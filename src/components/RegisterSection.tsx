@@ -9,7 +9,7 @@ function generateChallenge() {
 }
 
 const WEBHOOK_URL =
-  "https://hook.eu1.make.com/l72u6mscdkmi6cxmnu3auxu5s8kgjr0l";
+  "https://hook.eu1.make.com/ay8xqbengj94jw74iie1ndy116vw03ba";
 
 const RegisterSection = () => {
   const [name, setName] = useState("");
