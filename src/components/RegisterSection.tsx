@@ -1,15 +1,35 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
+
+function generateChallenge() {
+  const a = Math.floor(Math.random() * 10) + 1;
+  const b = Math.floor(Math.random() * 10) + 1;
+  return { a, b, answer: a + b };
+}
+
+const WEBHOOK_URL =
+  "https://hook.eu1.make.com/l72u6mscdkmi6cxmnu3auxu5s8kgjr0l";
 
 const RegisterSection = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [honeypot, setHoneypot] = useState("");
+  const [captcha, setCaptcha] = useState(generateChallenge);
+  const [captchaInput, setCaptchaInput] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const refreshCaptcha = useCallback(() => {
+    setCaptcha(generateChallenge());
+    setCaptchaInput("");
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (honeypot) return;
 
     if (!name.trim() || !email.trim()) {
       toast({ title: "Please fill in all fields", variant: "destructive" });
@@ -22,8 +42,34 @@ const RegisterSection = () => {
       return;
     }
 
-    setSubmitted(true);
-    toast({ title: "You're on the list!", description: "We'll be in touch soon." });
+    if (parseInt(captchaInput, 10) !== captcha.answer) {
+      toast({ title: "Incorrect answer — please try again", variant: "destructive" });
+      refreshCaptcha();
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      const res = await fetch(WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim(), email: email.trim() }),
+      });
+
+      if (!res.ok) throw new Error(`Status ${res.status}`);
+
+      setSubmitted(true);
+      toast({ title: "You're on the list!", description: "We'll be in touch soon." });
+    } catch {
+      toast({
+        title: "Something went wrong",
+        description: "Please try again in a moment.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -71,11 +117,48 @@ const RegisterSection = () => {
                 maxLength={255}
                 className="w-full border border-border bg-secondary px-5 py-4 font-body text-sm tracking-widest text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors"
               />
+
+              {/* Honeypot — invisible to humans, traps bots that auto-fill all fields */}
+              <div aria-hidden="true" className="absolute -left-[9999px]">
+                <input
+                  type="text"
+                  name="website"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                />
+              </div>
+
+              <div className="flex items-center gap-3">
+                <span className="font-body text-sm tracking-widest text-muted-foreground whitespace-nowrap">
+                  {captcha.a} + {captcha.b} =
+                </span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="?"
+                  value={captchaInput}
+                  onChange={(e) => setCaptchaInput(e.target.value)}
+                  maxLength={3}
+                  className="w-full border border-border bg-secondary px-5 py-4 font-body text-sm tracking-widest text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors"
+                />
+                <button
+                  type="button"
+                  onClick={refreshCaptcha}
+                  className="shrink-0 border border-border px-3 py-4 font-body text-xs tracking-widest text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="New question"
+                >
+                  ↻
+                </button>
+              </div>
+
               <button
                 type="submit"
-                className="w-full bg-primary py-4 font-display text-lg tracking-widest text-primary-foreground transition-all hover:opacity-90"
+                disabled={submitting}
+                className="w-full bg-primary py-4 font-display text-lg tracking-widest text-primary-foreground transition-all hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                REGISTER INTEREST
+                {submitting ? "SENDING…" : "REGISTER INTEREST"}
               </button>
             </form>
           )}
