@@ -42,7 +42,7 @@ const AboutSection = () => {
           <p className="font-body text-base leading-relaxed text-secondary-foreground">
             Padel is the fastest-growing racquet sport on the planet. Enclosed glass courts, 
             strategic wall play, and an energy that's part tennis, part squash, and entirely addictive. 
-            Foundry Padel is bringing this to Portland's St. John's neighborhood — 
+            Foundry Padel is bringing the sport to Portland's St. John's neighborhood — 
             four indoor courts, a curated social space, café, and retail, all next to Cathedral Park.
           </p>
         </motion.div>
