@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import heroImage from "@/assets/hero-padel-blue.png";
+import heroImage from "@/assets/hero-padel-blue.jpg";
 
 const HeroSection = () => {
   const scrollToRegister = () => {
