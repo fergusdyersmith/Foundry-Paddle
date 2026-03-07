@@ -50,7 +50,7 @@ const HeroSection = () => {
           transition={{ duration: 1, delay: 0.5 }}
           className="mt-6 font-body text-sm tracking-[0.2em] uppercase text-muted-foreground"
         >
-          Portland's First Padel Club — Coming Soon
+          Portland's First Padel Club — March 2026
         </motion.p>
 
         <motion.button
