@@ -46,7 +46,7 @@ const Footer = () => {
             <a href="https://instagram.com/foundrypadelpdx" target="_blank" rel="noopener noreferrer" className="text-muted-foreground transition-colors hover:text-primary">
               <Instagram size={20} />
             </a>
-            <a href="https://facebook.com/foundrypadel" target="_blank" rel="noopener noreferrer" className="text-muted-foreground transition-colors hover:text-primary">
+            <a href="https://www.facebook.com/share/1Cerw2CTec/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer" className="text-muted-foreground transition-colors hover:text-primary">
               <Facebook size={20} />
             </a>
             <a href="https://tiktok.com/@foundry.padel" target="_blank" rel="noopener noreferrer" className="text-muted-foreground transition-colors hover:text-primary">
