@@ -2,7 +2,7 @@
 
 ## Copy Changes
 
-- [ ] **Hero section:** Replace "this" with "padel" (or "the sport" / something less awkward) in the line: *"Foundry Padel is bringing **this** to Portland's St. John's neighborhood…"*
+- [x] **Hero section:** Replace "this" with "padel" (or "the sport" / something less awkward) in the line: *"Foundry Padel is bringing **this** to Portland…"* — updated, also removed St. John's reference
 
 ## Register Interest / Email
 

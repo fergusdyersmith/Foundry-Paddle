@@ -1,6 +1,6 @@
 # Foundry Padel
 
-Portland's first indoor padel club — 4 courts, café, and social spaces in St. John's.
+Portland's first indoor padel club — 4 courts, café, and social spaces in Portland.
 
 ## Tech Stack
 
