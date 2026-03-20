@@ -57,7 +57,7 @@ const Contact = () => {
                     <a href="https://maps.app.goo.gl/C9nVVN2M1TUWvZLU9" target="_blank" rel="noopener noreferrer" className="font-body text-sm text-foreground hover:text-primary transition-colors">
                       8613 N Crawford St, Portland, OR 97203
                     </a>
-                    <p className="font-body text-xs text-muted-foreground">St. John's, near Cathedral Park</p>
+                    <p className="font-body text-xs text-muted-foreground">Portland — near Cathedral Park</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
@@ -86,12 +86,24 @@ const Contact = () => {
                 </div>
               </div>
 
-              {/* Map placeholder */}
-              <div className="mt-10 aspect-[4/3] bg-secondary border border-border flex items-center justify-center">
-                <div className="text-center">
-                  <MapPin size={32} className="text-muted-foreground mx-auto mb-2" />
-                  <p className="font-body text-xs tracking-[0.15em] uppercase text-muted-foreground">Map Coming Soon</p>
-                </div>
+              {/* Map */}
+              <div className="mt-10">
+                <a
+                  href="https://maps.app.goo.gl/C9nVVN2M1TUWvZLU9"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block aspect-[4/3] border border-border overflow-hidden"
+                  aria-label="View on Google Maps"
+                >
+                  <iframe
+                    title="Foundry Padel location"
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2793.5!2d-122.7563!3d45.5897!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x54950711f479fe75%3A0xb58f66740bf8d95a!2sFoundry%20Padel!5e0!3m2!1sen!2sus!4v1"
+                    className="w-full h-full pointer-events-none"
+                    style={{ filter: "grayscale(1) invert(1) contrast(1.2) brightness(0.6)" }}
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                  />
+                </a>
               </div>
             </motion.div>
 

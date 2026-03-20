@@ -34,12 +34,11 @@ const TheClub = () => {
             <h1 className="font-display text-6xl sm:text-8xl text-foreground mb-4">THE CLUB</h1>
             <div className="flex items-center justify-center gap-4 mb-6">
               <div className="h-px w-16 bg-primary" />
-              <span className="font-body text-sm tracking-[0.2em] uppercase text-primary">St. John's, Portland</span>
+              <span className="font-body text-sm tracking-[0.2em] uppercase text-primary">Portland</span>
               <div className="h-px w-16 bg-primary" />
             </div>
             <p className="font-body text-base text-secondary-foreground max-w-xl mx-auto">
-              More than a venue — a home for the sport. Four courts, a café, social spaces, and a pro shop, 
-              all set in Portland's St. John's neighborhood, steps from Cathedral Park.
+              More than a venue — a home for the sport. Four courts, a café, social spaces, and a pro shop, all steps from Cathedral Park in Portland.
             </p>
           </motion.div>
         </div>

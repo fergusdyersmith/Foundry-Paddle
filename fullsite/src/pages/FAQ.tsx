@@ -9,7 +9,7 @@ const faqs = [
   },
   {
     q: "What equipment do I need?",
-    a: "Just yourself and athletic shoes (non-marking court shoes preferred). We provide racquets and balls for all sessions. As you get more into it, you can grab your own gear from our pro shop.",
+    a: "Just yourself and athletic shoes (non-marking court shoes preferred). We provide racquet and ball rentals for all sessions. As you get more into it, you can grab your own gear from our pro shop.",
   },
   {
     q: "How is padel different from tennis?",
@@ -45,7 +45,7 @@ const faqs = [
   },
   {
     q: "When are you opening?",
-    a: "We're targeting a 2026 opening. Sign up for our mailing list to be the first to know the exact date and get early access to memberships.",
+    a: "We're targeting May 2026. Sign up for our mailing list to be the first to know the exact date and get early access to memberships.",
   },
 ];
 

@@ -39,10 +39,10 @@ const TheSport = () => {
             <div>
               <h2 className="font-display text-4xl text-foreground mb-6">WHAT IS PADEL?</h2>
               <p className="font-body text-base leading-relaxed text-secondary-foreground mb-4">
-                Padel is a racquet sport that combines elements of tennis, squash, and badminton. Played on an enclosed court about one-third the size of a tennis court, it's always played in doubles and uses solid, stringless racquets.
+                Padel is a racquet sport that combines elements of tennis and squash. Played on an enclosed court about one-third the size of a tennis court, it's always played in doubles and uses solid, stringless racquets.
               </p>
               <p className="font-body text-base leading-relaxed text-secondary-foreground mb-4">
-                Born in Mexico in 1969, padel has exploded across Spain, Sweden, and South America. Over 25 million people play worldwide — and it's finally arriving in Portland.
+                Born in Mexico in 1969, padel has exploded across Spain, Argentina, and everywhere in the world but the US. Over 25 million people play worldwide — and it's finally arriving in Portland. For now, we're bringing the sport to the Pacific Northwest.
               </p>
               <p className="font-body text-sm text-muted-foreground">
                 The glass walls keep the ball in play, creating longer rallies, more strategy, and way more fun than you'd expect.

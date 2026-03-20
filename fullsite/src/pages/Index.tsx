@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import heroImage from "@/assets/hero-padel.jpg";
+import heroImage from "@/assets/hero-padel-blue.jpg";
 import BookCTA from "@/components/BookCTA";
 
 const features = [
@@ -62,7 +62,7 @@ const Index = () => {
             <p className="font-body text-base leading-relaxed text-secondary-foreground">
               Padel is the fastest-growing racquet sport on the planet. Enclosed glass courts,
               strategic wall play, and an energy that's part tennis, part squash, and entirely addictive.
-              Foundry Padel is bringing this to Portland's St. John's neighborhood —
+              Foundry Padel is bringing this to Portland —
               four indoor courts, a curated social space, café, and retail, all next to Cathedral Park.
             </p>
           </motion.div>
@@ -86,6 +86,35 @@ const Index = () => {
               </Link>
             </motion.div>
           ))}
+        </div>
+      </section>
+
+      {/* Partners */}
+      <section id="partners" className="py-20 px-6">
+        <div className="mx-auto max-w-4xl">
+          <div className="section-divider mb-16" />
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="text-center mb-12">
+            <h2 className="font-display text-4xl sm:text-5xl text-foreground mb-8">PARTNERS</h2>
+            <div className="max-w-2xl mx-auto space-y-6">
+              <p className="font-body text-base leading-relaxed text-secondary-foreground">
+                We're proud to partner with Adidas and Wilson — two brands that define padel culture globally. Their commitment to the sport, from professional tours to grassroots development, reflects the same passion we bring to Portland.
+              </p>
+              <p className="font-body text-base leading-relaxed text-secondary-foreground">
+                Beyond the court, we're partnering exclusively with Portland-based small businesses and makers. From our café's local roasters to the artisans crafting our spaces, Foundry is built by and for the Portland community.
+              </p>
+            </div>
+          </motion.div>
+          
+          {/* Logo grid - placeholders for now */}
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 0.2 }} className="grid grid-cols-2 md:grid-cols-4 gap-8 items-center justify-items-center">
+            {/* Placeholder boxes for logos - will be replaced with actual logo images */}
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="w-full max-w-[200px] aspect-[3/2] bg-secondary border border-border flex items-center justify-center">
+                <p className="font-body text-xs tracking-[0.15em] uppercase text-muted-foreground">Logo</p>
+              </div>
+            ))}
+          </motion.div>
+          <div className="section-divider mt-16" />
         </div>
       </section>
 
