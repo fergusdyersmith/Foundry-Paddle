@@ -105,14 +105,22 @@ const Index = () => {
             </div>
           </motion.div>
           
-          {/* Logo grid - placeholders for now */}
+          {/* Logo grid */}
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 0.2 }} className="grid grid-cols-2 md:grid-cols-4 gap-8 items-center justify-items-center">
-            {/* Placeholder boxes for logos - will be replaced with actual logo images */}
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="w-full max-w-[200px] aspect-[3/2] bg-secondary border border-border flex items-center justify-center">
-                <p className="font-body text-xs tracking-[0.15em] uppercase text-muted-foreground">Logo</p>
-              </div>
-            ))}
+            {/* Equipment partners - placeholders for Adidas and Wilson */}
+            <div className="w-full max-w-[200px] aspect-[3/2] bg-secondary border border-border flex items-center justify-center">
+              <p className="font-body text-xs tracking-[0.15em] uppercase text-muted-foreground">Adidas</p>
+            </div>
+            <div className="w-full max-w-[200px] aspect-[3/2] bg-secondary border border-border flex items-center justify-center">
+              <p className="font-body text-xs tracking-[0.15em] uppercase text-muted-foreground">Wilson</p>
+            </div>
+            {/* Portland partners - actual logos */}
+            <div className="w-full max-w-[200px] aspect-[3/2] flex items-center justify-center">
+              <img src="/caprico.png" alt="Caprico" className="max-w-full max-h-full object-contain" />
+            </div>
+            <div className="w-full max-w-[200px] aspect-[3/2] flex items-center justify-center">
+              <img src="/Touring_Logo_CRLockup_Small_Digital_Color.png" alt="Touring" className="max-w-full max-h-full object-contain" />
+            </div>
           </motion.div>
           <div className="section-divider mt-16" />
         </div>
