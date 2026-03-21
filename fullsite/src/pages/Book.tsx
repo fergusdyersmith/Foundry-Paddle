@@ -1,23 +1,8 @@
-import { useState } from "react";
 import { motion } from "framer-motion";
-import { useToast } from "@/hooks/use-toast";
 import { Calendar, Clock, Users } from "lucide-react";
+import InterestEmailForm from "@/components/InterestEmailForm";
 
 const Book = () => {
-  const [email, setEmail] = useState("");
-  const [submitted, setSubmitted] = useState(false);
-  const { toast } = useToast();
-
-  const handleNotify = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      toast({ title: "Please enter a valid email", variant: "destructive" });
-      return;
-    }
-    setSubmitted(true);
-    toast({ title: "You're on the list!", description: "We'll notify you when booking opens." });
-  };
-
   return (
     <main className="bg-background min-h-screen pt-24">
       <section className="py-20 px-6">
@@ -71,28 +56,7 @@ const Book = () => {
               Online booking launches with our opening. Drop your email and we'll let you know the moment courts go live.
             </p>
 
-            {submitted ? (
-              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="border border-primary p-10">
-                <span className="font-display text-3xl text-primary">YOU'RE IN</span>
-                <p className="mt-3 font-body text-sm text-muted-foreground">
-                  We'll reach out at <span className="text-foreground">{email}</span>
-                </p>
-              </motion.div>
-            ) : (
-              <form onSubmit={handleNotify} className="flex gap-3">
-                <input
-                  type="email"
-                  placeholder="YOUR EMAIL"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  maxLength={255}
-                  className="flex-1 border border-border bg-secondary px-5 py-4 font-body text-sm tracking-widest text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors"
-                />
-                <button type="submit" className="bg-primary px-8 py-4 font-display text-sm tracking-widest text-primary-foreground transition-all hover:opacity-90">
-                  NOTIFY ME
-                </button>
-              </form>
-            )}
+            <InterestEmailForm source="book" />
           </motion.div>
           <div className="section-divider mt-16" />
         </div>

@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Instagram, Facebook, Mail, MapPin, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { generateChallenge, INTEREST_WEBHOOK_URL } from "@/lib/interestWebhook";
 
 const TikTokIcon = ({ size = 20 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -11,21 +12,67 @@ const TikTokIcon = ({ size = 20 }: { size?: number }) => (
 
 const Contact = () => {
   const [form, setForm] = useState({ name: "", email: "", message: "" });
+  const [honeypot, setHoneypot] = useState("");
+  const [captcha, setCaptcha] = useState(generateChallenge);
+  const [captchaInput, setCaptchaInput] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const refreshCaptcha = useCallback(() => {
+    setCaptcha(generateChallenge());
+    setCaptchaInput("");
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (honeypot) return;
+
     if (!form.name.trim() || !form.email.trim() || !form.message.trim()) {
       toast({ title: "Please fill in all fields", variant: "destructive" });
       return;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email)) {
       toast({ title: "Please enter a valid email", variant: "destructive" });
       return;
     }
-    setSubmitted(true);
-    toast({ title: "Message sent!", description: "We'll get back to you soon." });
+
+    if (parseInt(captchaInput, 10) !== captcha.answer) {
+      toast({ title: "Incorrect answer — please try again", variant: "destructive" });
+      refreshCaptcha();
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      const res = await fetch(INTEREST_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          email: form.email.trim(),
+          message: form.message.trim(),
+          source: "contact",
+        }),
+      });
+
+      if (!res.ok) throw new Error(`Status ${res.status}`);
+
+      setSubmitted(true);
+      toast({ title: "Message sent!", description: "We'll get back to you soon." });
+    } catch {
+      toast({
+        title: "Something went wrong",
+        description: "Please try again in a moment.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -116,7 +163,7 @@ const Contact = () => {
                   <p className="mt-3 font-body text-sm text-muted-foreground">We'll get back to you at <span className="text-foreground">{form.email}</span></p>
                 </div>
               ) : (
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-4 relative">
                   <input
                     type="text"
                     placeholder="YOUR NAME"
@@ -141,8 +188,47 @@ const Contact = () => {
                     rows={6}
                     className="w-full border border-border bg-secondary px-5 py-4 font-body text-sm tracking-widest text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors resize-none"
                   />
-                  <button type="submit" className="w-full bg-primary py-4 font-display text-lg tracking-widest text-primary-foreground transition-all hover:opacity-90">
-                    SEND MESSAGE
+
+                  <div aria-hidden="true" className="absolute -left-[9999px]">
+                    <input
+                      type="text"
+                      name="website"
+                      tabIndex={-1}
+                      autoComplete="off"
+                      value={honeypot}
+                      onChange={(e) => setHoneypot(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <span className="font-body text-sm tracking-widest text-muted-foreground whitespace-nowrap">
+                      {captcha.a} + {captcha.b} =
+                    </span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="?"
+                      value={captchaInput}
+                      onChange={(e) => setCaptchaInput(e.target.value)}
+                      maxLength={3}
+                      className="w-full border border-border bg-secondary px-5 py-4 font-body text-sm tracking-widest text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={refreshCaptcha}
+                      className="shrink-0 border border-border px-3 py-4 font-body text-xs tracking-widest text-muted-foreground hover:text-foreground transition-colors"
+                      aria-label="New question"
+                    >
+                      ↻
+                    </button>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="w-full bg-primary py-4 font-display text-lg tracking-widest text-primary-foreground transition-all hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {submitting ? "SENDING…" : "SEND MESSAGE"}
                   </button>
                 </form>
               )}
