@@ -107,3 +107,12 @@
     transparent 100%
   );
 }
+
+/* Wistia web component: blurred poster until custom element upgrades */
+wistia-player[media-id="jxjc5ma996"]:not(:defined) {
+  background: center / contain no-repeat
+    url("https://fast.wistia.com/embed/medias/jxjc5ma996/swatch");
+  display: block;
+  filter: blur(5px);
+  padding-top: 56.25%;
+}

@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import BookCTA from "@/components/BookCTA";
+import WistiaVideo from "@/components/WistiaVideo";
 
 const comparisons = [
   { sport: "Tennis", padel: "Enclosed glass walls — balls stay in play", other: "Open court — balls go out" },
@@ -48,12 +49,7 @@ const TheSport = () => {
                 The glass walls keep the ball in play, creating longer rallies, more strategy, and way more fun than you'd expect.
               </p>
             </div>
-            <div className="aspect-video bg-secondary border border-border flex items-center justify-center">
-              <div className="text-center">
-                <span className="font-display text-3xl text-muted-foreground">▶</span>
-                <p className="font-body text-xs tracking-[0.15em] uppercase text-muted-foreground mt-2">Gameplay Video Coming Soon</p>
-              </div>
-            </div>
+            <WistiaVideo />
           </motion.div>
         </div>
       </section>
