@@ -120,7 +120,7 @@ const Index = () => {
             <h2 className="font-display text-4xl sm:text-5xl text-foreground mb-8">PARTNERS</h2>
             <div className="max-w-2xl mx-auto space-y-6">
               <p className="font-body text-base leading-relaxed text-secondary-foreground">
-                We're proud to partner with Adidas and Wilson — two brands that define padel culture globally. Their commitment to the sport, from professional tours to grassroots development, reflects the same passion we bring to Portland.
+                We're proud to work with partners who champion padel at every level — from the professional circuit to clubs like ours opening new courts.
               </p>
               <p className="font-body text-base leading-relaxed text-secondary-foreground">
                 Beyond the court, we're partnering exclusively with Portland-based small businesses and makers. From our café's local roasters to the artisans crafting our spaces, Foundry is built by and for the Portland community.
@@ -130,18 +130,10 @@ const Index = () => {
           
           {/* Logo grid */}
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 0.2 }} className="grid grid-cols-2 md:grid-cols-3 gap-8 items-center justify-items-center">
-            {/* Equipment partners - placeholders for Adidas and Wilson */}
-            <div className="w-full max-w-[200px] aspect-[3/2] bg-secondary border border-border flex items-center justify-center">
-              <p className="font-body text-xs tracking-[0.15em] uppercase text-muted-foreground">Adidas</p>
-            </div>
-            <div className="w-full max-w-[200px] aspect-[3/2] bg-secondary border border-border flex items-center justify-center">
-              <p className="font-body text-xs tracking-[0.15em] uppercase text-muted-foreground">Wilson</p>
-            </div>
-            {/* Portland partners */}
             <div className="w-full max-w-[200px] aspect-[3/2] flex items-center justify-center p-2">
               <img src={publicAsset("caprico.png")} alt="Caprico" className="max-w-full max-h-full object-contain" />
             </div>
-            <div className="w-full max-w-[200px] aspect-[3/2] flex items-center justify-center p-2">
+            <div className="w-full max-w-[200px] aspect-[3/2] flex items-center justify-center p-2 bg-white border border-border rounded-sm">
               <img src={publicAsset("Touring_Logo_CRLockup_Small_Digital_Color.png")} alt="Touring" className="max-w-full max-h-full object-contain" />
             </div>
             <div className="w-full max-w-[200px] aspect-[3/2] flex items-center justify-center p-2 bg-secondary/50 border border-border rounded-sm">
