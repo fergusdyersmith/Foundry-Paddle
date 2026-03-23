@@ -2,12 +2,16 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import heroImage from "@/assets/hero-padel-blue.jpg";
 import BookCTA from "@/components/BookCTA";
+import { PLAYTOMIC_BOOKING_URL } from "@/constants/booking";
 
 const features = [
   { label: "4", desc: "Indoor Courts" },
   { label: "1", desc: "Social Café" },
   { label: "∞", desc: "Good Times" },
 ];
+
+/** Public folder URLs must respect Vite `base` (e.g. /fullsite/) or images 404 on deploy. */
+const publicAsset = (filename: string) => `${import.meta.env.BASE_URL}${filename}`;
 
 const Index = () => {
   return (
@@ -35,9 +39,14 @@ const Index = () => {
             Portland's First Padel Club — Where The Game Begins
           </motion.p>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.8 }} className="mt-10 flex gap-4">
-            <Link to="/fullsite/book" className="border border-primary px-10 py-3 font-display text-lg tracking-widest text-primary transition-all hover:bg-primary hover:text-primary-foreground">
+            <a
+              href={PLAYTOMIC_BOOKING_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="border border-primary px-10 py-3 font-display text-lg tracking-widest text-primary transition-all hover:bg-primary hover:text-primary-foreground"
+            >
               BOOK NOW
-            </Link>
+            </a>
             <Link to="/fullsite/the-sport" className="border border-border px-10 py-3 font-display text-lg tracking-widest text-muted-foreground transition-all hover:border-foreground hover:text-foreground">
               LEARN MORE
             </Link>
@@ -64,6 +73,20 @@ const Index = () => {
               strategic wall play, and an energy that's part tennis, part squash, and entirely addictive.
               Foundry Padel is bringing this to Portland —
               four indoor courts, a curated social space, café, and retail, all next to Cathedral Park.
+            </p>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+            className="mt-16 max-w-2xl mx-auto text-center"
+          >
+            <p className="font-body text-sm leading-relaxed text-muted-foreground">
+              Serious but approachable. Competitive but community-driven.
+              We're building something for players who want more than a casual hit —
+              expect coaching, tournaments, pro workshops, and a space designed to
+              elevate the game and the culture around it.
             </p>
           </motion.div>
           <div className="section-divider mt-20" />
@@ -106,7 +129,7 @@ const Index = () => {
           </motion.div>
           
           {/* Logo grid */}
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 0.2 }} className="grid grid-cols-2 md:grid-cols-4 gap-8 items-center justify-items-center">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 0.2 }} className="grid grid-cols-2 md:grid-cols-3 gap-8 items-center justify-items-center">
             {/* Equipment partners - placeholders for Adidas and Wilson */}
             <div className="w-full max-w-[200px] aspect-[3/2] bg-secondary border border-border flex items-center justify-center">
               <p className="font-body text-xs tracking-[0.15em] uppercase text-muted-foreground">Adidas</p>
@@ -114,12 +137,18 @@ const Index = () => {
             <div className="w-full max-w-[200px] aspect-[3/2] bg-secondary border border-border flex items-center justify-center">
               <p className="font-body text-xs tracking-[0.15em] uppercase text-muted-foreground">Wilson</p>
             </div>
-            {/* Portland partners - actual logos */}
-            <div className="w-full max-w-[200px] aspect-[3/2] flex items-center justify-center">
-              <img src="/caprico.png" alt="Caprico" className="max-w-full max-h-full object-contain" />
+            {/* Portland partners */}
+            <div className="w-full max-w-[200px] aspect-[3/2] flex items-center justify-center p-2">
+              <img src={publicAsset("caprico.png")} alt="Caprico" className="max-w-full max-h-full object-contain" />
             </div>
-            <div className="w-full max-w-[200px] aspect-[3/2] flex items-center justify-center">
-              <img src="/Touring_Logo_CRLockup_Small_Digital_Color.png" alt="Touring" className="max-w-full max-h-full object-contain" />
+            <div className="w-full max-w-[200px] aspect-[3/2] flex items-center justify-center p-2">
+              <img src={publicAsset("Touring_Logo_CRLockup_Small_Digital_Color.png")} alt="Touring" className="max-w-full max-h-full object-contain" />
+            </div>
+            <div className="w-full max-w-[200px] aspect-[3/2] flex items-center justify-center p-2 bg-secondary/50 border border-border rounded-sm">
+              <img src={publicAsset("ocidental.png")} alt="Occidental Brewing Co." className="max-w-full max-h-full object-contain" />
+            </div>
+            <div className="w-full max-w-[200px] aspect-[3/2] flex items-center justify-center p-2 bg-secondary/50 border border-border rounded-sm">
+              <img src={publicAsset("3-Bar_Logo_BWr.png")} alt="Three Bar" className="max-w-full max-h-full object-contain" />
             </div>
           </motion.div>
           <div className="section-divider mt-16" />

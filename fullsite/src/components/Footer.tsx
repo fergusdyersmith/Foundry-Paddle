@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Instagram, Facebook } from "lucide-react";
+import { PLAYTOMIC_BOOKING_URL } from "@/constants/booking";
 
 const TikTokIcon = ({ size = 20 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -7,13 +8,17 @@ const TikTokIcon = ({ size = 20 }: { size?: number }) => (
   </svg>
 );
 
-const footerLinks = [
+type FooterNavLink =
+  | { label: string; path: string }
+  | { label: string; href: string; external: true };
+
+const footerLinks: FooterNavLink[] = [
   { label: "The Sport", path: "/fullsite/the-sport" },
   { label: "The Club", path: "/fullsite/the-club" },
   { label: "Memberships", path: "/fullsite/memberships" },
   { label: "FAQ", path: "/fullsite/faq" },
   { label: "Contact", path: "/fullsite/contact" },
-  { label: "Book a Court", path: "/fullsite/book" },
+  { label: "Book a Court", href: PLAYTOMIC_BOOKING_URL, external: true },
 ];
 
 const Footer = () => {
@@ -36,11 +41,23 @@ const Footer = () => {
           <div>
             <span className="font-body text-xs uppercase tracking-[0.2em] text-muted-foreground">Navigate</span>
             <div className="mt-3 flex flex-col gap-2">
-              {footerLinks.map((link) => (
-                <Link key={link.path} to={link.path} className="font-body text-sm text-secondary-foreground hover:text-primary transition-colors">
-                  {link.label}
-                </Link>
-              ))}
+              {footerLinks.map((link) =>
+                "external" in link ? (
+                  <a
+                    key={link.label}
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-body text-sm text-secondary-foreground hover:text-primary transition-colors"
+                  >
+                    {link.label}
+                  </a>
+                ) : (
+                  <Link key={link.path} to={link.path} className="font-body text-sm text-secondary-foreground hover:text-primary transition-colors">
+                    {link.label}
+                  </Link>
+                ),
+              )}
             </div>
           </div>
 
