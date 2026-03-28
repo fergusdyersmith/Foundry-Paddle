@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import heroImage from "@/assets/hero-padel-blue.jpg";
 import BookCTA from "@/components/BookCTA";
+import { PartnerLogoBand } from "@/components/PartnerLogoBand";
 import { PLAYTOMIC_BOOKING_URL } from "@/constants/booking";
 
 const features = [
@@ -9,9 +10,6 @@ const features = [
   { label: "1", desc: "Social Café" },
   { label: "∞", desc: "Good Times" },
 ];
-
-/** Public folder URLs must respect Vite `base` (e.g. /fullsite/) or images 404 on deploy. */
-const publicAsset = (filename: string) => `${import.meta.env.BASE_URL}${filename}`;
 
 const Index = () => {
   return (
@@ -127,21 +125,14 @@ const Index = () => {
               </p>
             </div>
           </motion.div>
-          
-          {/* Logo grid */}
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 0.2 }} className="grid grid-cols-2 md:grid-cols-3 gap-8 items-center justify-items-center">
-            <div className="w-full max-w-[200px] aspect-[3/2] flex items-center justify-center p-2">
-              <img src={publicAsset("caprico.png")} alt="Caprico" className="max-w-full max-h-full object-contain" />
-            </div>
-            <div className="w-full max-w-[200px] aspect-[3/2] flex items-center justify-center p-2 bg-white border border-border rounded-sm">
-              <img src={publicAsset("Touring_Logo_CRLockup_Small_Digital_Color.png")} alt="Touring" className="max-w-full max-h-full object-contain" />
-            </div>
-            <div className="w-full max-w-[200px] aspect-[3/2] flex items-center justify-center p-2 bg-secondary/50 border border-border rounded-sm">
-              <img src={publicAsset("ocidental.png")} alt="Occidental Brewing Co." className="max-w-full max-h-full object-contain" />
-            </div>
-            <div className="w-full max-w-[200px] aspect-[3/2] flex items-center justify-center p-2 bg-secondary/50 border border-border rounded-sm">
-              <img src={publicAsset("3-Bar_Logo_BWr.png")} alt="Three Bar" className="max-w-full max-h-full object-contain" />
-            </div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="-mx-6 md:-mx-10"
+          >
+            <PartnerLogoBand />
           </motion.div>
           <div className="section-divider mt-16" />
         </div>
