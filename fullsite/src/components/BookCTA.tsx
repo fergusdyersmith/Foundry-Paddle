@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
-import { PLAYTOMIC_BOOKING_URL } from "@/constants/booking";
+import { Link } from "react-router-dom";
+import { BOOK_PAGE_PATH } from "@/constants/booking";
 
 const BookCTA = () => (
   <section className="py-20 px-6">
@@ -17,14 +18,12 @@ const BookCTA = () => (
       <p className="font-body text-sm tracking-[0.15em] uppercase text-muted-foreground mb-10">
         Reserve your court and experience Portland's first padel club
       </p>
-      <a
-        href={PLAYTOMIC_BOOKING_URL}
-        target="_blank"
-        rel="noopener noreferrer"
+      <Link
+        to={BOOK_PAGE_PATH}
         className="inline-block border border-primary px-12 py-4 font-display text-xl tracking-widest text-primary transition-all hover:bg-primary hover:text-primary-foreground"
       >
         BOOK A COURT
-      </a>
+      </Link>
       <div className="section-divider mt-12" />
     </motion.div>
   </section>

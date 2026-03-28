@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import heroImage from "@/assets/hero-padel-blue.jpg";
 import BookCTA from "@/components/BookCTA";
 import { PartnerLogoBand } from "@/components/PartnerLogoBand";
-import { PLAYTOMIC_BOOKING_URL } from "@/constants/booking";
+import { BOOK_PAGE_PATH } from "@/constants/booking";
 
 const features = [
   { label: "4", desc: "Indoor Courts" },
@@ -37,14 +37,12 @@ const Index = () => {
             Portland's First Padel Club — Where The Game Begins
           </motion.p>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.8 }} className="mt-10 flex gap-4">
-            <a
-              href={PLAYTOMIC_BOOKING_URL}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              to={BOOK_PAGE_PATH}
               className="border border-primary px-10 py-3 font-display text-lg tracking-widest text-primary transition-all hover:bg-primary hover:text-primary-foreground"
             >
               BOOK NOW
-            </a>
+            </Link>
             <Link to="/fullsite/the-sport" className="border border-border px-10 py-3 font-display text-lg tracking-widest text-muted-foreground transition-all hover:border-foreground hover:text-foreground">
               LEARN MORE
             </Link>

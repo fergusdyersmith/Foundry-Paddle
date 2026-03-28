@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Instagram, Facebook } from "lucide-react";
-import { PLAYTOMIC_BOOKING_URL } from "@/constants/booking";
+import { BOOK_PAGE_PATH } from "@/constants/booking";
 
 const TikTokIcon = ({ size = 20 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -18,7 +18,7 @@ const footerLinks: FooterNavLink[] = [
   { label: "Memberships", path: "/fullsite/memberships" },
   { label: "FAQ", path: "/fullsite/faq" },
   { label: "Contact", path: "/fullsite/contact" },
-  { label: "Book a Court", href: PLAYTOMIC_BOOKING_URL, external: true },
+  { label: "Book a Court", path: BOOK_PAGE_PATH },
 ];
 
 const Footer = () => {

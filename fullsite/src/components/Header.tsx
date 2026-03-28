@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { PLAYTOMIC_BOOKING_URL } from "@/constants/booking";
+import { BOOK_PAGE_PATH } from "@/constants/booking";
 import { Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -37,14 +37,14 @@ const Header = () => {
               {link.label}
             </Link>
           ))}
-          <a
-            href={PLAYTOMIC_BOOKING_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="border border-primary px-6 py-2 font-display text-sm tracking-widest text-primary transition-all hover:bg-primary hover:text-primary-foreground"
+          <Link
+            to={BOOK_PAGE_PATH}
+            className={`border border-primary px-6 py-2 font-display text-sm tracking-widest transition-all hover:bg-primary hover:text-primary-foreground ${
+              location.pathname === BOOK_PAGE_PATH ? "bg-primary text-primary-foreground" : "text-primary"
+            }`}
           >
             BOOK A COURT
-          </a>
+          </Link>
         </nav>
 
         {/* Mobile toggle */}
@@ -79,15 +79,13 @@ const Header = () => {
                   {link.label}
                 </Link>
               ))}
-              <a
-                href={PLAYTOMIC_BOOKING_URL}
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                to={BOOK_PAGE_PATH}
                 onClick={() => setMobileOpen(false)}
                 className="border border-primary px-8 py-3 font-display text-sm tracking-widest text-primary transition-all hover:bg-primary hover:text-primary-foreground"
               >
                 BOOK A COURT
-              </a>
+              </Link>
             </div>
           </motion.nav>
         )}
