@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Calendar, Clock, Users } from "lucide-react";
-import InterestEmailForm from "@/components/InterestEmailForm";
+import { PLAYTOMIC_BOOKING_URL } from "@/constants/booking";
+// import InterestEmailForm from "@/components/InterestEmailForm";
 
 const Book = () => {
   return (
@@ -43,7 +44,40 @@ const Book = () => {
             ))}
           </div>
 
-          {/* Coming soon + email */}
+          {/* Playtomic booking embed (replaces coming-soon email form) */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="mx-auto w-full max-w-5xl"
+          >
+            <h2 className="font-display text-3xl sm:text-4xl text-foreground mb-2 text-center">BOOK ONLINE</h2>
+            <p className="font-body text-sm text-muted-foreground mb-6 text-center">
+              Choose a time and court below. Opens our booking partner in this page.
+            </p>
+            <div className="overflow-hidden rounded-sm border border-border bg-muted/30">
+              <iframe
+                src={PLAYTOMIC_BOOKING_URL}
+                title="Book a court — Playtomic"
+                className="block h-[min(90vh,900px)] w-full min-h-[640px]"
+                loading="lazy"
+                allow="payment *; fullscreen"
+              />
+            </div>
+            <p className="mt-4 text-center font-body text-xs text-muted-foreground">
+              <a
+                href={PLAYTOMIC_BOOKING_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline underline-offset-4 hover:text-primary"
+              >
+                Open booking in a new tab
+              </a>
+            </p>
+          </motion.div>
+
+          {/* Coming soon + email (replaced by Playtomic embed)
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -58,6 +92,7 @@ const Book = () => {
 
             <InterestEmailForm source="book" />
           </motion.div>
+          */}
           <div className="section-divider mt-16" />
         </div>
       </section>
