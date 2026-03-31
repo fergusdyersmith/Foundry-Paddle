@@ -1,6 +1,12 @@
 import { motion } from "framer-motion";
 import { Calendar, Clock, Users } from "lucide-react";
-import { PLAYTOMIC_BOOKING_URL } from "@/constants/booking";
+import {
+  PLAYTOMIC_APP_STORE_URL,
+  PLAYTOMIC_BOOKING_URL,
+  PLAYTOMIC_CLUB_URL,
+  PLAYTOMIC_PLAY_STORE_URL,
+  PLAYTOMIC_TENANT_URL,
+} from "@/constants/booking";
 // import InterestEmailForm from "@/components/InterestEmailForm";
 
 const Book = () => {
@@ -65,16 +71,74 @@ const Book = () => {
                 allow="payment *; fullscreen"
               />
             </div>
-            <p className="mt-4 text-center font-body text-xs text-muted-foreground">
-              <a
-                href={PLAYTOMIC_BOOKING_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline underline-offset-4 hover:text-primary"
-              >
-                Open booking in a new tab
-              </a>
-            </p>
+            <div className="mt-6 space-y-5 text-center font-body text-sm text-muted-foreground">
+              <p>
+                <a
+                  href={PLAYTOMIC_CLUB_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline underline-offset-4 hover:text-primary"
+                >
+                  Book on Playtomic (club page)
+                </a>
+              </p>
+              <p>
+                <a
+                  href={PLAYTOMIC_TENANT_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline underline-offset-4 hover:text-primary"
+                >
+                  Open in the Playtomic app
+                </a>
+                {" · "}
+                <a
+                  href={PLAYTOMIC_BOOKING_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline underline-offset-4 hover:text-primary"
+                >
+                  Open this calendar in a new tab
+                </a>
+              </p>
+              <div>
+                <p className="mb-3 font-body text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                  Get the app
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-5">
+                  <a
+                    href={PLAYTOMIC_APP_STORE_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block transition-opacity hover:opacity-90"
+                    aria-label="Download Playtomic on the App Store"
+                  >
+                    <img
+                      src={`${import.meta.env.BASE_URL}store-badge-apple-store.svg`}
+                      alt=""
+                      className="h-10 w-auto"
+                      width={120}
+                      height={40}
+                    />
+                  </a>
+                  <a
+                    href={PLAYTOMIC_PLAY_STORE_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block transition-opacity hover:opacity-90"
+                    aria-label="Get Playtomic on Google Play"
+                  >
+                    <img
+                      src={`${import.meta.env.BASE_URL}store-badge-google-play.png`}
+                      alt=""
+                      className="h-12 w-auto"
+                      width={155}
+                      height={60}
+                    />
+                  </a>
+                </div>
+              </div>
+            </div>
           </motion.div>
 
           {/* Coming soon + email (replaced by Playtomic embed)
