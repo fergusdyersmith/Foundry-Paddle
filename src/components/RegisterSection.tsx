@@ -14,6 +14,7 @@ const WEBHOOK_URL =
 const RegisterSection = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [mobile, setMobile] = useState("");
   const [honeypot, setHoneypot] = useState("");
   const [captcha, setCaptcha] = useState(generateChallenge);
   const [captchaInput, setCaptchaInput] = useState("");
@@ -31,8 +32,13 @@ const RegisterSection = () => {
 
     if (honeypot) return;
 
-    if (!name.trim() || !email.trim()) {
+    if (!name.trim() || !email.trim() || !mobile.trim()) {
       toast({ title: "Please fill in all fields", variant: "destructive" });
+      return;
+    }
+
+    if (!/\d/.test(mobile)) {
+      toast({ title: "Please enter a mobile number (digits required)", variant: "destructive" });
       return;
     }
 
@@ -54,7 +60,11 @@ const RegisterSection = () => {
       const res = await fetch(WEBHOOK_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), email: email.trim() }),
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim(),
+          mobile: mobile.trim(),
+        }),
       });
 
       if (!res.ok) throw new Error(`Status ${res.status}`);
@@ -96,7 +106,8 @@ const RegisterSection = () => {
             >
               <span className="font-display text-3xl text-primary">YOU'RE IN</span>
               <p className="mt-3 font-body text-sm text-muted-foreground">
-                We'll reach out at <span className="text-foreground">{email}</span>
+                We'll reach out at <span className="text-foreground">{email}</span> and{" "}
+                <span className="text-foreground">{mobile.trim()}</span>
               </p>
             </motion.div>
           ) : (
@@ -115,6 +126,15 @@ const RegisterSection = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 maxLength={255}
+                className="w-full border border-border bg-secondary px-5 py-4 font-body text-sm tracking-widest text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors"
+              />
+              <input
+                type="tel"
+                placeholder="MOBILE NUMBER"
+                value={mobile}
+                onChange={(e) => setMobile(e.target.value)}
+                autoComplete="tel"
+                maxLength={32}
                 className="w-full border border-border bg-secondary px-5 py-4 font-body text-sm tracking-widest text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors"
               />
 
