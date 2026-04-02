@@ -6,21 +6,29 @@ const spaces = [
     title: "THE COURTS",
     desc: "Four panoramic glass courts built to World Padel Tour specifications. LED-lit, climate-controlled, and designed for serious play. Whether you're rallying with friends or competing in a league, the courts are the heart of Foundry.",
     detail: "WPT-spec · LED lighting · Climate controlled",
+    image: "c948355b4e525fd8e6d3f81de38e0a9dcffb5ffa-3984x2490.avif",
+    imageAlt: "Indoor padel court with a player ready to strike the ball",
   },
   {
     title: "THE CAFÉ",
     desc: "Post-match coffee, cold-pressed juice, or something stronger. Our café is a gathering point — a place to debrief, strategize, or just hang. Locally roasted coffee, seasonal menus, and a bar program for evening leagues.",
     detail: "Local roasters · Seasonal menu · Bar program",
+    image: "download.jpeg",
+    imageAlt: "Padel player leaping for an overhead shot on a blue court",
   },
   {
     title: "SOCIAL SPACES",
     desc: "Spectator viewing, lounge seating, and a community table designed for connection. Watch matches from the mezzanine, meet your next doubles partner, or co-work between sessions.",
     detail: "Mezzanine viewing · Lounge · Co-working",
+    image: "images (1).jpeg",
+    imageAlt: "Padel racket and ball on the court surface",
   },
   {
     title: "PRO SHOP",
     desc: "Curated gear from the brands shaping padel. Racquets, grips, shoes, and apparel — tested by our coaching team and stocked for every level.",
     detail: "Racquets · Apparel · Accessories",
+    image: "images.jpeg",
+    imageAlt: "Padel play on court",
   },
 ];
 
@@ -63,8 +71,16 @@ const TheClub = () => {
                 <p className="font-body text-base leading-relaxed text-secondary-foreground mb-4">{space.desc}</p>
                 <p className="font-body text-xs tracking-[0.15em] uppercase text-primary">{space.detail}</p>
               </div>
-              <div className={`aspect-[4/3] bg-secondary border border-border flex items-center justify-center ${i % 2 === 1 ? "md:order-1" : ""}`}>
-                <p className="font-body text-xs tracking-[0.15em] uppercase text-muted-foreground">Photo Coming Soon</p>
+              <div
+                className={`aspect-[4/3] overflow-hidden bg-secondary border border-border ${i % 2 === 1 ? "md:order-1" : ""}`}
+              >
+                <img
+                  src={`${import.meta.env.BASE_URL}${encodeURI(space.image)}`}
+                  alt={space.imageAlt}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                  decoding="async"
+                />
               </div>
             </motion.div>
           ))}
