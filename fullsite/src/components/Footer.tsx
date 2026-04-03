@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Instagram, Facebook } from "lucide-react";
 import { BOOK_PAGE_PATH } from "@/constants/booking";
+import { GOOGLE_MAPS_EMBED_SRC, GOOGLE_MAPS_URL } from "@/constants/location";
 
 const TikTokIcon = ({ size = 20 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -33,7 +34,7 @@ const Footer = () => {
             </Link>
             <p className="mt-3 font-body text-sm text-muted-foreground">
               Portland's first padel club.<br />
-              <a href="https://maps.app.goo.gl/C9nVVN2M1TUWvZLU9" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">8613 N Crawford St, Portland, OR 97203</a>
+              <a href={GOOGLE_MAPS_URL} target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">8613 N Crawford St, Portland, OR 97203</a>
             </p>
           </div>
 
@@ -77,9 +78,28 @@ const Footer = () => {
           </div>
         </div>
 
+        <div className="mt-12">
+          <a
+            href={GOOGLE_MAPS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block aspect-[4/3] border border-border overflow-hidden"
+            aria-label="View on Google Maps"
+          >
+            <iframe
+              title="Foundry Padel location"
+              src={GOOGLE_MAPS_EMBED_SRC}
+              className="w-full h-full pointer-events-none"
+              style={{ filter: "grayscale(1) invert(1) contrast(1.2) brightness(0.6)" }}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+          </a>
+        </div>
+
         <div className="section-divider mt-12 mb-8" />
         <p className="font-body text-xs text-muted-foreground text-center">
-          © {new Date().getFullYear()} Foundry Padel. All rights reserved.
+          © {new Date().getFullYear()} Foundry Padel Inc. All rights reserved.
         </p>
       </div>
     </footer>

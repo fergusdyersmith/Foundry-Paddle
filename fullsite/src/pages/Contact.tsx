@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Instagram, Facebook, Mail, MapPin, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { generateChallenge, INTEREST_WEBHOOK_URL } from "@/lib/interestWebhook";
+import { GOOGLE_MAPS_EMBED_SRC, GOOGLE_MAPS_URL } from "@/constants/location";
 
 const TikTokIcon = ({ size = 20 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -101,7 +102,7 @@ const Contact = () => {
                 <div className="flex items-start gap-4">
                   <MapPin size={18} className="text-primary mt-1 shrink-0" />
                   <div>
-                    <a href="https://maps.app.goo.gl/C9nVVN2M1TUWvZLU9" target="_blank" rel="noopener noreferrer" className="font-body text-sm text-foreground hover:text-primary transition-colors">
+                    <a href={GOOGLE_MAPS_URL} target="_blank" rel="noopener noreferrer" className="font-body text-sm text-foreground hover:text-primary transition-colors">
                       8613 N Crawford St, Portland, OR 97203
                     </a>
                     <p className="font-body text-xs text-muted-foreground">Portland — near Cathedral Park</p>
@@ -136,7 +137,7 @@ const Contact = () => {
               {/* Map */}
               <div className="mt-10">
                 <a
-                  href="https://maps.app.goo.gl/C9nVVN2M1TUWvZLU9"
+                  href={GOOGLE_MAPS_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block aspect-[4/3] border border-border overflow-hidden"
@@ -144,7 +145,7 @@ const Contact = () => {
                 >
                   <iframe
                     title="Foundry Padel location"
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2793.5!2d-122.7563!3d45.5897!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x54950711f479fe75%3A0xb58f66740bf8d95a!2sFoundry%20Padel!5e0!3m2!1sen!2sus!4v1"
+                    src={GOOGLE_MAPS_EMBED_SRC}
                     className="w-full h-full pointer-events-none"
                     style={{ filter: "grayscale(1) invert(1) contrast(1.2) brightness(0.6)" }}
                     loading="lazy"
