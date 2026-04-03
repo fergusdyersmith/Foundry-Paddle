@@ -3,9 +3,7 @@ import { Calendar, Clock, Users } from "lucide-react";
 import {
   PLAYTOMIC_APP_STORE_URL,
   PLAYTOMIC_BOOKING_URL,
-  PLAYTOMIC_CLUB_URL,
   PLAYTOMIC_PLAY_STORE_URL,
-  PLAYTOMIC_TENANT_URL,
 } from "@/constants/booking";
 // import InterestEmailForm from "@/components/InterestEmailForm";
 
@@ -71,72 +69,46 @@ const Book = () => {
                 allow="payment *; fullscreen"
               />
             </div>
-            <div className="mt-6 space-y-5 text-center font-body text-sm text-muted-foreground">
-              <p>
-                <a
-                  href={PLAYTOMIC_CLUB_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline underline-offset-4 hover:text-primary"
-                >
-                  Book on Playtomic (club page)
-                </a>
+            <div className="mt-8 text-center font-body text-sm text-muted-foreground">
+              <div className="mb-6 flex items-center justify-center gap-4">
+                <div className="h-px w-12 bg-border sm:w-16" />
+                <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Or</span>
+                <div className="h-px w-12 bg-border sm:w-16" />
+              </div>
+              <p className="mb-4 font-body text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                Get the app
               </p>
-              <p>
+              <div className="flex flex-wrap items-center justify-center gap-4">
                 <a
-                  href={PLAYTOMIC_TENANT_URL}
+                  href={PLAYTOMIC_APP_STORE_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="underline underline-offset-4 hover:text-primary"
+                  className="inline-flex h-11 items-center transition-opacity hover:opacity-90"
+                  aria-label="Download Playtomic on the App Store"
                 >
-                  Open in the Playtomic app
+                  <img
+                    src={`${import.meta.env.BASE_URL}store-badge-apple-store.svg`}
+                    alt=""
+                    className="h-11 w-auto max-h-11 object-contain"
+                    width={120}
+                    height={40}
+                  />
                 </a>
-                {" · "}
                 <a
-                  href={PLAYTOMIC_BOOKING_URL}
+                  href={PLAYTOMIC_PLAY_STORE_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="underline underline-offset-4 hover:text-primary"
+                  className="inline-flex h-11 items-center transition-opacity hover:opacity-90"
+                  aria-label="Get Playtomic on Google Play"
                 >
-                  Open this calendar in a new tab
+                  <img
+                    src={`${import.meta.env.BASE_URL}store-badge-google-play.png`}
+                    alt=""
+                    className="h-11 w-auto max-h-11 object-contain"
+                    width={155}
+                    height={40}
+                  />
                 </a>
-              </p>
-              <div>
-                <p className="mb-3 font-body text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                  Get the app
-                </p>
-                <div className="flex flex-wrap items-center justify-center gap-5">
-                  <a
-                    href={PLAYTOMIC_APP_STORE_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-block transition-opacity hover:opacity-90"
-                    aria-label="Download Playtomic on the App Store"
-                  >
-                    <img
-                      src={`${import.meta.env.BASE_URL}store-badge-apple-store.svg`}
-                      alt=""
-                      className="h-10 w-auto"
-                      width={120}
-                      height={40}
-                    />
-                  </a>
-                  <a
-                    href={PLAYTOMIC_PLAY_STORE_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-block transition-opacity hover:opacity-90"
-                    aria-label="Get Playtomic on Google Play"
-                  >
-                    <img
-                      src={`${import.meta.env.BASE_URL}store-badge-google-play.png`}
-                      alt=""
-                      className="h-12 w-auto"
-                      width={155}
-                      height={60}
-                    />
-                  </a>
-                </div>
               </div>
             </div>
           </motion.div>
