@@ -64,7 +64,7 @@ const Book = () => {
               <iframe
                 src={PLAYTOMIC_BOOKING_URL}
                 title="Book a court — Playtomic"
-                className="block h-[min(90vh,900px)] w-full min-h-[640px]"
+                className="block h-[min(45vh,450px)] w-full min-h-[320px]"
                 loading="lazy"
                 allow="payment *; fullscreen"
               />
