@@ -1,3 +1,4 @@
+import { useReducedMotion } from "framer-motion";
 import { partnerLogoFiles } from "virtual:partner-logos";
 
 const logoSrc = (filename: string) => `${import.meta.env.BASE_URL}partner-logos/${filename}`;
@@ -20,13 +21,36 @@ function LogoSlide({ file, alt }: { file: string; alt: string }) {
 }
 
 export function PartnerLogoBand() {
+  const reduceMotion = useReducedMotion();
+
   if (partnerLogoFiles.length === 0) return null;
 
+  if (reduceMotion) {
+    return (
+      <div className="flex flex-wrap justify-center gap-x-8 gap-y-10 px-2 py-2">
+        {partnerLogoFiles.map((file) => (
+          <LogoSlide key={file} file={file} alt={altFromFilename(file)} />
+        ))}
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-nowrap items-center justify-center gap-2 py-2 sm:gap-3 md:gap-6">
-      {partnerLogoFiles.map((file) => (
-        <LogoSlide key={file} file={file} alt={altFromFilename(file)} />
-      ))}
+    <div className="relative overflow-hidden py-2">
+      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-background to-transparent md:w-20" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-background to-transparent md:w-20" />
+      <div className="flex w-max animate-partner-marquee">
+        <div className="flex shrink-0 gap-2 sm:gap-3 md:gap-6">
+          {partnerLogoFiles.map((file) => (
+            <LogoSlide key={file} file={file} alt={altFromFilename(file)} />
+          ))}
+        </div>
+        <div className="flex shrink-0 gap-2 sm:gap-3 md:gap-6" aria-hidden>
+          {partnerLogoFiles.map((file) => (
+            <LogoSlide key={`copy-${file}`} file={file} alt="" />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
