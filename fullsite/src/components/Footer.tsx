@@ -26,7 +26,7 @@ const Footer = () => {
   return (
     <footer className="border-t border-border py-16 px-6">
       <div className="mx-auto max-w-5xl">
-        <div className="grid sm:grid-cols-3 gap-12">
+        <div className="grid grid-cols-1 gap-12 md:grid-cols-4">
           {/* Brand */}
           <div>
             <Link to="/fullsite" className="font-display text-xl tracking-widest text-foreground">
@@ -76,25 +76,29 @@ const Footer = () => {
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="mt-12">
-          <a
-            href={GOOGLE_MAPS_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block aspect-[4/3] border border-border overflow-hidden"
-            aria-label="View on Google Maps"
-          >
-            <iframe
-              title="Foundry Padel location"
-              src={GOOGLE_MAPS_EMBED_SRC}
-              className="w-full h-full pointer-events-none"
-              style={{ filter: "grayscale(1) invert(1) contrast(1.2) brightness(0.6)" }}
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-            />
-          </a>
+          {/* Map — compact, same column rhythm as above */}
+          <div>
+            <span className="font-body text-xs uppercase tracking-[0.2em] text-muted-foreground">Location</span>
+            <div className="mt-3">
+              <a
+                href={GOOGLE_MAPS_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block aspect-square w-full max-w-[240px] border border-border overflow-hidden md:max-w-none"
+                aria-label="View on Google Maps"
+              >
+                <iframe
+                  title="Foundry Padel location"
+                  src={GOOGLE_MAPS_EMBED_SRC}
+                  className="h-full w-full pointer-events-none"
+                  style={{ filter: "grayscale(1) invert(1) contrast(1.2) brightness(0.6)" }}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              </a>
+            </div>
+          </div>
         </div>
 
         <div className="section-divider mt-12 mb-8" />
