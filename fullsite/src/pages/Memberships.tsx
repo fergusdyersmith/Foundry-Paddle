@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Check } from "lucide-react";
 import BookCTA from "@/components/BookCTA";
-import InterestEmailForm from "@/components/InterestEmailForm";
+import StayInTouchForm from "@/components/StayInTouchForm";
 
 const tiers = [
   {
@@ -80,20 +80,12 @@ const Memberships = () => {
         </div>
       </section>
 
-      {/* Email capture */}
-      <section className="py-20 px-6">
-        <div className="mx-auto max-w-lg text-center">
-          <div className="section-divider mb-12" />
-          <h2 className="font-display text-4xl text-foreground mb-3">GET NOTIFIED</h2>
-          <p className="font-body text-sm text-muted-foreground mb-8">
-            Be the first to know when memberships and pricing go live.
-          </p>
-          <InterestEmailForm source="memberships" />
-          <div className="section-divider mt-12" />
-        </div>
-      </section>
-
       <BookCTA />
+
+      <section className="relative py-28 px-6">
+        <div className="section-divider mb-12" />
+        <StayInTouchForm source="memberships" />
+      </section>
     </main>
   );
 };

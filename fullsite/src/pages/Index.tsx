@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import heroImage from "@/assets/hero-padel-blue.jpg";
 import BookCTA from "@/components/BookCTA";
+import StayInTouchForm from "@/components/StayInTouchForm";
 import { PartnerLogoBand } from "@/components/PartnerLogoBand";
 import { BOOK_PAGE_PATH } from "@/constants/booking";
 
@@ -137,6 +138,10 @@ const Index = () => {
       </section>
 
       <BookCTA />
+
+      <section className="relative py-28 px-6">
+        <StayInTouchForm source="home" />
+      </section>
     </main>
   );
 };
