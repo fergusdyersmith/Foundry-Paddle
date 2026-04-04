@@ -51,7 +51,7 @@ function partnerLogosVirtualModule(root: string) {
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: "/fullsite/",
+  base: "/",
   server: {
     host: "::",
     port: 8080,

@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:railway": "vite build && (cd fullsite && npm run build) && node scripts/copy-fullsite.js",
+    "build:railway": "node scripts/build-dist.js",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",

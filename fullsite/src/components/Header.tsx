@@ -5,12 +5,12 @@ import { Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const navLinks = [
-  { label: "HOME", path: "/fullsite" },
-  { label: "THE SPORT", path: "/fullsite/the-sport" },
-  { label: "THE CLUB", path: "/fullsite/the-club" },
-  { label: "MEMBERSHIPS", path: "/fullsite/memberships" },
-  { label: "FAQ", path: "/fullsite/faq" },
-  { label: "CONTACT", path: "/fullsite/contact" },
+  { label: "HOME", path: "/" },
+  { label: "THE SPORT", path: "/the-sport" },
+  { label: "THE CLUB", path: "/the-club" },
+  { label: "MEMBERSHIPS", path: "/memberships" },
+  { label: "FAQ", path: "/faq" },
+  { label: "CONTACT", path: "/contact" },
 ];
 
 const Header = () => {
@@ -20,7 +20,7 @@ const Header = () => {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-        <Link to="/fullsite" className="font-display text-2xl tracking-widest text-foreground">
+        <Link to="/" className="font-display text-2xl tracking-widest text-foreground">
           FOUNDRY <span className="text-primary">PADEL</span>
         </Link>
 

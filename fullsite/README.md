@@ -1,6 +1,6 @@
 # Foundry Padel — Full Site
 
-Full marketing site for Foundry Padel (Portland's first indoor padel club). Part of the [Foundry Paddle](https://github.com/fergusdyersmith/Foundry-Paddle) monorepo, served under `/fullsite`.
+Full marketing site for Foundry Padel (Portland's first indoor padel club). Part of the [Foundry Paddle](https://github.com/fergusdyersmith/Foundry-Paddle) monorepo; in production this app is served at `/` (domain root).
 
 ## Tech
 

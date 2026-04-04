@@ -16,4 +16,4 @@ export const PLAYTOMIC_PLAY_STORE_URL =
   "https://play.google.com/store/apps/details?id=com.playtomic";
 
 /** Internal route that embeds Playtomic — use this for nav and CTAs so users stay on the site. */
-export const BOOK_PAGE_PATH = "/fullsite/book";
+export const BOOK_PAGE_PATH = "/book";

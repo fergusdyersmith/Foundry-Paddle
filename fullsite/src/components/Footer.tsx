@@ -14,11 +14,11 @@ type FooterNavLink =
   | { label: string; href: string; external: true };
 
 const footerLinks: FooterNavLink[] = [
-  { label: "The Sport", path: "/fullsite/the-sport" },
-  { label: "The Club", path: "/fullsite/the-club" },
-  { label: "Memberships", path: "/fullsite/memberships" },
-  { label: "FAQ", path: "/fullsite/faq" },
-  { label: "Contact", path: "/fullsite/contact" },
+  { label: "The Sport", path: "/the-sport" },
+  { label: "The Club", path: "/the-club" },
+  { label: "Memberships", path: "/memberships" },
+  { label: "FAQ", path: "/faq" },
+  { label: "Contact", path: "/contact" },
   { label: "Book a Court", path: BOOK_PAGE_PATH },
 ];
 
@@ -29,7 +29,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 gap-12 md:grid-cols-4">
           {/* Brand */}
           <div>
-            <Link to="/fullsite" className="font-display text-xl tracking-widest text-foreground">
+            <Link to="/" className="font-display text-xl tracking-widest text-foreground">
               FOUNDRY <span className="text-primary">PADEL</span>
             </Link>
             <p className="mt-3 font-body text-sm text-muted-foreground">
