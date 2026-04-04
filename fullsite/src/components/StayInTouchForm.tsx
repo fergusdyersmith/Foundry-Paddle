@@ -97,7 +97,7 @@ const StayInTouchForm = ({
         transition={{ duration: 0.8 }}
       >
         <h2 className={headingClassName}>Stay In Touch</h2>
-        <p className={subtitleClassName}>Be the first to know when we open</p>
+        <p className={subtitleClassName}>Be first to all the latest news and updates.</p>
 
         {submitted ? (
           <motion.div
