@@ -27,16 +27,17 @@ User requested executor-mode implementation to enforce E.164 format for mobile n
 
 - Updated `fullsite/src/components/StayInTouchForm.tsx` with:
   - `E164_PHONE_REGEX` submit validation (`^\+[1-9]\d{1,14}$`)
-  - Mobile input auto-format to E.164 shape while typing (always `+` + digits only, up to 15 digits)
+  - Mobile input now uses fixed US `+1` prefix in-field (not typable), with typed digits auto-formatted as `XXX XXX XXXX`
   - E.164 guidance in placeholder and browser-level `pattern`
 - Updated `src/components/RegisterSection.tsx` with the same E.164 behavior for consistency.
 - Ran lint diagnostics on edited files; no linter errors found.
 
 # Executor's Feedback or Assistance Requests
 
-Auto-formatting enhancement applied: users now get E.164 structure while typing. Requesting user manual test of both forms for typing behavior and submit validation.
+Auto-formatting enhancement updated: field now hardcodes `+1` as non-editable prefix and only accepts/formats the 10-digit US number body. Requesting user manual test of both forms for typing UX and submit behavior.
 
 # Lessons
 
 - If `.cursor/scratchpad.md` does not exist in the repo, create it with required sections before continuing executor tracking.
 - For E.164 UX, auto-prepend `+` and strip non-digits on each keystroke to reduce user input friction.
+- For US-only phone UX, fixed `+1` prefix in the field is clearer than asking users to type country code.

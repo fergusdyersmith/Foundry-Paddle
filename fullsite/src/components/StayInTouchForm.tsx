@@ -12,7 +12,17 @@ type Props = {
   subtitleClassName?: string;
 };
 
-const E164_PHONE_REGEX = /^\+[1-9]\d{1,14}$/;
+const US_E164_PHONE_REGEX = /^\+1\d{10}$/;
+
+const formatUsPhoneDisplay = (digits: string) => {
+  const area = digits.slice(0, 3);
+  const central = digits.slice(3, 6);
+  const line = digits.slice(6, 10);
+
+  if (digits.length <= 3) return area;
+  if (digits.length <= 6) return `${area} ${central}`;
+  return `${area} ${central} ${line}`;
+};
 
 const StayInTouchForm = ({
   source,
@@ -21,7 +31,7 @@ const StayInTouchForm = ({
 }: Props) => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [mobile, setMobile] = useState("");
+  const [mobileDigits, setMobileDigits] = useState("");
   const [honeypot, setHoneypot] = useState("");
   const [captcha, setCaptcha] = useState(generateChallenge);
   const [captchaInput, setCaptchaInput] = useState("");
@@ -35,8 +45,8 @@ const StayInTouchForm = ({
   }, []);
 
   const handleMobileChange = (value: string) => {
-    const digits = value.replace(/\D/g, "").slice(0, 15);
-    setMobile(digits ? `+${digits}` : "");
+    const digits = value.replace(/\D/g, "").slice(0, 10);
+    setMobileDigits(digits);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,15 +54,15 @@ const StayInTouchForm = ({
 
     if (honeypot) return;
 
-    if (!name.trim() || !email.trim() || !mobile.trim()) {
+    if (!name.trim() || !email.trim() || !mobileDigits.trim()) {
       toast({ title: "Please fill in all fields", variant: "destructive" });
       return;
     }
 
-    const normalizedMobile = mobile.trim();
-    if (!E164_PHONE_REGEX.test(normalizedMobile)) {
+    const normalizedMobile = `+1${mobileDigits}`;
+    if (!US_E164_PHONE_REGEX.test(normalizedMobile)) {
       toast({
-        title: "Please enter a valid mobile number in E.164 format (e.g. +447911123456)",
+        title: "Please enter a valid mobile number in E.164 format (e.g. +14155552671)",
         variant: "destructive",
       });
       return;
@@ -119,7 +129,7 @@ const StayInTouchForm = ({
             <span className="font-display text-3xl text-primary">YOU&apos;RE IN</span>
             <p className="mt-3 font-body text-sm text-muted-foreground">
               We&apos;ll reach out at <span className="text-foreground">{email}</span> and{" "}
-              <span className="text-foreground">{mobile.trim()}</span>
+              <span className="text-foreground">{`+1${mobileDigits}`}</span>
             </p>
           </motion.div>
         ) : (
@@ -140,17 +150,19 @@ const StayInTouchForm = ({
               maxLength={255}
               className="w-full border border-border bg-secondary px-5 py-4 font-body text-sm tracking-widest text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors"
             />
-            <input
-              type="tel"
-              placeholder="MOBILE NUMBER (e.g. +447911123456)"
-              value={mobile}
-              onChange={(e) => handleMobileChange(e.target.value)}
-              autoComplete="tel"
-              inputMode="tel"
-              pattern="^\+[1-9]\d{1,14}$"
-              maxLength={16}
-              className="w-full border border-border bg-secondary px-5 py-4 font-body text-sm tracking-widest text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors"
-            />
+            <div className="flex items-center border border-border bg-secondary px-5 py-4 focus-within:border-primary transition-colors">
+              <span className="font-body text-sm tracking-widest text-muted-foreground">+1</span>
+              <input
+                type="tel"
+                placeholder="415 555 2671"
+                value={formatUsPhoneDisplay(mobileDigits)}
+                onChange={(e) => handleMobileChange(e.target.value)}
+                autoComplete="tel-national"
+                inputMode="numeric"
+                maxLength={12}
+                className="ml-3 w-full bg-transparent font-body text-sm tracking-widest text-foreground placeholder:text-muted-foreground focus:outline-none"
+              />
+            </div>
 
             <div aria-hidden="true" className="absolute -left-[9999px]">
               <input
