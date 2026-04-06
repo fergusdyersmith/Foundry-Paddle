@@ -10,6 +10,7 @@ function generateChallenge() {
 
 const WEBHOOK_URL =
   "https://hook.eu1.make.com/ay8xqbengj94jw74iie1ndy116vw03ba";
+const E164_PHONE_REGEX = /^\+[1-9]\d{1,14}$/;
 
 const RegisterSection = () => {
   const [name, setName] = useState("");
@@ -27,6 +28,11 @@ const RegisterSection = () => {
     setCaptchaInput("");
   }, []);
 
+  const handleMobileChange = (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, 15);
+    setMobile(digits ? `+${digits}` : "");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -37,8 +43,12 @@ const RegisterSection = () => {
       return;
     }
 
-    if (!/\d/.test(mobile)) {
-      toast({ title: "Please enter a mobile number (digits required)", variant: "destructive" });
+    const normalizedMobile = mobile.trim();
+    if (!E164_PHONE_REGEX.test(normalizedMobile)) {
+      toast({
+        title: "Please enter a valid mobile number in E.164 format (e.g. +447911123456)",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -63,7 +73,7 @@ const RegisterSection = () => {
         body: JSON.stringify({
           name: name.trim(),
           email: email.trim(),
-          mobile: mobile.trim(),
+          mobile: normalizedMobile,
         }),
       });
 
@@ -130,11 +140,13 @@ const RegisterSection = () => {
               />
               <input
                 type="tel"
-                placeholder="MOBILE NUMBER"
+                placeholder="MOBILE NUMBER (e.g. +447911123456)"
                 value={mobile}
-                onChange={(e) => setMobile(e.target.value)}
+                onChange={(e) => handleMobileChange(e.target.value)}
                 autoComplete="tel"
-                maxLength={32}
+                inputMode="tel"
+                pattern="^\+[1-9]\d{1,14}$"
+                maxLength={16}
                 className="w-full border border-border bg-secondary px-5 py-4 font-body text-sm tracking-widest text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors"
               />
 
