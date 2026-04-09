@@ -17,10 +17,19 @@ const interestWebhookUrl =
   process.env.MAKE_INTEREST_WEBHOOK_URL ||
   "https://hook.eu1.make.com/ay8xqbengj94jw74iie1ndy116vw03ba";
 
+const E164_MOBILE_REGEX = /^\+[1-9]\d{6,14}$/;
+
 const interestPayloadSchema = z.object({
   name: z.string().trim().min(1).max(100),
   email: z.string().trim().email().max(255),
-  mobile: z.string().regex(/^\+1\d{10}$/).optional(),
+  mobile: z.preprocess(
+    (v) => {
+      if (v === undefined || v === null) return undefined;
+      if (typeof v === "string" && v.trim() === "") return undefined;
+      return v;
+    },
+    z.string().regex(E164_MOBILE_REGEX).optional(),
+  ),
   source: z.enum(["home", "memberships", "contact", "book"]).optional(),
 });
 

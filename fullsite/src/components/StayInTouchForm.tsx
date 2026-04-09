@@ -1,7 +1,13 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { generateChallenge } from "@/lib/interestWebhook";
+import {
+  COUNTRY_DIAL_CODES,
+  E164_REGEX,
+  composeE164,
+  maxNationalDigits,
+} from "@shared/countryDialCodes";
 
 export type StayInTouchSource = "home" | "memberships" | "contact";
 
@@ -12,18 +18,11 @@ type Props = {
   subtitleClassName?: string;
 };
 
-const US_E164_PHONE_REGEX = /^\+1\d{10}$/;
 const REGISTER_INTEREST_ENDPOINT = "/api/register-interest";
+const DEFAULT_COUNTRY_CODE = "US";
 
-const formatUsPhoneDisplay = (digits: string) => {
-  const area = digits.slice(0, 3);
-  const central = digits.slice(3, 6);
-  const line = digits.slice(6, 10);
-
-  if (digits.length <= 3) return area;
-  if (digits.length <= 6) return `${area} ${central}`;
-  return `${area} ${central} ${line}`;
-};
+const fieldClassName =
+  "w-full border border-border bg-secondary px-5 py-4 font-body text-sm tracking-widest text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors";
 
 const StayInTouchForm = ({
   source,
@@ -32,7 +31,8 @@ const StayInTouchForm = ({
 }: Props) => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [mobileDigits, setMobileDigits] = useState("");
+  const [countryCode, setCountryCode] = useState(DEFAULT_COUNTRY_CODE);
+  const [nationalDigits, setNationalDigits] = useState("");
   const [honeypot, setHoneypot] = useState("");
   const [captcha, setCaptcha] = useState(generateChallenge);
   const [captchaInput, setCaptchaInput] = useState("");
@@ -40,14 +40,26 @@ const StayInTouchForm = ({
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
 
+  const dialDigits = useMemo(
+    () => COUNTRY_DIAL_CODES.find((c) => c.code === countryCode)?.dial ?? "1",
+    [countryCode],
+  );
+
+  const nationalMax = useMemo(() => maxNationalDigits(dialDigits), [dialDigits]);
+
   const refreshCaptcha = useCallback(() => {
     setCaptcha(generateChallenge());
     setCaptchaInput("");
   }, []);
 
-  const handleMobileChange = (value: string) => {
-    const digits = value.replace(/\D/g, "").slice(0, 10);
-    setMobileDigits(digits);
+  const handleCountryChange = (code: string) => {
+    setCountryCode(code);
+    setNationalDigits("");
+  };
+
+  const handleNationalChange = (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, nationalMax);
+    setNationalDigits(digits);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -55,17 +67,8 @@ const StayInTouchForm = ({
 
     if (honeypot) return;
 
-    if (!name.trim() || !email.trim() || !mobileDigits.trim()) {
-      toast({ title: "Please fill in all fields", variant: "destructive" });
-      return;
-    }
-
-    const normalizedMobile = `+1${mobileDigits}`;
-    if (!US_E164_PHONE_REGEX.test(normalizedMobile)) {
-      toast({
-        title: "Please enter a valid mobile number in E.164 format (e.g. +14155552671)",
-        variant: "destructive",
-      });
+    if (!name.trim() || !email.trim()) {
+      toast({ title: "Please fill in your name and email", variant: "destructive" });
       return;
     }
 
@@ -73,6 +76,20 @@ const StayInTouchForm = ({
     if (!emailRegex.test(email)) {
       toast({ title: "Please enter a valid email", variant: "destructive" });
       return;
+    }
+
+    let mobile: string | undefined;
+    if (nationalDigits.trim()) {
+      const composed = composeE164(dialDigits, nationalDigits);
+      if (!E164_REGEX.test(composed)) {
+        toast({
+          title: "Please enter a valid mobile number",
+          description: "Include your full number after the country code, or leave the field blank.",
+          variant: "destructive",
+        });
+        return;
+      }
+      mobile = composed;
     }
 
     if (parseInt(captchaInput, 10) !== captcha.answer) {
@@ -84,15 +101,22 @@ const StayInTouchForm = ({
     setSubmitting(true);
 
     try {
+      const body: {
+        name: string;
+        email: string;
+        source: StayInTouchSource;
+        mobile?: string;
+      } = {
+        name: name.trim(),
+        email: email.trim(),
+        source,
+      };
+      if (mobile) body.mobile = mobile;
+
       const res = await fetch(REGISTER_INTEREST_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: name.trim(),
-          email: email.trim(),
-          mobile: normalizedMobile,
-          source,
-        }),
+        body: JSON.stringify(body),
       });
 
       if (!res.ok) throw new Error(`Status ${res.status}`);
@@ -109,6 +133,9 @@ const StayInTouchForm = ({
       setSubmitting(false);
     }
   };
+
+  const successMobile =
+    nationalDigits.trim() ? composeE164(dialDigits, nationalDigits) : null;
 
   return (
     <div className="mx-auto max-w-lg text-center">
@@ -129,8 +156,16 @@ const StayInTouchForm = ({
           >
             <span className="font-display text-3xl text-primary">YOU&apos;RE IN</span>
             <p className="mt-3 font-body text-sm text-muted-foreground">
-              We&apos;ll reach out at <span className="text-foreground">{email}</span> and{" "}
-              <span className="text-foreground">{`+1${mobileDigits}`}</span>
+              {successMobile ? (
+                <>
+                  We&apos;ll reach out at <span className="text-foreground">{email}</span> and{" "}
+                  <span className="text-foreground">{successMobile}</span>
+                </>
+              ) : (
+                <>
+                  We&apos;ll reach out at <span className="text-foreground">{email}</span>
+                </>
+              )}
             </p>
           </motion.div>
         ) : (
@@ -141,7 +176,7 @@ const StayInTouchForm = ({
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={100}
-              className="w-full border border-border bg-secondary px-5 py-4 font-body text-sm tracking-widest text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors"
+              className={fieldClassName}
             />
             <input
               type="email"
@@ -149,20 +184,42 @@ const StayInTouchForm = ({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               maxLength={255}
-              className="w-full border border-border bg-secondary px-5 py-4 font-body text-sm tracking-widest text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors"
+              className={fieldClassName}
             />
-            <div className="flex items-center border border-border bg-secondary px-5 py-4 focus-within:border-primary transition-colors">
-              <span className="font-body text-sm tracking-widest text-muted-foreground">+1</span>
-              <input
-                type="tel"
-                placeholder="415 555 2671"
-                value={formatUsPhoneDisplay(mobileDigits)}
-                onChange={(e) => handleMobileChange(e.target.value)}
-                autoComplete="tel-national"
-                inputMode="numeric"
-                maxLength={12}
-                className="ml-3 w-full bg-transparent font-body text-sm tracking-widest text-foreground placeholder:text-muted-foreground focus:outline-none"
-              />
+
+            <div className="space-y-2">
+              <label className="sr-only" htmlFor="stay-country">
+                Country code
+              </label>
+              <select
+                id="stay-country"
+                value={countryCode}
+                onChange={(e) => handleCountryChange(e.target.value)}
+                className={fieldClassName}
+              >
+                {COUNTRY_DIAL_CODES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.name} (+{c.dial})
+                  </option>
+                ))}
+              </select>
+              <div className="flex items-center border border-border bg-secondary px-5 py-4 focus-within:border-primary transition-colors">
+                <span className="shrink-0 font-body text-sm tracking-widest text-muted-foreground">
+                  +{dialDigits}
+                </span>
+                <input
+                  id="stay-mobile-national"
+                  type="tel"
+                  placeholder="Mobile (optional)"
+                  value={nationalDigits}
+                  onChange={(e) => handleNationalChange(e.target.value)}
+                  autoComplete="tel-national"
+                  inputMode="numeric"
+                  maxLength={nationalMax}
+                  aria-label="Mobile number, optional"
+                  className="ml-3 w-full min-w-0 bg-transparent font-body text-sm tracking-widest text-foreground placeholder:text-muted-foreground focus:outline-none"
+                />
+              </div>
             </div>
 
             <div aria-hidden="true" className="absolute -left-[9999px]">
@@ -187,7 +244,7 @@ const StayInTouchForm = ({
                 value={captchaInput}
                 onChange={(e) => setCaptchaInput(e.target.value)}
                 maxLength={3}
-                className="w-full border border-border bg-secondary px-5 py-4 font-body text-sm tracking-widest text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors"
+                className={fieldClassName}
               />
               <button
                 type="button"
