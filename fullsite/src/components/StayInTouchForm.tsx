@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
-import { generateChallenge, INTEREST_WEBHOOK_URL } from "@/lib/interestWebhook";
+import { generateChallenge } from "@/lib/interestWebhook";
 
 export type StayInTouchSource = "home" | "memberships" | "contact";
 
@@ -13,6 +13,7 @@ type Props = {
 };
 
 const US_E164_PHONE_REGEX = /^\+1\d{10}$/;
+const REGISTER_INTEREST_ENDPOINT = "/api/register-interest";
 
 const formatUsPhoneDisplay = (digits: string) => {
   const area = digits.slice(0, 3);
@@ -83,7 +84,7 @@ const StayInTouchForm = ({
     setSubmitting(true);
 
     try {
-      const res = await fetch(INTEREST_WEBHOOK_URL, {
+      const res = await fetch(REGISTER_INTEREST_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

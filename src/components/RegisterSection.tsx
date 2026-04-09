@@ -8,8 +8,7 @@ function generateChallenge() {
   return { a, b, answer: a + b };
 }
 
-const WEBHOOK_URL =
-  "https://hook.eu1.make.com/ay8xqbengj94jw74iie1ndy116vw03ba";
+const REGISTER_INTEREST_ENDPOINT = "/api/register-interest";
 const US_E164_PHONE_REGEX = /^\+1\d{10}$/;
 
 const formatUsPhoneDisplay = (digits: string) => {
@@ -77,13 +76,14 @@ const RegisterSection = () => {
     setSubmitting(true);
 
     try {
-      const res = await fetch(WEBHOOK_URL, {
+      const res = await fetch(REGISTER_INTEREST_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: name.trim(),
           email: email.trim(),
           mobile: normalizedMobile,
+          source: "home",
         }),
       });
 

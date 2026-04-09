@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import { existsSync } from "fs";
+import { z } from "zod";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dist = path.join(__dirname, "dist");
@@ -10,6 +11,55 @@ const indexHtml = path.join(dist, "index.html");
 const launchIndex = path.join(launchDir, "index.html");
 
 const app = express();
+app.use(express.json({ limit: "32kb" }));
+
+const interestWebhookUrl =
+  process.env.MAKE_INTEREST_WEBHOOK_URL ||
+  "https://hook.eu1.make.com/ay8xqbengj94jw74iie1ndy116vw03ba";
+
+const interestPayloadSchema = z.object({
+  name: z.string().trim().min(1).max(100),
+  email: z.string().trim().email().max(255),
+  mobile: z.string().regex(/^\+1\d{10}$/),
+  source: z.enum(["home", "memberships", "contact"]).optional(),
+});
+
+app.post("/api/register-interest", async (req, res) => {
+  const parsed = interestPayloadSchema.safeParse(req.body);
+  if (!parsed.success) {
+    console.warn("[register-interest] Validation failed", {
+      issues: parsed.error.issues.map((issue) => ({
+        path: issue.path.join("."),
+        code: issue.code,
+      })),
+    });
+    return res.status(400).json({ error: "Invalid request payload." });
+  }
+
+  try {
+    const upstreamResponse = await fetch(interestWebhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(parsed.data),
+    });
+
+    if (!upstreamResponse.ok) {
+      const responseText = await upstreamResponse.text();
+      console.error("[register-interest] Upstream webhook failure", {
+        status: upstreamResponse.status,
+        bodyPreview: responseText.slice(0, 300),
+      });
+      return res.status(502).json({ error: "Upstream service unavailable." });
+    }
+
+    return res.status(200).json({ ok: true });
+  } catch (error) {
+    console.error("[register-interest] Unexpected error", {
+      message: error instanceof Error ? error.message : "Unknown error",
+    });
+    return res.status(500).json({ error: "Internal server error." });
+  }
+});
 
 // Legacy URLs: /fullsite and /fullsite/* -> / and /*
 app.use((req, res, next) => {
