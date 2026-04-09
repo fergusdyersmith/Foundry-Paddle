@@ -46,13 +46,19 @@ Update (2026-04-09): User now reports form submission failure with browser conso
   - Updated `fullsite/src/components/StayInTouchForm.tsx` to submit to `/api/register-interest` (no direct Make call from browser).
   - Removed direct webhook URL export from `fullsite/src/lib/interestWebhook.ts`.
 - Lint diagnostics run for all touched files; no linter errors found.
+- Additional diagnosis after user retest:
+  - Observed upstream response directly from Make webhook URL: `HTTP 410 Webhook not found`.
+  - This explains backend `502` from `/api/register-interest` (relay receives upstream non-2xx).
+  - Updated `fullsite/src/components/InterestEmailForm.tsx` to also use `/api/register-interest` (avoids legacy direct Make browser calls).
+  - Expanded backend payload schema to allow `source: "book"` and optional `mobile` for email-only notify flows.
 
 # Executor's Feedback or Assistance Requests
 
 Manual verification requested:
 - Submit the form on production/staging and confirm success toast appears.
 - In browser DevTools Network tab, verify request target is same-origin `/api/register-interest` (not `hook.eu1.make.com`).
-- If submission fails, share backend logs from Railway for `[register-interest]` entries to diagnose upstream errors quickly.
+- Update Railway env var `MAKE_INTEREST_WEBHOOK_URL` to a valid active Make webhook (current hardcoded URL returns `410 Webhook not found`).
+- If submission still fails after env update, share backend logs from Railway for `[register-interest]` entries to diagnose quickly.
 
 # Lessons
 

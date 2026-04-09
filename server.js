@@ -20,8 +20,8 @@ const interestWebhookUrl =
 const interestPayloadSchema = z.object({
   name: z.string().trim().min(1).max(100),
   email: z.string().trim().email().max(255),
-  mobile: z.string().regex(/^\+1\d{10}$/),
-  source: z.enum(["home", "memberships", "contact"]).optional(),
+  mobile: z.string().regex(/^\+1\d{10}$/).optional(),
+  source: z.enum(["home", "memberships", "contact", "book"]).optional(),
 });
 
 app.post("/api/register-interest", async (req, res) => {

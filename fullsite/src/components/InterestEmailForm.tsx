@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
-import { generateChallenge, INTEREST_WEBHOOK_URL } from "@/lib/interestWebhook";
+import { generateChallenge } from "@/lib/interestWebhook";
 
 type Source = "book" | "memberships";
 
@@ -22,6 +22,7 @@ const SOURCE_META: Record<
 };
 
 type Props = { source: Source };
+const REGISTER_INTEREST_ENDPOINT = "/api/register-interest";
 
 const InterestEmailForm = ({ source }: Props) => {
   const meta = SOURCE_META[source];
@@ -63,7 +64,7 @@ const InterestEmailForm = ({ source }: Props) => {
     setSubmitting(true);
 
     try {
-      const res = await fetch(INTEREST_WEBHOOK_URL, {
+      const res = await fetch(REGISTER_INTEREST_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
