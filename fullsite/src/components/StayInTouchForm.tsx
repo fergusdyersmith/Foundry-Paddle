@@ -23,6 +23,8 @@ const DEFAULT_COUNTRY_CODE = "US";
 
 const fieldClassName =
   "w-full border border-border bg-secondary px-5 py-4 font-body text-sm tracking-widest text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors";
+const countrySelectClassName =
+  "w-full max-w-[220px] border border-border bg-secondary px-3 py-2.5 pr-8 font-body text-xs tracking-[0.08em] text-foreground truncate focus:border-primary focus:outline-none transition-colors";
 
 const StayInTouchForm = ({
   source,
@@ -191,11 +193,14 @@ const StayInTouchForm = ({
               <label className="sr-only" htmlFor="stay-country">
                 Country code
               </label>
+              <p className="font-body text-[10px] tracking-[0.18em] uppercase text-muted-foreground">
+                Country code
+              </p>
               <select
                 id="stay-country"
                 value={countryCode}
                 onChange={(e) => handleCountryChange(e.target.value)}
-                className={fieldClassName}
+                className={countrySelectClassName}
               >
                 {COUNTRY_DIAL_CODES.map((c) => (
                   <option key={c.code} value={c.code}>
