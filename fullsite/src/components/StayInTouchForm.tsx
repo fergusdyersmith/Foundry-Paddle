@@ -3,6 +3,13 @@ import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { generateChallenge } from "@/lib/interestWebhook";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   COUNTRY_DIAL_CODES,
   E164_REGEX,
   composeE164,
@@ -23,8 +30,15 @@ const DEFAULT_COUNTRY_CODE = "US";
 
 const fieldClassName =
   "w-full border border-border bg-secondary px-5 py-4 font-body text-sm tracking-widest text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors";
-const countrySelectClassName =
-  "w-full max-w-[220px] border border-border bg-secondary px-3 py-2.5 pr-8 font-body text-xs tracking-[0.08em] text-foreground truncate focus:border-primary focus:outline-none transition-colors";
+
+const countrySelectTriggerClassName =
+  "h-10 w-full max-w-[min(100%,18rem)] border-border bg-secondary font-body text-xs tracking-[0.08em] text-foreground shadow-none rounded-none focus:ring-0 focus:ring-offset-0 focus:border-primary [&>span]:line-clamp-1";
+
+const countrySelectContentClassName =
+  "max-h-[min(240px,38vh)] min-w-[var(--radix-select-trigger-width)] max-w-[22rem] border-border bg-secondary text-foreground rounded-none shadow-lg z-[100]";
+
+const countrySelectItemClassName =
+  "rounded-none py-2 pl-8 pr-3 text-xs tracking-wide whitespace-normal leading-snug focus:bg-primary/15 focus:text-foreground data-[highlighted]:bg-primary/15";
 
 const StayInTouchForm = ({
   source,
@@ -190,24 +204,30 @@ const StayInTouchForm = ({
             />
 
             <div className="space-y-2">
-              <label className="sr-only" htmlFor="stay-country">
-                Country code
-              </label>
               <p className="font-body text-[10px] tracking-[0.18em] uppercase text-muted-foreground">
                 Country code
               </p>
-              <select
-                id="stay-country"
-                value={countryCode}
-                onChange={(e) => handleCountryChange(e.target.value)}
-                className={countrySelectClassName}
-              >
-                {COUNTRY_DIAL_CODES.map((c) => (
-                  <option key={c.code} value={c.code}>
-                    {c.name} (+{c.dial})
-                  </option>
-                ))}
-              </select>
+              <Select value={countryCode} onValueChange={handleCountryChange}>
+                <SelectTrigger
+                  id="stay-country"
+                  aria-label="Country code"
+                  className={countrySelectTriggerClassName}
+                >
+                  <SelectValue placeholder="Select country" />
+                </SelectTrigger>
+                <SelectContent
+                  position="popper"
+                  sideOffset={6}
+                  align="start"
+                  className={countrySelectContentClassName}
+                >
+                  {COUNTRY_DIAL_CODES.map((c) => (
+                    <SelectItem key={c.code} value={c.code} className={countrySelectItemClassName}>
+                      {c.name} (+{c.dial})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <div className="flex items-center border border-border bg-secondary px-5 py-4 focus-within:border-primary transition-colors">
                 <span className="shrink-0 font-body text-sm tracking-widest text-muted-foreground">
                   +{dialDigits}
