@@ -39,7 +39,7 @@ const Header = () => {
             </Link>
           ))}
           <EventsModal>
-            <button className="font-body text-xs tracking-[0.2em] uppercase text-muted-foreground transition-colors hover:text-primary">
+            <button className="border border-muted-foreground/40 px-5 py-2 font-display text-xs tracking-widest text-muted-foreground transition-all hover:border-primary hover:text-primary">
               EVENTS
             </button>
           </EventsModal>
@@ -88,7 +88,7 @@ const Header = () => {
               <EventsModal>
                 <button
                   onClick={() => setMobileOpen(false)}
-                  className="font-body text-sm tracking-[0.2em] uppercase text-muted-foreground transition-colors hover:text-primary"
+                  className="border border-muted-foreground/40 px-6 py-2.5 font-display text-sm tracking-widest text-muted-foreground transition-all hover:border-primary hover:text-primary"
                 >
                   EVENTS
                 </button>
