@@ -78,6 +78,6 @@ Update (2026-04-09): User now reports form submission failure with browser conso
 - For third-party webhook integrations from frontend, avoid direct browser calls; use same-origin backend relay to bypass CORS and centralize validation/logging.
 - Neon serverless driver converts DATE and TIME columns to JS Date objects which causes timezone drift when serialized to JSON. Use `::text` cast in SQL SELECT queries to get plain string values (`YYYY-MM-DD`, `HH:MM:SS`).
 - When running Vite dev server alongside Express backend, add a `proxy` entry in `vite.config.ts` for `/api` routes to forward to the backend port.
-- Playtomic Third Party API base URL is `thirdparty.playtomic.io` (not `api.playtomic.io`); however the OAuth token endpoint IS at `api.playtomic.io/oauth/token`.
+- Playtomic Third Party API base URL is `thirdparty.playtomic.io` (not `api.playtomic.io`). The OAuth token endpoint is ALSO at `thirdparty.playtomic.io/api/v1/oauth/token` (NOT `api.playtomic.io/oauth/token` as the help article incorrectly states). The body field is `secret` (not `client_secret`), and the response field is `token` (not `access_token`).
 - Playtomic API rate limit is 1 req/min — must cache server-side. A 5-min TTL on a 30-day rolling window fetch is a safe strategy.
 - Playtomic booking dates are UTC; use `Intl.DateTimeFormat` with the club's timezone to convert to local date/time for display.

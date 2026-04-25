@@ -100,13 +100,12 @@ async function getPlaytomicToken() {
     return tokenCache.accessToken;
   }
 
-  const res = await fetch("https://api.playtomic.io/oauth/token", {
+  const res = await fetch("https://thirdparty.playtomic.io/api/v1/oauth/token", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       client_id: PLAYTOMIC_CLIENT_ID,
-      client_secret: PLAYTOMIC_CLIENT_SECRET,
-      grant_type: "client_credentials",
+      secret: PLAYTOMIC_CLIENT_SECRET,
     }),
   });
 
@@ -122,7 +121,7 @@ async function getPlaytomicToken() {
   const data = await res.json();
   const bufferMs = 5 * 60 * 1000;
   tokenCache = {
-    accessToken: data.access_token,
+    accessToken: data.token,
     expiresAt: Date.now() + (data.expires_in || 3600) * 1000 - bufferMs,
   };
 
