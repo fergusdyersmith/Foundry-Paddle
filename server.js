@@ -13,9 +13,8 @@ const launchIndex = path.join(launchDir, "index.html");
 const app = express();
 app.use(express.json({ limit: "32kb" }));
 
-const interestWebhookUrl =
-  process.env.MAKE_INTEREST_WEBHOOK_URL ||
-  "https://hook.eu1.make.com/ay8xqbengj94jw74iie1ndy116vw03ba";
+/** Set in production (e.g. Railway). Make returns 410 "Webhook not found" when the scenario hook was deleted or rotated. */
+const interestWebhookUrl = process.env.MAKE_INTEREST_WEBHOOK_URL?.trim();
 
 const E164_MOBILE_REGEX = /^\+[1-9]\d{6,14}$/;
 
@@ -45,26 +44,65 @@ app.post("/api/register-interest", async (req, res) => {
     return res.status(400).json({ error: "Invalid request payload." });
   }
 
+  if (!interestWebhookUrl) {
+    console.error(
+      "[register-interest] MAKE_INTEREST_WEBHOOK_URL is missing — cannot forward signup data.",
+    );
+    return res.status(503).json({ error: "Signup service is not configured." });
+  }
+
+  let webhookHost = "unknown";
   try {
+    webhookHost = new URL(interestWebhookUrl).host;
+  } catch {
+    // ignore — already validated upstream by env config
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10_000);
     const upstreamResponse = await fetch(interestWebhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(parsed.data),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     if (!upstreamResponse.ok) {
       const responseText = await upstreamResponse.text();
       console.error("[register-interest] Upstream webhook failure", {
         status: upstreamResponse.status,
+        host: webhookHost,
         bodyPreview: responseText.slice(0, 300),
+        hint:
+          upstreamResponse.status === 410
+            ? "Make.com hook URL is gone (410) — create a new scenario webhook and set MAKE_INTEREST_WEBHOOK_URL."
+            : undefined,
       });
       return res.status(502).json({ error: "Upstream service unavailable." });
     }
 
     return res.status(200).json({ ok: true });
   } catch (error) {
+    // Node `fetch` (undici) wraps the real reason in `error.cause`. Surface it
+    // so we can tell DNS / connect / TLS / timeout failures apart on Railway.
+    const cause = error instanceof Error ? error.cause : undefined;
     console.error("[register-interest] Unexpected error", {
-      message: error instanceof Error ? error.message : "Unknown error",
+      host: webhookHost,
+      name: error instanceof Error ? error.name : typeof error,
+      message: error instanceof Error ? error.message : String(error),
+      causeName: cause instanceof Error ? cause.name : undefined,
+      causeCode:
+        cause && typeof cause === "object" && "code" in cause
+          ? cause.code
+          : undefined,
+      causeMessage:
+        cause instanceof Error ? cause.message : undefined,
+      causeErrno:
+        cause && typeof cause === "object" && "errno" in cause
+          ? cause.errno
+          : undefined,
     });
     return res.status(500).json({ error: "Internal server error." });
   }
