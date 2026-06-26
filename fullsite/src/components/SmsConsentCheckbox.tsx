@@ -21,9 +21,11 @@ const SmsConsentCheckbox = ({ id, checked, onChange }: Props) => (
       className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
     />
     <span className="font-body text-xs leading-relaxed text-muted-foreground">
-      I agree to receive recurring text messages from Foundry Padel (reminders, booking
-      confirmations, events, and promotions). Consent is not a condition of purchase. Msg &amp; data
-      rates may apply. Msg frequency varies. Reply STOP to opt out, HELP for help. See our{" "}
+      I agree to receive recurring automated text messages from Foundry Padel about my account
+      and activity (booking confirmations, class and clinic reminders, match and open-spot
+      notifications, schedule changes, and replies to my questions). Consent is not a condition of
+      any purchase. Msg &amp; data rates may apply. Msg frequency varies. Reply STOP to opt out,
+      HELP for help. See our{" "}
       <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link> and{" "}
       <Link to="/sms-terms" className="text-primary hover:underline">SMS Terms</Link>.
     </span>

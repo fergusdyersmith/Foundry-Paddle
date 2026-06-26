@@ -14,10 +14,10 @@ const SmsTerms = () => {
           <div className="space-y-8 font-body text-sm sm:text-base text-secondary-foreground leading-relaxed">
             <p>
               By opting in, you agree to receive recurring automated text messages from Foundry Padel
-              at the number provided (reminders, booking confirmations, events, clinics, and
-              promotions). Consent is not a condition of any purchase. Message frequency varies. Message
-              and data rates may apply. Reply STOP to cancel, HELP for help. Carriers are not liable for
-              delayed or undelivered messages.
+              at the number provided (booking confirmations, class and clinic reminders, match
+              notifications, schedule changes, and support replies). Consent is not a condition of any
+              purchase. Message frequency varies. Message and data rates may apply. Reply STOP to
+              cancel, HELP for help. Carriers are not liable for delayed or undelivered messages.
             </p>
 
             <div>

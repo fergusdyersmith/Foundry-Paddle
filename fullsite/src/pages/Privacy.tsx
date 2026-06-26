@@ -37,8 +37,8 @@ const Privacy = () => {
             <div className="border-l-2 border-primary pl-5">
               <h2 className="font-display text-2xl text-foreground mb-3">SMS / Text Messaging Privacy</h2>
               <p>
-                Foundry Padel offers SMS notifications about classes, clinics, bookings, events, and
-                promotions to individuals who opt in. No mobile information will be shared with third
+                Foundry Padel offers SMS notifications about classes, clinics, bookings, and schedule
+                updates to individuals who opt in. No mobile information will be shared with third
                 parties or affiliates for marketing or promotional purposes. Information shared with
                 subprocessors solely to provide the messaging service (such as our SMS provider) is not
                 shared for any other purpose. Message frequency varies. Message and data rates may
