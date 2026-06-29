@@ -81,8 +81,8 @@ const Index = () => {
           >
             <p className="font-body text-sm leading-relaxed text-muted-foreground">
               Serious but approachable. Competitive but community-driven.
-              We're building something for players who want more than a casual hit —
-              expect coaching, tournaments, pro workshops, and a space designed to
+              This is a home for players who want more than a casual hit —
+              coaching, tournaments, pro workshops, and a space designed to
               elevate the game and the culture around it.
             </p>
           </motion.div>

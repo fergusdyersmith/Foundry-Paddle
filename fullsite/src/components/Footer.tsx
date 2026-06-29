@@ -36,7 +36,8 @@ const Footer = () => {
             </Link>
             <p className="mt-3 font-body text-sm text-muted-foreground">
               Portland's first padel club.<br />
-              <a href={GOOGLE_MAPS_URL} target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">8613 N Crawford St, Portland, OR 97203</a>
+              <a href={GOOGLE_MAPS_URL} target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">8613 N Crawford St, Portland, OR 97203</a><br />
+              <span className="text-foreground">Open Daily · 8AM–10PM</span>
             </p>
           </div>
 
