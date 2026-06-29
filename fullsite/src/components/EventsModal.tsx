@@ -10,24 +10,10 @@ import {
 } from "@/components/ui/dialog";
 import { ChevronLeft, ChevronRight, Clock, Loader2, ExternalLink } from "lucide-react";
 import { PLAYTOMIC_TENANT_URL } from "@/constants/booking";
+import { TYPE_LABELS, TYPE_COLORS } from "@/constants/events";
+import { formatTime } from "@/lib/events";
+import type { PadelEvent } from "@/types/events";
 import { addDays, format, isSameDay, startOfDay } from "date-fns";
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-interface PadelEvent {
-  id: string;
-  title: string;
-  date: string;
-  start_time: string;
-  end_time: string;
-  duration_min: number;
-  price: string | null;
-  booking_type: string;
-  court: string | null;
-  signed_up: number;
-}
 
 // ---------------------------------------------------------------------------
 // API
@@ -45,22 +31,6 @@ async function fetchEvents(date: string): Promise<PadelEvent[]> {
 
 const today = startOfDay(new Date());
 const VISIBLE_DAYS = 9;
-
-const TYPE_LABELS: Record<string, string> = {
-  COURSE_CLASS: "Course",
-  PUBLIC_CLASS: "Clinic",
-  PRIVATE_CLASS: "Private Class",
-  TOURNAMENT: "Tournament",
-  OPEN_MATCH: "Open Play",
-};
-
-const TYPE_COLORS: Record<string, string> = {
-  COURSE_CLASS: "bg-primary/15 text-primary",
-  PUBLIC_CLASS: "bg-emerald-500/15 text-emerald-400",
-  PRIVATE_CLASS: "bg-amber-500/15 text-amber-400",
-  TOURNAMENT: "bg-violet-500/15 text-violet-400",
-  OPEN_MATCH: "bg-sky-500/15 text-sky-400",
-};
 
 // ---------------------------------------------------------------------------
 // Sub-components
@@ -135,14 +105,6 @@ function WeekStrip({
     </div>
   );
 }
-
-function formatTime(t: string) {
-  const [h, m] = t.split(":").map(Number);
-  const period = h >= 12 ? "PM" : "AM";
-  const hour12 = h % 12 || 12;
-  return `${hour12.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")} ${period}`;
-}
-
 
 function TypeFilterStrip({
   types,

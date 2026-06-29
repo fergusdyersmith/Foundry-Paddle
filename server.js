@@ -326,12 +326,44 @@ function mapBookingGroup(group) {
 // ---------------------------------------------------------------------------
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const MAX_RANGE_DAYS = 31;
+
+// Day count (inclusive) between two YYYY-MM-DD strings, or null if start > end.
+function inclusiveDaySpan(start, end) {
+  const ms = Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`);
+  if (Number.isNaN(ms) || ms < 0) return null;
+  return Math.round(ms / 86400000) + 1;
+}
+
+// Shared: fetch Playtomic bookings, group multi-court activities, map to the
+// client shape, optionally filter to [from, to] (inclusive YYYY-MM-DD), and
+// sort by date then start time.
+async function getEvents({ from = null, to = null } = {}) {
+  const bookings = await fetchPlaytomicBookings();
+  return groupEventBookings(bookings)
+    .map(mapBookingGroup)
+    .filter((e) => (from ? e.date >= from : true) && (to ? e.date <= to : true))
+    .sort((a, b) =>
+      a.date === b.date
+        ? a.start_time.localeCompare(b.start_time)
+        : a.date.localeCompare(b.date),
+    );
+}
+
+function eventsNotConfigured(res) {
+  console.error("[events] PLAYTOMIC_CLIENT_ID / PLAYTOMIC_CLIENT_SECRET not configured");
+  return res.status(503).json({ error: "Events not configured." });
+}
+
+function eventsFetchFailed(res, error) {
+  console.error("[events] Playtomic fetch failed", {
+    message: error instanceof Error ? error.message : error,
+  });
+  return res.status(502).json({ error: "Failed to fetch events from Playtomic." });
+}
 
 app.get("/api/events", async (req, res) => {
-  if (!PLAYTOMIC_CLIENT_ID || !PLAYTOMIC_CLIENT_SECRET) {
-    console.error("[events] PLAYTOMIC_CLIENT_ID / PLAYTOMIC_CLIENT_SECRET not configured");
-    return res.status(503).json({ error: "Events not configured." });
-  }
+  if (!PLAYTOMIC_CLIENT_ID || !PLAYTOMIC_CLIENT_SECRET) return eventsNotConfigured(res);
 
   const { date } = req.query;
   if (!date || !DATE_REGEX.test(date)) {
@@ -339,19 +371,37 @@ app.get("/api/events", async (req, res) => {
   }
 
   try {
-    const bookings = await fetchPlaytomicBookings();
-
-    const events = groupEventBookings(bookings)
-      .map(mapBookingGroup)
-      .filter((e) => e.date === date)
-      .sort((a, b) => a.start_time.localeCompare(b.start_time));
-
-    return res.json(events);
+    return res.json(await getEvents({ from: date, to: date }));
   } catch (error) {
-    console.error("[events] Playtomic fetch failed", {
-      message: error instanceof Error ? error.message : error,
-    });
-    return res.status(502).json({ error: "Failed to fetch events from Playtomic." });
+    return eventsFetchFailed(res, error);
+  }
+});
+
+// 30-day calendar view: all events in [start, end] inclusive, in one request.
+app.get("/api/events/range", async (req, res) => {
+  if (!PLAYTOMIC_CLIENT_ID || !PLAYTOMIC_CLIENT_SECRET) return eventsNotConfigured(res);
+
+  const { start, end } = req.query;
+  if (!start || !end || !DATE_REGEX.test(start) || !DATE_REGEX.test(end)) {
+    return res
+      .status(400)
+      .json({ error: "Query params 'start' and 'end' required (YYYY-MM-DD)." });
+  }
+
+  const span = inclusiveDaySpan(start, end);
+  if (span === null) {
+    return res.status(400).json({ error: "'start' must be on or before 'end'." });
+  }
+  if (span > MAX_RANGE_DAYS) {
+    return res
+      .status(400)
+      .json({ error: `Range too large (max ${MAX_RANGE_DAYS} days).` });
+  }
+
+  try {
+    return res.json(await getEvents({ from: start, to: end }));
+  } catch (error) {
+    return eventsFetchFailed(res, error);
   }
 });
 
