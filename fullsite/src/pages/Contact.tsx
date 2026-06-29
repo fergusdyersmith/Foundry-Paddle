@@ -2,6 +2,8 @@ import { motion } from "framer-motion";
 import { Instagram, Facebook, Mail, MapPin, Clock } from "lucide-react";
 import { GOOGLE_MAPS_EMBED_SRC, GOOGLE_MAPS_URL } from "@/constants/location";
 import StayInTouchForm from "@/components/StayInTouchForm";
+import WhatsAppJoinLink from "@/components/WhatsAppJoinLink";
+import WhatsAppIcon from "@/components/WhatsAppIcon";
 
 const TikTokIcon = ({ size = 20 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -57,6 +59,15 @@ const Contact = () => {
                     </a>
                   </div>
                 </div>
+                <div className="flex items-start gap-4">
+                  <span className="text-primary mt-1 shrink-0"><WhatsAppIcon size={18} /></span>
+                  <div>
+                    <WhatsAppJoinLink hideIcon className="font-body text-sm text-foreground hover:text-primary transition-colors">
+                      Join our WhatsApp community
+                    </WhatsAppJoinLink>
+                    <p className="font-body text-xs text-muted-foreground">Match-ups, events &amp; club chat</p>
+                  </div>
+                </div>
               </div>
 
               <div className="mt-10">
@@ -65,6 +76,7 @@ const Contact = () => {
                   <a href="https://instagram.com/foundrypadelpdx" target="_blank" rel="noopener noreferrer" className="text-muted-foreground transition-colors hover:text-primary"><Instagram size={20} /></a>
                   <a href="https://www.facebook.com/share/1Cerw2CTec/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer" className="text-muted-foreground transition-colors hover:text-primary"><Facebook size={20} /></a>
                   <a href="https://tiktok.com/@foundry.padel" target="_blank" rel="noopener noreferrer" className="text-muted-foreground transition-colors hover:text-primary"><TikTokIcon size={20} /></a>
+                  <WhatsAppJoinLink ariaLabel="Join our WhatsApp community" iconSize={20} className="text-muted-foreground transition-colors hover:text-primary" />
                 </div>
               </div>
 

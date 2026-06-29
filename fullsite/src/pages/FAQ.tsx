@@ -1,8 +1,16 @@
 import { motion } from "framer-motion";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import BookCTA from "@/components/BookCTA";
+import WhatsAppJoinLink from "@/components/WhatsAppJoinLink";
 
-const faqs = [
+interface Faq {
+  q: string;
+  a: string;
+  /** Optional CTA rendered under the answer. */
+  cta?: "whatsapp";
+}
+
+const faqs: Faq[] = [
   {
     q: "I've never played padel. Can I still come?",
     a: "Absolutely. Padel is one of the easiest racquet sports to pick up. We offer beginner sessions, coaching clinics, and open play nights specifically designed for newcomers. You'll be rallying within minutes.",
@@ -38,6 +46,11 @@ const faqs = [
   {
     q: "Do you run leagues and tournaments?",
     a: "Yes. We run regular tournaments and open play, with social leagues and inter-club events too. Members get priority registration and discounted entry.",
+  },
+  {
+    q: "Is there a community I can join?",
+    a: "Yes — we run an active WhatsApp community where members and players organise games, find partners, and hear about open play, clinics, and events first. Everyone's welcome, whatever your level.",
+    cta: "whatsapp",
   },
   {
     q: "Where exactly is Foundry Padel?",
@@ -83,6 +96,14 @@ const FAQ = () => {
                   </AccordionTrigger>
                   <AccordionContent className="font-body text-sm text-secondary-foreground leading-relaxed">
                     {faq.a}
+                    {faq.cta === "whatsapp" && (
+                      <WhatsAppJoinLink
+                        iconSize={16}
+                        className="mt-4 inline-flex items-center gap-2 border border-primary px-4 py-2 font-display text-xs tracking-widest text-primary transition-all hover:bg-primary hover:text-primary-foreground"
+                      >
+                        JOIN THE WHATSAPP GROUP
+                      </WhatsAppJoinLink>
+                    )}
                   </AccordionContent>
                 </AccordionItem>
               </motion.div>

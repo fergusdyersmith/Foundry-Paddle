@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Instagram, Facebook } from "lucide-react";
 import { BOOK_PAGE_PATH } from "@/constants/booking";
 import { GOOGLE_MAPS_EMBED_SRC, GOOGLE_MAPS_URL } from "@/constants/location";
+import WhatsAppJoinLink from "@/components/WhatsAppJoinLink";
 
 const TikTokIcon = ({ size = 20 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -72,10 +73,17 @@ const Footer = () => {
               <a href="mailto:portland@foundrypadel.com" className="font-body text-sm text-secondary-foreground hover:text-primary transition-colors">
                 portland@foundrypadel.com
               </a>
+              <WhatsAppJoinLink
+                hideIcon
+                className="mt-2 block font-body text-sm text-secondary-foreground hover:text-primary transition-colors"
+              >
+                Join our WhatsApp community
+              </WhatsAppJoinLink>
               <div className="flex items-center gap-5 mt-4">
                 <a href="https://instagram.com/foundrypadelpdx" target="_blank" rel="noopener noreferrer" className="text-muted-foreground transition-colors hover:text-primary"><Instagram size={18} /></a>
                 <a href="https://www.facebook.com/share/1Cerw2CTec/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer" className="text-muted-foreground transition-colors hover:text-primary"><Facebook size={18} /></a>
                 <a href="https://tiktok.com/@foundry.padel" target="_blank" rel="noopener noreferrer" className="text-muted-foreground transition-colors hover:text-primary"><TikTokIcon size={18} /></a>
+                <WhatsAppJoinLink ariaLabel="Join our WhatsApp community" iconSize={18} className="text-muted-foreground transition-colors hover:text-primary" />
               </div>
             </div>
           </div>
