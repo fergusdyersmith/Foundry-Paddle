@@ -239,10 +239,11 @@ const PLAYTOMIC_TENANT_ID =
 
 // Playtomic booking types surfaced in the public Events widget. OPEN_MATCH is
 // open play; the rest are academy programming (clinics/courses/private/tournaments).
+// Booking types surfaced on the public schedule. PRIVATE_CLASS is intentionally
+// excluded — private lessons are personal bookings, not public events.
 const EVENT_BOOKING_TYPES = new Set([
   "COURSE_CLASS",
   "PUBLIC_CLASS",
-  "PRIVATE_CLASS",
   "TOURNAMENT",
   "OPEN_MATCH",
 ]);
