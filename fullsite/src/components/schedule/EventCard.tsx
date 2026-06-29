@@ -20,7 +20,7 @@ export default function EventCard({
     TYPE_COLORS[event.booking_type] || "bg-muted text-muted-foreground";
   const row = stacked ? "" : "sm:flex-row sm:items-center sm:p-5";
   const timeWidth = stacked ? "" : "sm:w-36";
-  const actions = stacked ? "" : "sm:justify-end sm:gap-6";
+  const actions = stacked ? "" : "sm:gap-6";
 
   return (
     <div className={`flex flex-col gap-4 border border-border bg-card p-4 ${row}`}>
@@ -52,7 +52,7 @@ export default function EventCard({
         </div>
       </div>
 
-      <div className={`flex shrink-0 items-center justify-between gap-4 ${actions}`}>
+      <div className={`flex shrink-0 items-center gap-4 ${actions}`}>
         {event.signed_up > 0 && (
           <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
             <Users className="h-3.5 w-3.5" />
@@ -64,7 +64,7 @@ export default function EventCard({
           href={PLAYTOMIC_TENANT_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 border border-primary px-5 py-2 font-display text-xs tracking-widest text-primary transition-all hover:bg-primary hover:text-primary-foreground"
+          className="ml-auto inline-flex items-center gap-1.5 border border-primary px-5 py-2 font-display text-xs tracking-widest text-primary transition-all hover:bg-primary hover:text-primary-foreground"
         >
           BOOK
           <ExternalLink className="h-3 w-3" />
