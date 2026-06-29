@@ -29,6 +29,13 @@ type Props = {
 const REGISTER_INTEREST_ENDPOINT = "/api/register-interest";
 const DEFAULT_COUNTRY_CODE = "US";
 
+const LEVELS: { value: string; label: string }[] = [
+  { value: "new", label: "NEW TO PADEL" },
+  { value: "beginner", label: "BEGINNER" },
+  { value: "intermediate", label: "INTERMEDIATE" },
+  { value: "advanced", label: "ADVANCED" },
+];
+
 const fieldClassName =
   "w-full border border-border bg-secondary px-5 py-4 font-body text-sm tracking-widest text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors";
 
@@ -48,6 +55,7 @@ const StayInTouchForm = ({
 }: Props) => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [level, setLevel] = useState("");
   const [countryCode, setCountryCode] = useState(DEFAULT_COUNTRY_CODE);
   const [nationalDigits, setNationalDigits] = useState("");
   const [smsConsent, setSmsConsent] = useState(false);
@@ -125,11 +133,13 @@ const StayInTouchForm = ({
         source: StayInTouchSource;
         mobile?: string;
         sms_consent?: boolean;
+        level?: string;
       } = {
         name: name.trim(),
         email: email.trim(),
         source,
       };
+      if (level) body.level = level;
       // Tie SMS consent to the number: only meaningful when a mobile is given.
       if (mobile) {
         body.mobile = mobile;
@@ -209,6 +219,29 @@ const StayInTouchForm = ({
               maxLength={255}
               className={fieldClassName}
             />
+
+            <div>
+              <p className="mb-2 font-body text-[10px] tracking-[0.18em] uppercase text-muted-foreground">
+                Your level (optional)
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {LEVELS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setLevel((cur) => (cur === opt.value ? "" : opt.value))}
+                    aria-pressed={level === opt.value}
+                    className={`border px-4 py-3 font-body text-xs tracking-widest transition-colors ${
+                      level === opt.value
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-secondary text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             <div className="space-y-2">
               <p className="font-body text-[10px] tracking-[0.18em] uppercase text-muted-foreground">
