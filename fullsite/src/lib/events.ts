@@ -10,6 +10,15 @@ export function formatTime(t: string): string {
   return `${hour12.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")} ${period}`;
 }
 
+/** Playtomic prices arrive as "40 USD" / "37.50 USD"; render as "$40" / "$37.50".
+ *  Anything unrecognized passes through unchanged. */
+export function formatPrice(price: string): string {
+  const m = price.match(/^(\d+(?:\.\d+)?)\s*USD$/i);
+  if (!m) return price;
+  const n = Number(m[1]);
+  return `$${Number.isInteger(n) ? n : n.toFixed(2)}`;
+}
+
 /** Group events by their YYYY-MM-DD date. Input is assumed already sorted by
  *  date then start time (the API returns it that way), so each day's array
  *  preserves chronological order. */

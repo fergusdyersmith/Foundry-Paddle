@@ -23,13 +23,14 @@ import Seo from "@/components/Seo";
 
 const today = startOfDay(new Date());
 const todayKey = format(today, "yyyy-MM-dd");
-const weekEndKey = format(addDays(today, 7), "yyyy-MM-dd");
 // Playtomic only returns ~30 days out, so fetch that whole window once and
 // slice it into the clinic and open-match lists below.
 const rangeEnd = addDays(today, 30);
 
 const CLINIC_TYPES = new Set(["PUBLIC_CLASS", "COURSE_CLASS"]);
 const CLINIC_LIMIT = 4;
+// Open matches shown before the "view more" expander.
+const MATCHES_VISIBLE = 3;
 
 const WAYS_TO_PLAY = [
   {
@@ -69,7 +70,7 @@ const ListStatus = ({ children }: { children: React.ReactNode }) => (
 );
 
 const Book = () => {
-  const [showWeek, setShowWeek] = useState(false);
+  const [showAllMatches, setShowAllMatches] = useState(false);
 
   const {
     data: events = [],
@@ -84,25 +85,19 @@ const Book = () => {
 
   // Only matches someone can still join: not full (4 players) and not already
   // started. Recomputed on every refetch (60s), so full matches drop off live.
-  const openMatches = useMemo(
-    () =>
-      events.filter(
-        (e) => e.booking_type === "OPEN_MATCH" && e.signed_up < OPEN_MATCH_CAPACITY,
-      ),
-    [events],
-  );
-
-  const matchesToday = useMemo(() => {
+  // The API returns events sorted by date then start time.
+  const upcomingMatches = useMemo(() => {
     const nowTime = format(new Date(), "HH:mm");
-    return openMatches.filter(
-      (e) => e.date === todayKey && e.start_time > nowTime,
+    return events.filter(
+      (e) =>
+        e.booking_type === "OPEN_MATCH" &&
+        e.signed_up < OPEN_MATCH_CAPACITY &&
+        (e.date > todayKey || (e.date === todayKey && e.start_time > nowTime)),
     );
-  }, [openMatches]);
+  }, [events]);
 
-  const matchesThisWeek = useMemo(
-    () => openMatches.filter((e) => e.date > todayKey && e.date <= weekEndKey),
-    [openMatches],
-  );
+  const visibleMatches = upcomingMatches.slice(0, MATCHES_VISIBLE);
+  const collapsedMatches = upcomingMatches.slice(MATCHES_VISIBLE);
 
   return (
     <main className="bg-background min-h-screen pt-24">
@@ -297,37 +292,38 @@ const Book = () => {
                     See the full schedule
                   </Link>
                 </ListStatus>
+              ) : upcomingMatches.length === 0 ? (
+                <ListStatus>
+                  No open matches on the calendar right now. Start one in the Playtomic app
+                  and other players can join you.
+                </ListStatus>
               ) : (
                 <>
                   <p className="mb-3 font-body text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                    Today
+                    Next up
                   </p>
-                  {matchesToday.length === 0 ? (
-                    <ListStatus>No open matches today. Check the week ahead below.</ListStatus>
-                  ) : (
-                    <div className="flex flex-col gap-3">
-                      {matchesToday.map((e) => (
-                        <BookEventRow key={e.id} event={e} />
-                      ))}
-                    </div>
-                  )}
+                  <div className="flex flex-col gap-3">
+                    {visibleMatches.map((e) => (
+                      <BookEventRow key={e.id} event={e} />
+                    ))}
+                  </div>
 
-                  {matchesThisWeek.length > 0 && (
+                  {collapsedMatches.length > 0 && (
                     <div className="mt-5">
                       <button
-                        onClick={() => setShowWeek((s) => !s)}
+                        onClick={() => setShowAllMatches((s) => !s)}
                         className="inline-flex items-center gap-2 font-display text-xs tracking-[0.2em] text-muted-foreground transition-colors hover:text-primary"
                       >
-                        {showWeek ? "HIDE" : "VIEW"} THIS WEEK ({matchesThisWeek.length})
-                        {showWeek ? (
+                        {showAllMatches ? "SHOW FEWER" : `VIEW MORE (${collapsedMatches.length})`}
+                        {showAllMatches ? (
                           <ChevronUp className="h-3.5 w-3.5" />
                         ) : (
                           <ChevronDown className="h-3.5 w-3.5" />
                         )}
                       </button>
-                      {showWeek && (
+                      {showAllMatches && (
                         <div className="mt-4 flex flex-col gap-3">
-                          {matchesThisWeek.map((e) => (
+                          {collapsedMatches.map((e) => (
                             <BookEventRow key={e.id} event={e} />
                           ))}
                         </div>

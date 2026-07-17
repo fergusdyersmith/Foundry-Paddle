@@ -1,7 +1,7 @@
 import { format, parseISO } from "date-fns";
 import { ExternalLink, Users } from "lucide-react";
 import { OPEN_MATCH_CAPACITY } from "@/constants/events";
-import { eventBookingUrl, formatTime } from "@/lib/events";
+import { eventBookingUrl, formatPrice, formatTime } from "@/lib/events";
 import type { PadelEvent } from "@/types/events";
 
 /** Compact one-line event row for the Book page's clinic and open-match
@@ -32,7 +32,7 @@ export default function BookEventRow({ event }: { event: PadelEvent }) {
         </p>
         <p className="text-xs text-muted-foreground">
           {formatTime(event.start_time)} · {event.duration_min} min
-          {event.price ? ` · ${event.price}` : ""}
+          {event.price ? ` · ${formatPrice(event.price)}` : ""}
         </p>
       </div>
       {isMatch ? (
