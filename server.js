@@ -237,8 +237,10 @@ const PLAYTOMIC_CLIENT_SECRET = process.env.PLAYTOMIC_CLIENT_SECRET;
 const PLAYTOMIC_TENANT_ID =
   process.env.PLAYTOMIC_TENANT_ID || "70cae734-e32f-4e3a-9f72-516d9f025125";
 
-// Playtomic booking types surfaced in the public Events widget. OPEN_MATCH is
-// open play; the rest are academy programming (clinics/courses/private/tournaments).
+// Playtomic booking types surfaced in the public Events widget. OPEN_MATCH is a
+// 4-player open match (players requesting others to fill a court) — distinct from
+// "open play" group sessions, which arrive as classes. The rest are academy
+// programming (clinics/courses/private/tournaments).
 // Booking types surfaced on the public schedule. PRIVATE_CLASS is intentionally
 // excluded — private lessons are personal bookings, not public events.
 const EVENT_BOOKING_TYPES = new Set([
@@ -253,7 +255,7 @@ const BOOKING_TYPE_LABELS = {
   PUBLIC_CLASS: "Clinic",
   PRIVATE_CLASS: "Private Class",
   TOURNAMENT: "Tournament",
-  OPEN_MATCH: "Open Play",
+  OPEN_MATCH: "Open Match",
 };
 
 let tokenCache = { accessToken: null, expiresAt: 0 };

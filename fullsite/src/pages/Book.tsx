@@ -16,6 +16,7 @@ import {
   PLAYTOMIC_BOOKING_URL,
   PLAYTOMIC_PLAY_STORE_URL,
 } from "@/constants/booking";
+import { OPEN_MATCH_CAPACITY } from "@/constants/events";
 import { useScheduleEvents } from "@/hooks/useScheduleEvents";
 import BookEventRow from "@/components/book/BookEventRow";
 import Seo from "@/components/Seo";
@@ -81,18 +82,26 @@ const Book = () => {
     [events],
   );
 
-  const matchesToday = useMemo(
-    () => events.filter((e) => e.booking_type === "OPEN_MATCH" && e.date === todayKey),
+  // Only matches someone can still join: not full (4 players) and not already
+  // started. Recomputed on every refetch (60s), so full matches drop off live.
+  const openMatches = useMemo(
+    () =>
+      events.filter(
+        (e) => e.booking_type === "OPEN_MATCH" && e.signed_up < OPEN_MATCH_CAPACITY,
+      ),
     [events],
   );
 
+  const matchesToday = useMemo(() => {
+    const nowTime = format(new Date(), "HH:mm");
+    return openMatches.filter(
+      (e) => e.date === todayKey && e.start_time > nowTime,
+    );
+  }, [openMatches]);
+
   const matchesThisWeek = useMemo(
-    () =>
-      events.filter(
-        (e) =>
-          e.booking_type === "OPEN_MATCH" && e.date > todayKey && e.date <= weekEndKey,
-      ),
-    [events],
+    () => openMatches.filter((e) => e.date > todayKey && e.date <= weekEndKey),
+    [openMatches],
   );
 
   return (

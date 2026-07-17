@@ -1,12 +1,16 @@
 import { format, parseISO } from "date-fns";
 import { ExternalLink, Users } from "lucide-react";
+import { OPEN_MATCH_CAPACITY } from "@/constants/events";
 import { eventBookingUrl, formatTime } from "@/lib/events";
 import type { PadelEvent } from "@/types/events";
 
 /** Compact one-line event row for the Book page's clinic and open-match
- *  lists. The whole row is a link to the event's Playtomic deep link. */
+ *  lists. The whole row is a link to the event's Playtomic deep link. Open
+ *  matches show spots left (roster out of 4) instead of a raw signup count. */
 export default function BookEventRow({ event }: { event: PadelEvent }) {
   const date = parseISO(event.date);
+  const isMatch = event.booking_type === "OPEN_MATCH";
+  const spotsLeft = Math.max(0, OPEN_MATCH_CAPACITY - event.signed_up);
   return (
     <a
       href={eventBookingUrl(event)}
@@ -31,11 +35,21 @@ export default function BookEventRow({ event }: { event: PadelEvent }) {
           {event.price ? ` · ${event.price}` : ""}
         </p>
       </div>
-      {event.signed_up > 0 && (
-        <span className="hidden shrink-0 items-center gap-1 text-xs font-medium text-muted-foreground sm:inline-flex">
-          <Users className="h-3.5 w-3.5" />
-          {event.signed_up}
+      {isMatch ? (
+        <span className="shrink-0 text-right text-xs font-medium text-primary">
+          {event.signed_up}/{OPEN_MATCH_CAPACITY}
+          <span className="hidden sm:inline">
+            {" "}
+            · {spotsLeft} {spotsLeft === 1 ? "spot" : "spots"} left
+          </span>
         </span>
+      ) : (
+        event.signed_up > 0 && (
+          <span className="hidden shrink-0 items-center gap-1 text-xs font-medium text-muted-foreground sm:inline-flex">
+            <Users className="h-3.5 w-3.5" />
+            {event.signed_up}
+          </span>
+        )
       )}
       <span className="inline-flex shrink-0 items-center gap-1.5 font-display text-xs tracking-widest text-primary">
         BOOK

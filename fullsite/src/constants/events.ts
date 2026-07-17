@@ -4,8 +4,12 @@ export const TYPE_LABELS: Record<string, string> = {
   PUBLIC_CLASS: "Clinic",
   PRIVATE_CLASS: "Private Class",
   TOURNAMENT: "Tournament",
-  OPEN_MATCH: "Open Play",
+  OPEN_MATCH: "Open Match",
 };
+
+/** Padel open matches are always 4 players; Playtomic doesn't expose a max, so
+ *  this is the assumed capacity for "spots left" display and full-match hiding. */
+export const OPEN_MATCH_CAPACITY = 4;
 
 /** Badge color classes per booking type (Tailwind, tinted-on-dark). */
 export const TYPE_COLORS: Record<string, string> = {
