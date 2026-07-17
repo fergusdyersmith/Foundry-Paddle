@@ -18,7 +18,7 @@ const faqs: Faq[] = [
   },
   {
     q: "What equipment do I need?",
-    a: "Just yourself and athletic shoes (non-marking court shoes preferred). We provide racquet and ball rentals for all sessions. As you get more into it, you can grab your own gear from our pro shop.",
+    a: "Just yourself and athletic shoes (non-marking court shoes preferred). Racket rentals are $5, or $10 for a high-end demo racket, and balls are available for purchase. As you get more into it, you can grab your own gear from our pro shop.",
   },
   {
     q: "How is padel different from tennis?",
@@ -68,7 +68,7 @@ const FAQ = () => {
     <main className="bg-background min-h-screen pt-24">
       <Seo
         title="Padel FAQ — Beginners, Gear, Hours & Location | Foundry Padel"
-        description="Never played padel? A first-timer's guide: no partner needed, rackets and balls provided, hours (8am–10pm daily), pricing, and how to find us in St. Johns, Portland."
+        description="Never played padel? A first-timer's guide: no partner needed, racket rentals from $5, hours (8am–10pm daily), pricing, and how to find us in St. Johns, Portland."
         path="/faq"
       />
       <section className="py-20 px-6">

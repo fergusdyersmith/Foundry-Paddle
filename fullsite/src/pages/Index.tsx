@@ -19,7 +19,7 @@ const Index = () => {
     <main className="bg-background min-h-screen">
       <Seo
         title="Foundry Padel — Portland's First Indoor Padel Club | St. Johns"
-        description="Play padel in Portland at Foundry — 4 indoor glass courts in St. Johns, next to Cathedral Park. $15 per player, $60 per 90-min court. Rackets provided, no partner needed. Open daily 8am–10pm."
+        description="Play padel in Portland at Foundry — 4 indoor glass courts in St. Johns, next to Cathedral Park. $15 per player, $60 per 90-min court. Racket rentals from $5, no partner needed. Open daily 8am–10pm."
         path="/"
       />
       {/* Hero */}
@@ -42,7 +42,7 @@ const Index = () => {
             </div>
           </motion.div>
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1, delay: 0.5 }} className="mt-6 max-w-xl font-body text-sm tracking-[0.15em] uppercase text-muted-foreground">
-            Never held a padel racket? Most of Portland hasn't. Rackets provided, no partner needed — just book and play.
+            Never held a padel racket? Most of Portland hasn't. Racket rentals on site, no partner needed. Just book and play.
           </motion.p>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.8 }} className="mt-10 flex flex-col items-center gap-4 sm:flex-row">
             <Link
@@ -129,7 +129,7 @@ const Index = () => {
               <div>
                 <h3 className="font-body text-xs tracking-[0.2em] uppercase text-primary mb-2">Gear &amp; partners</h3>
                 <p className="font-body text-base text-secondary-foreground">
-                  Rackets and balls are provided. No partner needed — join open play and we'll match you by skill.
+                  Rent a racket for $5, or a high-end demo racket for $10. Balls and rackets are for sale in our pro shop. No partner needed: join open play and we'll match you by skill.
                 </p>
               </div>
               <div>

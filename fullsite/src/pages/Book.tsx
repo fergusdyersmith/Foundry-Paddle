@@ -1,76 +1,170 @@
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Calendar, Clock, Users } from "lucide-react";
+import { Link } from "react-router-dom";
+import { addDays, format, startOfDay } from "date-fns";
+import {
+  ArrowRight,
+  Calendar,
+  ChevronDown,
+  ChevronUp,
+  GraduationCap,
+  Loader2,
+  Zap,
+} from "lucide-react";
 import {
   PLAYTOMIC_APP_STORE_URL,
   PLAYTOMIC_BOOKING_URL,
   PLAYTOMIC_PLAY_STORE_URL,
 } from "@/constants/booking";
+import { useScheduleEvents } from "@/hooks/useScheduleEvents";
+import BookEventRow from "@/components/book/BookEventRow";
 import Seo from "@/components/Seo";
 
+const today = startOfDay(new Date());
+const todayKey = format(today, "yyyy-MM-dd");
+const weekEndKey = format(addDays(today, 7), "yyyy-MM-dd");
+// Playtomic only returns ~30 days out, so fetch that whole window once and
+// slice it into the clinic and open-match lists below.
+const rangeEnd = addDays(today, 30);
+
+const CLINIC_TYPES = new Set(["PUBLIC_CLASS", "COURSE_CLASS"]);
+const CLINIC_LIMIT = 4;
+
+const WAYS_TO_PLAY = [
+  {
+    id: "reserve",
+    icon: Calendar,
+    title: "RESERVE A COURT",
+    desc: "Got your group of four? Book a 90-minute court.",
+  },
+  {
+    id: "clinics",
+    icon: GraduationCap,
+    title: "LEARN THE BASICS",
+    desc: "New to padel? Join a coach-led clinic.",
+  },
+  {
+    id: "matches",
+    icon: Zap,
+    title: "OPEN MATCHES",
+    desc: "Need players? Hop into a match at your level.",
+  },
+];
+
+const scrollToSection = (id: string) =>
+  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+const SectionHeading = ({ title, sub }: { title: string; sub: string }) => (
+  <div className="mb-6">
+    <h2 className="font-display text-3xl sm:text-4xl text-foreground mb-2">{title}</h2>
+    <p className="font-body text-sm text-muted-foreground">{sub}</p>
+  </div>
+);
+
+const ListStatus = ({ children }: { children: React.ReactNode }) => (
+  <div className="flex items-center justify-center border border-dashed border-border px-4 py-10 text-center font-body text-sm text-muted-foreground">
+    {children}
+  </div>
+);
+
 const Book = () => {
+  const [showWeek, setShowWeek] = useState(false);
+
+  const {
+    data: events = [],
+    isLoading,
+    isError,
+  } = useScheduleEvents(today, rangeEnd);
+
+  const clinics = useMemo(
+    () => events.filter((e) => CLINIC_TYPES.has(e.booking_type)).slice(0, CLINIC_LIMIT),
+    [events],
+  );
+
+  const matchesToday = useMemo(
+    () => events.filter((e) => e.booking_type === "OPEN_MATCH" && e.date === todayKey),
+    [events],
+  );
+
+  const matchesThisWeek = useMemo(
+    () =>
+      events.filter(
+        (e) =>
+          e.booking_type === "OPEN_MATCH" && e.date > todayKey && e.date <= weekEndKey,
+      ),
+    [events],
+  );
+
   return (
     <main className="bg-background min-h-screen pt-24">
       <Seo
         title="Book a Padel Court in Portland — $60 / 90 min | Foundry Padel"
-        description="Book an indoor padel court at Foundry in Portland — $60 per court for 90 minutes ($15 per player). 4 WPT-spec glass courts, open daily 8am–10pm. Reserve online."
+        description="Book an indoor padel court at Foundry in Portland — $60 per court for 90 minutes ($15 per player). Join a beginner clinic or an open match, racket rentals from $5. Open daily 8am–10pm."
         path="/book"
       />
+
+      {/* Header + ways to play */}
       <section className="py-20 px-6">
-        <div className="mx-auto max-w-4xl text-center">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
+        <div className="mx-auto max-w-4xl">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-center"
+          >
             <h1 className="font-display text-6xl sm:text-8xl text-foreground mb-4">BOOK A COURT</h1>
             <div className="flex items-center justify-center gap-4 mb-6">
               <div className="h-px w-16 bg-primary" />
-              <span className="font-body text-sm tracking-[0.2em] uppercase text-primary">Reserve Your Spot</span>
+              <span className="font-body text-sm tracking-[0.2em] uppercase text-primary">Three Ways to Play</span>
               <div className="h-px w-16 bg-primary" />
             </div>
             <p className="font-body text-base text-secondary-foreground">
               Drop-in play is{" "}
-              <span className="text-foreground font-semibold">$15 per player</span> —{" "}
-              <span className="text-foreground font-semibold">$60 per court</span> for a 90-minute
-              booking. Rackets and balls provided; no partner needed.
+              <span className="text-foreground font-semibold">$15 per player</span>,{" "}
+              <span className="text-foreground font-semibold">$60 per court</span> for 90 minutes.
+              Racket rentals are <span className="text-foreground font-semibold">$5</span> ($10 for
+              a high-end demo racket), and balls are for sale at the club. No partner needed.
             </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="mt-12 grid gap-3 sm:grid-cols-3"
+          >
+            {WAYS_TO_PLAY.map((w) => (
+              <button
+                key={w.id}
+                onClick={() => scrollToSection(w.id)}
+                className="group border border-border p-6 text-left transition-colors hover:border-primary"
+              >
+                <w.icon size={22} className="text-primary mb-3" />
+                <h2 className="font-display text-lg text-foreground mb-1">{w.title}</h2>
+                <p className="font-body text-xs text-muted-foreground">{w.desc}</p>
+                <span className="mt-3 inline-flex items-center gap-1 font-display text-[10px] tracking-[0.2em] text-primary opacity-70 transition-opacity group-hover:opacity-100">
+                  JUMP TO <ArrowRight className="h-3 w-3" />
+                </span>
+              </button>
+            ))}
           </motion.div>
         </div>
       </section>
 
-      {/* Booking info */}
-      <section className="py-12 px-6">
+      {/* 1 — Reserve a court */}
+      <section id="reserve" className="scroll-mt-28 px-6 py-12">
         <div className="mx-auto max-w-4xl">
           <div className="section-divider mb-16" />
-          <div className="grid sm:grid-cols-3 gap-8 mb-16">
-            {[
-              { icon: Calendar, title: "7 DAYS A WEEK", desc: "Morning, afternoon, and evening slots available" },
-              { icon: Clock, title: "90 MIN SESSIONS", desc: "Plenty of time to warm up, play, and cool down" },
-              { icon: Users, title: "4 COURTS", desc: "WPT-spec panoramic glass courts" },
-            ].map((item, i) => (
-              <motion.div
-                key={item.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-                className="border border-border p-8 text-center"
-              >
-                <item.icon size={28} className="text-primary mx-auto mb-4" />
-                <h3 className="font-display text-xl text-foreground mb-2">{item.title}</h3>
-                <p className="font-body text-sm text-muted-foreground">{item.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Playtomic booking embed (replaces coming-soon email form) */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
-            className="mx-auto w-full max-w-5xl"
           >
-            <h2 className="font-display text-3xl sm:text-4xl text-foreground mb-2 text-center">BOOK ONLINE</h2>
-            <p className="font-body text-sm text-muted-foreground mb-6 text-center">
-              Choose a time and court below. Opens our booking partner in this page.
-            </p>
+            <SectionHeading
+              title="RESERVE A COURT"
+              sub="Have your four? Choose a time and court below. Open daily 8am–10pm · 90-minute sessions · 4 WPT-spec glass courts."
+            />
             <div className="overflow-hidden rounded-sm border border-border bg-muted/30">
               <iframe
                 src={PLAYTOMIC_BOOKING_URL}
@@ -80,27 +174,20 @@ const Book = () => {
                 allow="payment *; fullscreen"
               />
             </div>
-            <div className="mt-8 text-center font-body text-sm text-muted-foreground">
-              <div className="mb-6 flex items-center justify-center gap-4">
-                <div className="h-px w-12 bg-border sm:w-16" />
-                <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Or</span>
-                <div className="h-px w-12 bg-border sm:w-16" />
-              </div>
-              <p className="mb-4 font-body text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                Get the app
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-4">
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 font-body text-xs text-muted-foreground">
+              <span className="uppercase tracking-[0.2em]">Or book in the Playtomic app</span>
+              <div className="flex items-center gap-3">
                 <a
                   href={PLAYTOMIC_APP_STORE_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex h-11 items-center transition-opacity hover:opacity-90"
+                  className="inline-flex h-9 items-center transition-opacity hover:opacity-90"
                   aria-label="Download Playtomic on the App Store"
                 >
                   <img
                     src={`${import.meta.env.BASE_URL}store-badge-apple-store.svg`}
                     alt=""
-                    className="h-11 w-auto max-h-11 object-contain"
+                    className="h-9 w-auto object-contain"
                     width={120}
                     height={40}
                   />
@@ -109,13 +196,13 @@ const Book = () => {
                   href={PLAYTOMIC_PLAY_STORE_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex h-11 items-center transition-opacity hover:opacity-90"
+                  className="inline-flex h-9 items-center transition-opacity hover:opacity-90"
                   aria-label="Get Playtomic on Google Play"
                 >
                   <img
                     src={`${import.meta.env.BASE_URL}store-badge-google-play.png`}
                     alt=""
-                    className="h-11 w-auto max-h-11 object-contain"
+                    className="h-9 w-auto object-contain"
                     width={155}
                     height={40}
                   />
@@ -123,7 +210,125 @@ const Book = () => {
               </div>
             </div>
           </motion.div>
+        </div>
+      </section>
 
+      {/* 2 + 3 — Clinics and open matches */}
+      <section className="px-6 py-12">
+        <div className="mx-auto max-w-6xl">
+          <div className="section-divider mb-16" />
+          <div className="grid gap-16 lg:grid-cols-2 lg:gap-12">
+            {/* Learn the basics */}
+            <motion.div
+              id="clinics"
+              className="scroll-mt-28"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+            >
+              <SectionHeading
+                title="LEARN THE BASICS"
+                sub="Never played? Book a coach-led clinic: small groups, all levels welcome, and you'll be rallying by the end of the first session."
+              />
+              {isLoading ? (
+                <ListStatus>
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                </ListStatus>
+              ) : isError ? (
+                <ListStatus>
+                  Couldn't load upcoming clinics.&nbsp;
+                  <Link to="/schedule" className="text-primary hover:underline">
+                    See the full schedule
+                  </Link>
+                </ListStatus>
+              ) : clinics.length === 0 ? (
+                <ListStatus>
+                  New clinic dates drop soon.&nbsp;
+                  <Link to="/schedule" className="text-primary hover:underline">
+                    Check the full schedule
+                  </Link>
+                </ListStatus>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {clinics.map((e) => (
+                    <BookEventRow key={e.id} event={e} />
+                  ))}
+                </div>
+              )}
+              <Link
+                to="/schedule"
+                className="mt-5 inline-flex items-center gap-2 font-display text-xs tracking-[0.2em] text-muted-foreground transition-colors hover:text-primary"
+              >
+                VIEW FULL SCHEDULE <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </motion.div>
+
+            {/* Open matches */}
+            <motion.div
+              id="matches"
+              className="scroll-mt-28"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, delay: 0.1 }}
+            >
+              <SectionHeading
+                title="OPEN MATCHES"
+                sub="Hop into a match without bringing a group. Join solo and Playtomic matches you with players at your level."
+              />
+              {isLoading ? (
+                <ListStatus>
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                </ListStatus>
+              ) : isError ? (
+                <ListStatus>
+                  Couldn't load open matches.&nbsp;
+                  <Link to="/schedule" className="text-primary hover:underline">
+                    See the full schedule
+                  </Link>
+                </ListStatus>
+              ) : (
+                <>
+                  <p className="mb-3 font-body text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                    Today
+                  </p>
+                  {matchesToday.length === 0 ? (
+                    <ListStatus>No open matches today. Check the week ahead below.</ListStatus>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {matchesToday.map((e) => (
+                        <BookEventRow key={e.id} event={e} />
+                      ))}
+                    </div>
+                  )}
+
+                  {matchesThisWeek.length > 0 && (
+                    <div className="mt-5">
+                      <button
+                        onClick={() => setShowWeek((s) => !s)}
+                        className="inline-flex items-center gap-2 font-display text-xs tracking-[0.2em] text-muted-foreground transition-colors hover:text-primary"
+                      >
+                        {showWeek ? "HIDE" : "VIEW"} THIS WEEK ({matchesThisWeek.length})
+                        {showWeek ? (
+                          <ChevronUp className="h-3.5 w-3.5" />
+                        ) : (
+                          <ChevronDown className="h-3.5 w-3.5" />
+                        )}
+                      </button>
+                      {showWeek && (
+                        <div className="mt-4 flex flex-col gap-3">
+                          {matchesThisWeek.map((e) => (
+                            <BookEventRow key={e.id} event={e} />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </motion.div>
+          </div>
           <div className="section-divider mt-16" />
         </div>
       </section>
