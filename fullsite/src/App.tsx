@@ -8,6 +8,7 @@ import Schedule from "./pages/Schedule";
 import FAQ from "./pages/FAQ";
 import Contact from "./pages/Contact";
 import Book from "./pages/Book";
+import NewToPadel from "./pages/NewToPadel";
 import Privacy from "./pages/Privacy";
 import SmsTerms from "./pages/SmsTerms";
 import NotFound from "./pages/NotFound";
@@ -27,6 +28,9 @@ export const routes: RouteRecord[] = [
       { path: "faq", element: <FAQ /> },
       { path: "contact", element: <Contact /> },
       { path: "book", element: <Book /> },
+      { path: "new-to-padel", element: <NewToPadel /> },
+      // Alias for pickleball-targeted ads/flyers; canonical points to /new-to-padel.
+      { path: "pickleball", element: <NewToPadel /> },
       { path: "privacy", element: <Privacy /> },
       { path: "sms-terms", element: <SmsTerms /> },
       { path: "terms", element: <SmsTerms /> },
