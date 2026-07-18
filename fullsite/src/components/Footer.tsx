@@ -23,6 +23,7 @@ const footerLinks: FooterNavLink[] = [
   { label: "Contact", path: "/contact" },
   { label: "Book a Court", path: BOOK_PAGE_PATH },
   { label: "App", href: APP_URL, external: true },
+  { label: "Skill Survey", path: "/survey" },
   { label: "Privacy Policy", path: "/privacy" },
   { label: "SMS Terms", path: "/sms-terms" },
 ];
