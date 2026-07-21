@@ -119,8 +119,10 @@ export const PRESETS: ThemePreset[] = [
   },
 ];
 
-/** Display-font options for the logo-suite decision. GT America (Suite 1) is
- *  excluded: paid license. */
+/** Display-font options. Suite 3 (Archivo) is the chosen identity per
+ *  Courtney's final logo package; Archivo Black stands in for the package's
+ *  Akzidenz-Grotesk Next Black Extended display accent (paid Berthold font,
+ *  not delivered). Others kept for comparison. */
 export const DISPLAY_FONTS: {
   id: string;
   name: string;
@@ -128,18 +130,24 @@ export const DISPLAY_FONTS: {
   /** Stylesheet URL to inject when selected (null = already loaded). */
   css: string | null;
 }[] = [
-  { id: "bebas", name: "Bebas Neue (current)", family: "'Bebas Neue', sans-serif", css: null },
+  { id: "bebas", name: "Bebas Neue (current site)", family: "'Bebas Neue', sans-serif", css: null },
+  {
+    id: "archivo",
+    name: "Archivo — CHOSEN (Suite 3)",
+    family: "'Archivo', sans-serif",
+    css: "https://fonts.googleapis.com/css2?family=Archivo:wght@200;300;400;600;700&display=swap",
+  },
+  {
+    id: "archivo-black",
+    name: "Archivo Black (≈ Akzidenz Black Ext.)",
+    family: "'Archivo Black', sans-serif",
+    css: "https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap",
+  },
   {
     id: "schibsted",
     name: "Schibsted Grotesk (Suites 2/4)",
     family: "'Schibsted Grotesk', sans-serif",
     css: "https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;700;800&display=swap",
-  },
-  {
-    id: "archivo",
-    name: "Archivo (Suite 3)",
-    family: "'Archivo', sans-serif",
-    css: "https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;600;700&display=swap",
   },
   {
     id: "ranade",
@@ -148,3 +156,55 @@ export const DISPLAY_FONTS: {
     css: "https://api.fontshare.com/v2/css?f[]=ranade@400,500,700&display=swap",
   },
 ];
+
+/** Header logo options (Courtney's final package, assets in /public/rebrand).
+ *  "Light" variants are derived from the delivered dark-green SVGs pending
+ *  official inverted files. */
+export const LOGO_OPTIONS: {
+  id: string;
+  name: string;
+  /** null = the current text wordmark. */
+  src: string | null;
+  /** Tailwind height class for the header <img>. */
+  heightClass: string;
+}[] = [
+  { id: "current", name: "Current text wordmark", src: null, heightClass: "" },
+  {
+    id: "lockup-light",
+    name: "Horizontal lockup · light (dark themes)",
+    src: "/rebrand/FP_lockup_horizontal_light.svg",
+    heightClass: "h-9",
+  },
+  {
+    id: "lockup-green",
+    name: "Horizontal lockup · green (light theme)",
+    src: "/rebrand/FP_lockup_horizontal_green.svg",
+    heightClass: "h-9",
+  },
+  {
+    id: "icon-2c-white",
+    name: "Monogram · white + clay racket",
+    src: "/rebrand/FP_icon_2color_white.svg",
+    heightClass: "h-10",
+  },
+  {
+    id: "icon-2c-green",
+    name: "Monogram · green + clay racket",
+    src: "/rebrand/FP_icon_2color_green.svg",
+    heightClass: "h-10",
+  },
+  {
+    id: "icon-light",
+    name: "Monogram · light",
+    src: "/rebrand/FP_icon_light.svg",
+    heightClass: "h-10",
+  },
+];
+
+/** New-brand favicon set (toggled in the lab; production still ships the old
+ *  gold favicon until the real flip). */
+export const REBRAND_FAVICON = {
+  svg: "/rebrand/favicon.svg",
+  ico: "/rebrand/favicon.ico",
+  appleTouch: "/rebrand/apple-touch-icon.png",
+};

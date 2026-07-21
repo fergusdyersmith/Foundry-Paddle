@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, ChevronDown, ChevronUp, Copy, Palette, RotateCcw, X } from "lucide-react";
 import { hexToHslVar, hslVarToHex } from "./color";
-import { DISPLAY_FONTS, PRESETS, TOKENS } from "./themes";
+import { DISPLAY_FONTS, LOGO_OPTIONS, PRESETS, REBRAND_FAVICON, TOKENS } from "./themes";
 
 /** Rebrand preview overlay: pick a palette preset, fine-tune individual
  *  tokens, and switch the display font. Only mounted when the build has
@@ -14,9 +14,17 @@ interface LabState {
   presetId: string;
   overrides: Record<string, string>;
   fontId: string;
+  logoId: string;
+  newFavicon: boolean;
 }
 
-const DEFAULT_STATE: LabState = { presetId: "current", overrides: {}, fontId: "bebas" };
+const DEFAULT_STATE: LabState = {
+  presetId: "current",
+  overrides: {},
+  fontId: "bebas",
+  logoId: "current",
+  newFavicon: false,
+};
 
 function loadState(): LabState {
   try {
@@ -39,6 +47,8 @@ export default function ThemeLab() {
   // The untouched site palette, captured once at mount, so "Current (Gold)"
   // and unset tokens can show real values in the pickers.
   const baseline = useRef<Record<string, string>>({});
+  // Original favicon hrefs, remembered so the toggle can restore them.
+  const originalIcons = useRef<{ icon: string; apple: string } | null>(null);
 
   useEffect(() => {
     const style = getComputedStyle(document.documentElement);
@@ -96,6 +106,20 @@ export default function ThemeLab() {
     } else {
       root.style.setProperty("--font-display", font.family);
     }
+
+    // Favicon swap (preview only; production keeps the old set until launch).
+    const iconLink = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+    const appleLink = document.querySelector<HTMLLinkElement>('link[rel="apple-touch-icon"]');
+    if (iconLink && appleLink && !originalIcons.current) {
+      originalIcons.current = { icon: iconLink.href, apple: appleLink.href };
+    }
+    if (iconLink && appleLink && originalIcons.current) {
+      iconLink.href = state.newFavicon ? REBRAND_FAVICON.svg : originalIcons.current.icon;
+      appleLink.href = state.newFavicon ? REBRAND_FAVICON.appleTouch : originalIcons.current.apple;
+    }
+
+    // Tell the Header (and anything else) that lab state changed.
+    window.dispatchEvent(new CustomEvent("theme-lab-update"));
   }, [state, mounted]);
 
   if (!mounted) return null;
@@ -161,6 +185,51 @@ export default function ThemeLab() {
                 </button>
               ))}
             </div>
+
+            {/* Header logo */}
+            <p className="mb-2 mt-5 text-[11px] uppercase tracking-wider text-neutral-500">
+              Header logo
+            </p>
+            <div className="flex flex-col gap-1.5">
+              {LOGO_OPTIONS.map((l) => (
+                <button
+                  key={l.id}
+                  onClick={() => setState((s) => ({ ...s, logoId: l.id }))}
+                  className={`flex items-center gap-3 rounded-md border px-3 py-2 text-left text-xs transition-colors ${
+                    state.logoId === l.id
+                      ? "border-white bg-neutral-800"
+                      : "border-neutral-700 hover:border-neutral-500"
+                  }`}
+                >
+                  <span
+                    className={`flex h-8 w-14 shrink-0 items-center justify-center overflow-hidden rounded border border-neutral-700 ${
+                      l.id.includes("green") ? "bg-[#EEEFE3]" : "bg-[#313E39]"
+                    }`}
+                  >
+                    {l.src ? (
+                      <img src={l.src} alt="" className="max-h-6 max-w-12 object-contain" />
+                    ) : (
+                      <span className="font-display text-[9px] tracking-widest text-white">FP</span>
+                    )}
+                  </span>
+                  <span className="flex-1">{l.name}</span>
+                  {state.logoId === l.id && <Check className="h-4 w-4 shrink-0 text-emerald-400" />}
+                </button>
+              ))}
+            </div>
+
+            {/* Favicon */}
+            <label className="mt-4 flex cursor-pointer items-center justify-between text-xs text-neutral-300">
+              <span>
+                New favicon <span className="text-neutral-500">(check the browser tab)</span>
+              </span>
+              <input
+                type="checkbox"
+                checked={state.newFavicon}
+                onChange={(e) => setState((s) => ({ ...s, newFavicon: e.target.checked }))}
+                className="h-4 w-4 accent-emerald-500"
+              />
+            </label>
 
             {/* Display font */}
             <p className="mb-2 mt-5 text-[11px] uppercase tracking-wider text-neutral-500">

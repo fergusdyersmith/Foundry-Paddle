@@ -1,10 +1,34 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { BOOK_PAGE_PATH } from "@/constants/booking";
 import { APP_URL } from "@/constants/app";
 import { Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import EventsModal from "@/components/EventsModal";
+import { LOGO_OPTIONS } from "@/theme-lab/themes";
+
+// Rebrand-preview only: the Theme Lab can swap the header logo. Reads the
+// lab's localStorage state; inert (always the text wordmark) in plain builds.
+const THEME_LAB_ENABLED = import.meta.env.VITE_THEME_LAB === "1";
+
+function useLabLogo() {
+  const [logoId, setLogoId] = useState("current");
+  useEffect(() => {
+    if (!THEME_LAB_ENABLED) return;
+    const read = () => {
+      try {
+        const s = JSON.parse(window.localStorage.getItem("foundry-theme-lab") || "{}");
+        setLogoId(s.logoId || "current");
+      } catch {
+        /* keep current */
+      }
+    };
+    read();
+    window.addEventListener("theme-lab-update", read);
+    return () => window.removeEventListener("theme-lab-update", read);
+  }, []);
+  return LOGO_OPTIONS.find((l) => l.id === logoId && l.src) ?? null;
+}
 
 type NavItem =
   | { label: string; path: string }
@@ -24,13 +48,20 @@ const navLinks: NavItem[] = [
 const Header = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+  const labLogo = useLabLogo();
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-        <Link to="/" className="font-display text-2xl tracking-widest text-foreground">
-          FOUNDRY <span className="text-primary">PADEL</span>
-        </Link>
+        {labLogo ? (
+          <Link to="/" className="flex items-center" aria-label="Foundry Padel home">
+            <img src={labLogo.src!} alt="Foundry Padel" className={`${labLogo.heightClass} w-auto`} />
+          </Link>
+        ) : (
+          <Link to="/" className="font-display text-2xl tracking-widest text-foreground">
+            FOUNDRY <span className="text-primary">PADEL</span>
+          </Link>
+        )}
 
         {/* Desktop nav */}
         <nav className="hidden lg:flex items-center gap-8">
