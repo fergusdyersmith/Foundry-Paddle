@@ -11,6 +11,8 @@ import { DISPLAY_FONTS, LOGO_OPTIONS, PRESETS, REBRAND_FAVICON, TOKENS } from ".
 const STORAGE_KEY = "foundry-theme-lab";
 
 interface LabState {
+  /** Bumped when defaults change; stale stored state is discarded. */
+  v?: number;
   presetId: string;
   overrides: Record<string, string>;
   fontId: string;
@@ -18,18 +20,26 @@ interface LabState {
   newFavicon: boolean;
 }
 
+const STATE_VERSION = 2;
+
+// Default view for fresh visitors: the working rebrand direction (Rockwood +
+// clay CTA, Schibsted headings, light monogram, new favicon). "Current (Gold)"
+// stays available in the picker for comparison.
 const DEFAULT_STATE: LabState = {
-  presetId: "current",
+  v: STATE_VERSION,
+  presetId: "rockwood-clay",
   overrides: {},
-  fontId: "bebas",
-  logoId: "current",
-  newFavicon: false,
+  fontId: "schibsted",
+  logoId: "icon-light",
+  newFavicon: true,
 };
 
 function loadState(): LabState {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    return raw ? { ...DEFAULT_STATE, ...JSON.parse(raw) } : DEFAULT_STATE;
+    const parsed = raw ? JSON.parse(raw) : null;
+    if (!parsed || parsed.v !== STATE_VERSION) return DEFAULT_STATE;
+    return { ...DEFAULT_STATE, ...parsed };
   } catch {
     return DEFAULT_STATE;
   }
@@ -289,7 +299,7 @@ export default function ThemeLab() {
             <button
               onClick={() => setState(DEFAULT_STATE)}
               className="flex items-center gap-1.5 rounded-md border border-neutral-600 px-3 py-2 text-xs text-neutral-300 hover:border-neutral-400"
-              title="Back to the current live site look"
+              title="Back to the default rebrand direction"
             >
               <RotateCcw className="h-3.5 w-3.5" />
               Reset
