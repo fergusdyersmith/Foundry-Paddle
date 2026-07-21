@@ -4,6 +4,8 @@ import { hexToHslVar, hslVarToHex } from "./color";
 import {
   DISPLAY_FONTS,
   FAVICON_OPTIONS,
+  type FaviconShape,
+  faviconSrc,
   LOGO_OPTIONS,
   PRESETS,
   REBRAND_APPLE_TOUCH,
@@ -25,9 +27,10 @@ interface LabState {
   fontId: string;
   logoId: string;
   faviconId: string;
+  faviconShape: FaviconShape;
 }
 
-const STATE_VERSION = 3;
+const STATE_VERSION = 4;
 
 // Default view for fresh visitors: the working rebrand direction (Rockwood +
 // clay CTA, Schibsted headings, light monogram, new favicon). "Current (Gold)"
@@ -38,7 +41,8 @@ const DEFAULT_STATE: LabState = {
   overrides: {},
   fontId: "schibsted",
   logoId: "icon-light",
-  faviconId: "delivered",
+  faviconId: "green-white",
+  faviconShape: "square",
 };
 
 function loadState(): LabState {
@@ -131,9 +135,9 @@ export default function ThemeLab() {
       originalIcons.current = { icon: iconLink.href, apple: appleLink.href };
     }
     if (iconLink && appleLink && originalIcons.current) {
-      const fav = FAVICON_OPTIONS.find((f) => f.id === state.faviconId);
-      iconLink.href = fav?.src ?? originalIcons.current.icon;
-      appleLink.href = fav?.src ? REBRAND_APPLE_TOUCH : originalIcons.current.apple;
+      const src = faviconSrc(state.faviconId, state.faviconShape);
+      iconLink.href = src ?? originalIcons.current.icon;
+      appleLink.href = src ? REBRAND_APPLE_TOUCH : originalIcons.current.apple;
     }
 
     // Tell the Header (and anything else) that lab state changed.
@@ -156,6 +160,8 @@ export default function ThemeLab() {
     const payload = {
       preset: preset.name,
       displayFont: (DISPLAY_FONTS.find((f) => f.id === state.fontId) ?? DISPLAY_FONTS[0]).name,
+      headerLogo: (LOGO_OPTIONS.find((l) => l.id === state.logoId) ?? LOGO_OPTIONS[0]).name,
+      favicon: `${(FAVICON_OPTIONS.find((f) => f.id === state.faviconId) ?? FAVICON_OPTIONS[0]).name} (${state.faviconShape})`,
       tokens: Object.fromEntries(TOKENS.map(({ key, label }) => [`${label} (--${key})`, effectiveHex(key)])),
     };
     try {
@@ -240,37 +246,48 @@ export default function ThemeLab() {
             <p className="mb-2 mt-5 text-[11px] uppercase tracking-wider text-neutral-500">
               Favicon <span className="normal-case text-neutral-600">(check the browser tab)</span>
             </p>
-            <div className="grid grid-cols-3 gap-1.5">
-              {FAVICON_OPTIONS.map((f) => (
+            <div className="mb-2 flex gap-1.5">
+              {(["square", "circle"] as const).map((shape) => (
                 <button
-                  key={f.id}
-                  onClick={() => setState((s) => ({ ...s, faviconId: f.id }))}
-                  title={f.name}
-                  className={`flex flex-col items-center gap-1 rounded-md border px-1 py-2 transition-colors ${
-                    state.faviconId === f.id
-                      ? "border-white bg-neutral-800"
-                      : "border-neutral-700 hover:border-neutral-500"
+                  key={shape}
+                  onClick={() => setState((s) => ({ ...s, faviconShape: shape }))}
+                  className={`flex-1 rounded-md border px-2 py-1.5 text-[11px] capitalize transition-colors ${
+                    state.faviconShape === shape
+                      ? "border-white bg-neutral-800 text-white"
+                      : "border-neutral-700 text-neutral-400 hover:border-neutral-500"
                   }`}
                 >
-                  {f.src ? (
-                    <img
-                      src={f.src}
-                      alt=""
-                      className="h-8 w-8 rounded border border-neutral-600"
-                    />
-                  ) : (
-                    <span
-                      className="flex h-8 w-8 items-center justify-center rounded border border-neutral-600 font-display text-[10px]"
-                      style={{ background: f.swatch[0], color: f.swatch[1] }}
-                    >
-                      FP
-                    </span>
-                  )}
-                  <span className="text-center text-[9px] leading-tight text-neutral-400">
-                    {f.name}
-                  </span>
+                  {shape}
                 </button>
               ))}
+            </div>
+            <div className="grid grid-cols-3 gap-1.5">
+              {FAVICON_OPTIONS.map((f) => {
+                const src = faviconSrc(f.id, state.faviconShape);
+                return (
+                  <button
+                    key={f.id}
+                    onClick={() => setState((s) => ({ ...s, faviconId: f.id }))}
+                    title={f.name}
+                    className={`flex flex-col items-center gap-1 rounded-md border px-1 py-2 transition-colors ${
+                      state.faviconId === f.id
+                        ? "border-white bg-neutral-800"
+                        : "border-neutral-700 hover:border-neutral-500"
+                    }`}
+                  >
+                    {src ? (
+                      <img src={src} alt="" className="h-8 w-8" />
+                    ) : (
+                      <span className="flex h-8 w-8 items-center justify-center rounded border border-neutral-600 bg-[#0f0f0f] font-display text-[10px] text-[#e59a2f]">
+                        FP
+                      </span>
+                    )}
+                    <span className="text-center text-[9px] leading-tight text-neutral-400">
+                      {f.name}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
             {/* Display font */}

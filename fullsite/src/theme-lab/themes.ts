@@ -201,50 +201,57 @@ export const LOGO_OPTIONS: {
   },
 ];
 
-/** Favicon options. "delivered" is Courtney's official RealFaviconGenerator
- *  set; the color variants are generated from the vector monogram
- *  (scripts kept simple: bg tile + recolored mark). Production ships the old
- *  gold favicon until the real flip. */
+/** Favicon options, each available as a square tile or a circle. All are
+ *  generated from the vector monogram (the green/white pair matches
+ *  Courtney's delivered favicon). Production ships the old gold favicon
+ *  until the real flip. */
+export type FaviconShape = "square" | "circle";
+
 export const FAVICON_OPTIONS: {
   id: string;
   name: string;
-  /** null = the current production favicon. */
-  src: string | null;
-  /** Panel swatch: [tile, mark]. */
-  swatch: [string, string];
+  /** null = the current production favicon (square only). */
+  srcSquare: string | null;
+  srcCircle: string | null;
 }[] = [
-  { id: "current", name: "Current (gold)", src: null, swatch: ["#0f0f0f", "#e59a2f"] },
+  { id: "current", name: "Current (gold)", srcSquare: null, srcCircle: null },
   {
-    id: "delivered",
-    name: "Green · white (delivered)",
-    src: "/rebrand/favicon.svg",
-    swatch: ["#303E39", "#FFFFFF"],
+    id: "green-white",
+    name: "Green · white",
+    srcSquare: "/rebrand/favicon-green-white.svg",
+    srcCircle: "/rebrand/favicon-green-white-circle.svg",
   },
   {
     id: "green-alabaster",
     name: "Green · alabaster",
-    src: "/rebrand/favicon-green-alabaster.svg",
-    swatch: ["#303E39", "#EEEFE3"],
+    srcSquare: "/rebrand/favicon-green-alabaster.svg",
+    srcCircle: "/rebrand/favicon-green-alabaster-circle.svg",
   },
   {
     id: "black-white",
     name: "Black · white",
-    src: "/rebrand/favicon-black-white.svg",
-    swatch: ["#101010", "#FFFFFF"],
+    srcSquare: "/rebrand/favicon-black-white.svg",
+    srcCircle: "/rebrand/favicon-black-white-circle.svg",
   },
   {
     id: "white-clay",
     name: "White · clay",
-    src: "/rebrand/favicon-white-clay.svg",
-    swatch: ["#FFFFFF", "#AE6C56"],
+    srcSquare: "/rebrand/favicon-white-clay.svg",
+    srcCircle: "/rebrand/favicon-white-clay-circle.svg",
   },
   {
     id: "black-clay",
     name: "Black · clay",
-    src: "/rebrand/favicon-black-clay.svg",
-    swatch: ["#101010", "#AE6C56"],
+    srcSquare: "/rebrand/favicon-black-clay.svg",
+    srcCircle: "/rebrand/favicon-black-clay-circle.svg",
   },
 ];
+
+export function faviconSrc(id: string, shape: FaviconShape): string | null {
+  const opt = FAVICON_OPTIONS.find((f) => f.id === id);
+  if (!opt) return null;
+  return shape === "circle" ? (opt.srcCircle ?? opt.srcSquare) : opt.srcSquare;
+}
 
 /** Apple touch icon for any new-brand favicon choice (delivered PNG). */
 export const REBRAND_APPLE_TOUCH = "/rebrand/apple-touch-icon.png";
