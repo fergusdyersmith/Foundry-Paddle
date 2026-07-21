@@ -205,7 +205,7 @@ export const LOGO_OPTIONS: {
  *  generated from the vector monogram (the green/white pair matches
  *  Courtney's delivered favicon). Production ships the old gold favicon
  *  until the real flip. */
-export type FaviconShape = "square" | "circle";
+export type FaviconShape = "square" | "circle" | "transparent";
 
 export const FAVICON_OPTIONS: {
   id: string;
@@ -247,7 +247,19 @@ export const FAVICON_OPTIONS: {
   },
 ];
 
+/** Transparent-background options: just the mark, in each brand color. */
+export const TRANSPARENT_FAVICONS: { id: string; name: string; src: string | null }[] = [
+  { id: "current", name: "Current (gold)", src: null },
+  { id: "mark-white", name: "White mark", src: "/rebrand/favicon-mark-white.svg" },
+  { id: "mark-black", name: "Black mark", src: "/rebrand/favicon-mark-black.svg" },
+  { id: "mark-clay", name: "Clay mark", src: "/rebrand/favicon-mark-clay.svg" },
+  { id: "mark-green", name: "Green mark", src: "/rebrand/favicon-mark-green.svg" },
+];
+
 export function faviconSrc(id: string, shape: FaviconShape): string | null {
+  if (shape === "transparent") {
+    return TRANSPARENT_FAVICONS.find((f) => f.id === id)?.src ?? null;
+  }
   const opt = FAVICON_OPTIONS.find((f) => f.id === id);
   if (!opt) return null;
   return shape === "circle" ? (opt.srcCircle ?? opt.srcSquare) : opt.srcSquare;

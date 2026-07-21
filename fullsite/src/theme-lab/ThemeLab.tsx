@@ -10,7 +10,15 @@ import {
   PRESETS,
   REBRAND_APPLE_TOUCH,
   TOKENS,
+  TRANSPARENT_FAVICONS,
 } from "./themes";
+
+/** Checkerboard so transparent favicon thumbs read as transparent. */
+const CHECKER_BG = {
+  backgroundImage:
+    "conic-gradient(#3a3a3a 25%, #565656 0 50%, #3a3a3a 0 75%, #565656 0)",
+  backgroundSize: "8px 8px",
+};
 
 /** Rebrand preview overlay: pick a palette preset, fine-tune individual
  *  tokens, and switch the display font. Only mounted when the build has
@@ -161,7 +169,11 @@ export default function ThemeLab() {
       preset: preset.name,
       displayFont: (DISPLAY_FONTS.find((f) => f.id === state.fontId) ?? DISPLAY_FONTS[0]).name,
       headerLogo: (LOGO_OPTIONS.find((l) => l.id === state.logoId) ?? LOGO_OPTIONS[0]).name,
-      favicon: `${(FAVICON_OPTIONS.find((f) => f.id === state.faviconId) ?? FAVICON_OPTIONS[0]).name} (${state.faviconShape})`,
+      favicon: `${
+        ((state.faviconShape === "transparent" ? TRANSPARENT_FAVICONS : FAVICON_OPTIONS).find(
+          (f) => f.id === state.faviconId,
+        ) ?? FAVICON_OPTIONS[0]).name
+      } (${state.faviconShape})`,
       tokens: Object.fromEntries(TOKENS.map(({ key, label }) => [`${label} (--${key})`, effectiveHex(key)])),
     };
     try {
@@ -247,47 +259,65 @@ export default function ThemeLab() {
               Favicon <span className="normal-case text-neutral-600">(check the browser tab)</span>
             </p>
             <div className="mb-2 flex gap-1.5">
-              {(["square", "circle"] as const).map((shape) => (
+              {(["square", "circle", "transparent"] as const).map((shape) => (
                 <button
                   key={shape}
-                  onClick={() => setState((s) => ({ ...s, faviconShape: shape }))}
+                  onClick={() =>
+                    setState((s) => {
+                      // Keep the selection valid for the new shape's option list.
+                      const list = shape === "transparent" ? TRANSPARENT_FAVICONS : FAVICON_OPTIONS;
+                      const stillValid = list.some((f) => f.id === s.faviconId);
+                      return {
+                        ...s,
+                        faviconShape: shape,
+                        faviconId: stillValid ? s.faviconId : list[1].id,
+                      };
+                    })
+                  }
                   className={`flex-1 rounded-md border px-2 py-1.5 text-[11px] capitalize transition-colors ${
                     state.faviconShape === shape
                       ? "border-white bg-neutral-800 text-white"
                       : "border-neutral-700 text-neutral-400 hover:border-neutral-500"
                   }`}
                 >
-                  {shape}
+                  {shape === "transparent" ? "no tile" : shape}
                 </button>
               ))}
             </div>
             <div className="grid grid-cols-3 gap-1.5">
-              {FAVICON_OPTIONS.map((f) => {
-                const src = faviconSrc(f.id, state.faviconShape);
-                return (
-                  <button
-                    key={f.id}
-                    onClick={() => setState((s) => ({ ...s, faviconId: f.id }))}
-                    title={f.name}
-                    className={`flex flex-col items-center gap-1 rounded-md border px-1 py-2 transition-colors ${
-                      state.faviconId === f.id
-                        ? "border-white bg-neutral-800"
-                        : "border-neutral-700 hover:border-neutral-500"
-                    }`}
-                  >
-                    {src ? (
-                      <img src={src} alt="" className="h-8 w-8" />
-                    ) : (
-                      <span className="flex h-8 w-8 items-center justify-center rounded border border-neutral-600 bg-[#0f0f0f] font-display text-[10px] text-[#e59a2f]">
-                        FP
+              {(state.faviconShape === "transparent" ? TRANSPARENT_FAVICONS : FAVICON_OPTIONS).map(
+                (f) => {
+                  const src = faviconSrc(f.id, state.faviconShape);
+                  return (
+                    <button
+                      key={f.id}
+                      onClick={() => setState((s) => ({ ...s, faviconId: f.id }))}
+                      title={f.name}
+                      className={`flex flex-col items-center gap-1 rounded-md border px-1 py-2 transition-colors ${
+                        state.faviconId === f.id
+                          ? "border-white bg-neutral-800"
+                          : "border-neutral-700 hover:border-neutral-500"
+                      }`}
+                    >
+                      {src ? (
+                        <span
+                          className="flex h-8 w-8 items-center justify-center overflow-hidden rounded"
+                          style={state.faviconShape === "transparent" ? CHECKER_BG : undefined}
+                        >
+                          <img src={src} alt="" className="h-8 w-8" />
+                        </span>
+                      ) : (
+                        <span className="flex h-8 w-8 items-center justify-center rounded border border-neutral-600 bg-[#0f0f0f] font-display text-[10px] text-[#e59a2f]">
+                          FP
+                        </span>
+                      )}
+                      <span className="text-center text-[9px] leading-tight text-neutral-400">
+                        {f.name}
                       </span>
-                    )}
-                    <span className="text-center text-[9px] leading-tight text-neutral-400">
-                      {f.name}
-                    </span>
-                  </button>
-                );
-              })}
+                    </button>
+                  );
+                },
+              )}
             </div>
 
             {/* Display font */}
