@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, ChevronDown, ChevronUp, Copy, Palette, RotateCcw, X } from "lucide-react";
 import { hexToHslVar, hslVarToHex } from "./color";
-import { DISPLAY_FONTS, LOGO_OPTIONS, PRESETS, REBRAND_FAVICON, TOKENS } from "./themes";
+import {
+  DISPLAY_FONTS,
+  FAVICON_OPTIONS,
+  LOGO_OPTIONS,
+  PRESETS,
+  REBRAND_APPLE_TOUCH,
+  TOKENS,
+} from "./themes";
 
 /** Rebrand preview overlay: pick a palette preset, fine-tune individual
  *  tokens, and switch the display font. Only mounted when the build has
@@ -17,10 +24,10 @@ interface LabState {
   overrides: Record<string, string>;
   fontId: string;
   logoId: string;
-  newFavicon: boolean;
+  faviconId: string;
 }
 
-const STATE_VERSION = 2;
+const STATE_VERSION = 3;
 
 // Default view for fresh visitors: the working rebrand direction (Rockwood +
 // clay CTA, Schibsted headings, light monogram, new favicon). "Current (Gold)"
@@ -31,7 +38,7 @@ const DEFAULT_STATE: LabState = {
   overrides: {},
   fontId: "schibsted",
   logoId: "icon-light",
-  newFavicon: true,
+  faviconId: "delivered",
 };
 
 function loadState(): LabState {
@@ -124,8 +131,9 @@ export default function ThemeLab() {
       originalIcons.current = { icon: iconLink.href, apple: appleLink.href };
     }
     if (iconLink && appleLink && originalIcons.current) {
-      iconLink.href = state.newFavicon ? REBRAND_FAVICON.svg : originalIcons.current.icon;
-      appleLink.href = state.newFavicon ? REBRAND_FAVICON.appleTouch : originalIcons.current.apple;
+      const fav = FAVICON_OPTIONS.find((f) => f.id === state.faviconId);
+      iconLink.href = fav?.src ?? originalIcons.current.icon;
+      appleLink.href = fav?.src ? REBRAND_APPLE_TOUCH : originalIcons.current.apple;
     }
 
     // Tell the Header (and anything else) that lab state changed.
@@ -229,17 +237,41 @@ export default function ThemeLab() {
             </div>
 
             {/* Favicon */}
-            <label className="mt-4 flex cursor-pointer items-center justify-between text-xs text-neutral-300">
-              <span>
-                New favicon <span className="text-neutral-500">(check the browser tab)</span>
-              </span>
-              <input
-                type="checkbox"
-                checked={state.newFavicon}
-                onChange={(e) => setState((s) => ({ ...s, newFavicon: e.target.checked }))}
-                className="h-4 w-4 accent-emerald-500"
-              />
-            </label>
+            <p className="mb-2 mt-5 text-[11px] uppercase tracking-wider text-neutral-500">
+              Favicon <span className="normal-case text-neutral-600">(check the browser tab)</span>
+            </p>
+            <div className="grid grid-cols-3 gap-1.5">
+              {FAVICON_OPTIONS.map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => setState((s) => ({ ...s, faviconId: f.id }))}
+                  title={f.name}
+                  className={`flex flex-col items-center gap-1 rounded-md border px-1 py-2 transition-colors ${
+                    state.faviconId === f.id
+                      ? "border-white bg-neutral-800"
+                      : "border-neutral-700 hover:border-neutral-500"
+                  }`}
+                >
+                  {f.src ? (
+                    <img
+                      src={f.src}
+                      alt=""
+                      className="h-8 w-8 rounded border border-neutral-600"
+                    />
+                  ) : (
+                    <span
+                      className="flex h-8 w-8 items-center justify-center rounded border border-neutral-600 font-display text-[10px]"
+                      style={{ background: f.swatch[0], color: f.swatch[1] }}
+                    >
+                      FP
+                    </span>
+                  )}
+                  <span className="text-center text-[9px] leading-tight text-neutral-400">
+                    {f.name}
+                  </span>
+                </button>
+              ))}
+            </div>
 
             {/* Display font */}
             <p className="mb-2 mt-5 text-[11px] uppercase tracking-wider text-neutral-500">

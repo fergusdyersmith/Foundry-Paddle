@@ -201,10 +201,50 @@ export const LOGO_OPTIONS: {
   },
 ];
 
-/** New-brand favicon set (toggled in the lab; production still ships the old
- *  gold favicon until the real flip). */
-export const REBRAND_FAVICON = {
-  svg: "/rebrand/favicon.svg",
-  ico: "/rebrand/favicon.ico",
-  appleTouch: "/rebrand/apple-touch-icon.png",
-};
+/** Favicon options. "delivered" is Courtney's official RealFaviconGenerator
+ *  set; the color variants are generated from the vector monogram
+ *  (scripts kept simple: bg tile + recolored mark). Production ships the old
+ *  gold favicon until the real flip. */
+export const FAVICON_OPTIONS: {
+  id: string;
+  name: string;
+  /** null = the current production favicon. */
+  src: string | null;
+  /** Panel swatch: [tile, mark]. */
+  swatch: [string, string];
+}[] = [
+  { id: "current", name: "Current (gold)", src: null, swatch: ["#0f0f0f", "#e59a2f"] },
+  {
+    id: "delivered",
+    name: "Green · white (delivered)",
+    src: "/rebrand/favicon.svg",
+    swatch: ["#303E39", "#FFFFFF"],
+  },
+  {
+    id: "green-alabaster",
+    name: "Green · alabaster",
+    src: "/rebrand/favicon-green-alabaster.svg",
+    swatch: ["#303E39", "#EEEFE3"],
+  },
+  {
+    id: "black-white",
+    name: "Black · white",
+    src: "/rebrand/favicon-black-white.svg",
+    swatch: ["#101010", "#FFFFFF"],
+  },
+  {
+    id: "white-clay",
+    name: "White · clay",
+    src: "/rebrand/favicon-white-clay.svg",
+    swatch: ["#FFFFFF", "#AE6C56"],
+  },
+  {
+    id: "black-clay",
+    name: "Black · clay",
+    src: "/rebrand/favicon-black-clay.svg",
+    swatch: ["#101010", "#AE6C56"],
+  },
+];
+
+/** Apple touch icon for any new-brand favicon choice (delivered PNG). */
+export const REBRAND_APPLE_TOUCH = "/rebrand/apple-touch-icon.png";
