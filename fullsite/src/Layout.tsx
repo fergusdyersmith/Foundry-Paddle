@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Outlet } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -6,6 +7,14 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ScrollToTop from "@/components/ScrollToTop";
+
+// Rebrand preview overlay — only in builds with VITE_THEME_LAB=1 (the Railway
+// test service). The flag is compile-time, so production bundles exclude the
+// lab entirely.
+const THEME_LAB_ENABLED = import.meta.env.VITE_THEME_LAB === "1";
+const ThemeLab = THEME_LAB_ENABLED
+  ? lazy(() => import("@/theme-lab/ThemeLab"))
+  : null;
 
 // One client for the whole app. Kept at module scope so it survives re-renders
 // (and is created once during static prerendering).
@@ -23,6 +32,11 @@ const Layout = () => (
       <Header />
       <Outlet />
       <Footer />
+      {ThemeLab && (
+        <Suspense fallback={null}>
+          <ThemeLab />
+        </Suspense>
+      )}
     </TooltipProvider>
   </QueryClientProvider>
 );
