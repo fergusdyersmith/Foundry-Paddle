@@ -46,7 +46,7 @@ const Index = () => {
             <img
               src="/rebrand/FP_text_light.svg"
               alt="Foundry Padel"
-              className="mx-auto mt-4 w-72 sm:w-96 md:w-[26rem]"
+              className="mx-auto mt-8 w-72 sm:w-96 md:w-[26rem]"
             />
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.6 }} className="mt-8 flex flex-col items-center gap-4 sm:flex-row">
