@@ -34,12 +34,13 @@ const Index = () => {
         </div>
         <div className="relative z-10 flex h-full flex-col items-center justify-end pb-24 px-6">
           <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, ease: [0.25, 0.46, 0.45, 0.94] }} className="text-center">
-            <h1 className="font-display text-7xl sm:text-8xl md:text-9xl tracking-wider text-foreground leading-none">FOUNDRY</h1>
-            <div className="flex items-center justify-center gap-4 mt-1">
-              <div className="h-px w-12 bg-primary" />
-              <span className="font-display text-2xl sm:text-3xl tracking-[0.3em] text-primary">PADEL</span>
-              <div className="h-px w-12 bg-primary" />
-            </div>
+            {/* New-brand stacked lockup; sr-only h1 keeps the page's keyword heading. */}
+            <h1 className="sr-only">Foundry Padel</h1>
+            <img
+              src="/rebrand/FP_lockup_stack_light.svg"
+              alt="Foundry Padel"
+              className="mx-auto w-56 sm:w-72 md:w-80"
+            />
           </motion.div>
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1, delay: 0.5 }} className="mt-6 max-w-xl font-body text-sm tracking-[0.15em] uppercase text-muted-foreground">
             Never held a padel racket? Most of Portland hasn't. Racket rentals on site, no partner needed. Just book and play.
@@ -47,11 +48,11 @@ const Index = () => {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.8 }} className="mt-10 flex flex-col items-center gap-4 sm:flex-row">
             <Link
               to={BOOK_PAGE_PATH}
-              className="bg-primary px-10 py-4 font-display text-lg tracking-widest text-primary-foreground shadow-[0_0_40px_-8px_hsl(var(--primary)/0.7)] transition-all hover:brightness-110"
+              className="bg-primary px-7 py-3 font-display text-sm tracking-widest text-primary-foreground shadow-[0_0_30px_-10px_hsl(var(--primary)/0.6)] transition-all hover:brightness-110"
             >
               BOOK YOUR FIRST PLAY — $15
             </Link>
-            <Link to="/the-sport" className="border border-border px-8 py-4 font-display text-sm tracking-widest text-muted-foreground transition-all hover:border-foreground hover:text-foreground">
+            <Link to="/the-sport" className="border border-border px-7 py-3 font-display text-sm tracking-widest text-muted-foreground transition-all hover:border-foreground hover:text-foreground">
               NEW TO PADEL? START HERE
             </Link>
           </motion.div>

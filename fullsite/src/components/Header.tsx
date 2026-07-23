@@ -87,9 +87,7 @@ const Header = () => {
           )}
           <Link
             to={BOOK_PAGE_PATH}
-            className={`border border-primary px-6 py-2 font-display text-sm tracking-widest transition-all hover:bg-primary hover:text-primary-foreground ${
-              location.pathname === BOOK_PAGE_PATH ? "bg-primary text-primary-foreground" : "text-primary"
-            }`}
+            className="bg-primary px-6 py-2 font-display text-sm tracking-widest text-primary-foreground transition-all hover:brightness-110"
           >
             BOOK A COURT
           </Link>
@@ -143,7 +141,7 @@ const Header = () => {
               <Link
                 to={BOOK_PAGE_PATH}
                 onClick={() => setMobileOpen(false)}
-                className="border border-primary px-8 py-3 font-display text-sm tracking-widest text-primary transition-all hover:bg-primary hover:text-primary-foreground"
+                className="bg-primary px-8 py-3 font-display text-sm tracking-widest text-primary-foreground transition-all hover:brightness-110"
               >
                 BOOK A COURT
               </Link>
