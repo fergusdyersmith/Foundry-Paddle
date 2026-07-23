@@ -20,7 +20,7 @@ const BookCTA = () => (
       </p>
       <Link
         to={BOOK_PAGE_PATH}
-        className="inline-block border border-primary px-12 py-4 font-display text-xl tracking-widest text-primary transition-all hover:bg-primary hover:text-primary-foreground"
+        className="inline-block bg-primary px-12 py-4 font-display text-xl tracking-widest text-primary-foreground transition-all hover:brightness-110"
       >
         BOOK A COURT
       </Link>

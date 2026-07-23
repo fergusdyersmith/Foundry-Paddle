@@ -63,7 +63,7 @@ export default function EventCard({
           href={eventBookingUrl(event)}
           target="_blank"
           rel="noopener noreferrer"
-          className="ml-auto inline-flex items-center gap-1.5 border border-primary px-5 py-2 font-display text-xs tracking-widest text-primary transition-all hover:bg-primary hover:text-primary-foreground"
+          className="ml-auto inline-flex items-center gap-1.5 bg-primary px-5 py-2 font-display text-xs tracking-widest text-primary-foreground transition-all hover:brightness-110"
         >
           BOOK
           <ExternalLink className="h-3 w-3" />

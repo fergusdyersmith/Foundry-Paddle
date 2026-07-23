@@ -296,14 +296,14 @@ const Coaching = () => {
                           href={PLAYTOMIC_TENANT_URL}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="mt-4 inline-flex items-center gap-2 border border-primary px-4 py-2 font-display text-xs tracking-widest text-primary transition-all hover:bg-primary hover:text-primary-foreground"
+                          className="mt-4 inline-flex items-center gap-2 bg-primary px-4 py-2 font-display text-xs tracking-widest text-primary-foreground transition-all hover:brightness-110"
                         >
                           BOOK IN PLAYTOMIC <ExternalLink className="h-3 w-3" />
                         </a>
                       ) : (
                         <a
                           href={`mailto:portland@foundrypadel.com?subject=Private lesson with ${encodeURIComponent(selected.name)}`}
-                          className="mt-4 inline-flex items-center gap-2 border border-primary px-4 py-2 font-display text-xs tracking-widest text-primary transition-all hover:bg-primary hover:text-primary-foreground"
+                          className="mt-4 inline-flex items-center gap-2 bg-primary px-4 py-2 font-display text-xs tracking-widest text-primary-foreground transition-all hover:brightness-110"
                         >
                           EMAIL TO ARRANGE <Mail className="h-3 w-3" />
                         </a>
@@ -316,7 +316,7 @@ const Coaching = () => {
                       </p>
                       <a
                         href={`mailto:portland@foundrypadel.com?subject=Private lesson with ${encodeURIComponent(selected.name)}`}
-                        className="mt-4 inline-flex items-center gap-2 border border-primary px-4 py-2 font-display text-xs tracking-widest text-primary transition-all hover:bg-primary hover:text-primary-foreground"
+                        className="mt-4 inline-flex items-center gap-2 bg-primary px-4 py-2 font-display text-xs tracking-widest text-primary-foreground transition-all hover:brightness-110"
                       >
                         EMAIL TO ARRANGE <Mail className="h-3 w-3" />
                       </a>

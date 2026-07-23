@@ -10,7 +10,7 @@ import { GOOGLE_MAPS_URL } from "@/constants/location";
 
 const features = [
   { label: "4", desc: "Indoor Courts" },
-  { label: "1", desc: "Social Café" },
+  { label: "1", desc: "Social Bar" },
   { label: "∞", desc: "Good Times" },
 ];
 
@@ -41,12 +41,12 @@ const Index = () => {
             <img
               src="/rebrand/FP_icon_light.svg"
               alt=""
-              className="mx-auto w-40 sm:w-48 md:w-56"
+              className="mx-auto w-48 sm:w-64 md:w-72"
             />
             <img
               src="/rebrand/FP_text_light.svg"
               alt="Foundry Padel"
-              className="mx-auto mt-3 w-56 sm:w-72 md:w-80"
+              className="mx-auto mt-4 w-72 sm:w-96 md:w-[26rem]"
             />
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.6 }} className="mt-8 flex flex-col items-center gap-4 sm:flex-row">
@@ -81,7 +81,7 @@ const Index = () => {
               Padel is the fastest-growing racquet sport on the planet. Enclosed glass courts,
               strategic wall play, and an energy that's part tennis, part squash, and entirely addictive.
               Foundry Padel is bringing this to Portland —
-              four indoor courts, a curated social space, café, and retail, all next to Cathedral Park.
+              four indoor courts, a curated social space, bar, and retail, all next to Cathedral Park.
             </p>
           </motion.div>
           <motion.div
@@ -169,7 +169,7 @@ const Index = () => {
         <div className="mx-auto max-w-5xl grid md:grid-cols-3 gap-6">
           {[
             { title: "THE SPORT", desc: "New to padel? Learn the basics and why it's taking the world by storm.", link: "/the-sport" },
-            { title: "THE CLUB", desc: "Four courts, a social café, and a space designed for the culture.", link: "/the-club" },
+            { title: "THE CLUB", desc: "Four courts, a social bar, and a space designed for the culture.", link: "/the-club" },
             { title: "MEMBERSHIPS", desc: "From drop-in to unlimited — find the tier that fits your game.", link: "/memberships" },
           ].map((item) => (
             <motion.div key={item.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
@@ -194,7 +194,7 @@ const Index = () => {
                 We're proud to work with partners who champion padel at every level — from the professional circuit to clubs like ours opening new courts.
               </p>
               <p className="font-body text-base leading-relaxed text-secondary-foreground">
-                Beyond the court, we're partnering exclusively with Portland-based small businesses and makers. From our café's local roasters to the artisans crafting our spaces, Foundry is built by and for the Portland community.
+                Beyond the court, we're partnering exclusively with Portland-based small businesses and makers. From the local brews at our bar to the artisans crafting our spaces, Foundry is built by and for the Portland community.
               </p>
             </div>
           </motion.div>

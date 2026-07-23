@@ -11,11 +11,11 @@ const spaces = [
     imageAlt: "Indoor padel court with a player ready to strike the ball",
   },
   {
-    title: "THE CAFÉ",
-    desc: "Post-match coffee, cold-pressed juice, or something stronger. Our café is a gathering point — a place to debrief, strategize, or just hang.",
-    detail: "Local roasters · Seasonal menu · Bar program",
+    title: "THE BAR",
+    desc: "Post-match beer or a glass of wine. The bar is the club's gathering point — a place to debrief, strategize, or just hang.",
+    detail: "Local beer · Wine · Post-match hangs",
     image: "cafe.png",
-    imageAlt: "Members gathered around a communal table with coffee and pastries at the club café",
+    imageAlt: "Members gathered around a communal table at the club bar",
   },
   {
     title: "SOCIAL SPACES",
@@ -37,8 +37,8 @@ const TheClub = () => {
   return (
     <main className="bg-background min-h-screen pt-24">
       <Seo
-        title="The Club — 4 Indoor Courts, Café & Pro Shop | Foundry Padel"
-        description="Four WPT-spec panoramic glass courts, a café, social spaces and a pro shop in St. Johns, Portland — steps from Cathedral Park. Tour Foundry Padel."
+        title="The Club — 4 Indoor Courts, Bar & Pro Shop | Foundry Padel"
+        description="Four WPT-spec panoramic glass courts, a bar, social spaces and a pro shop in St. Johns, Portland — steps from Cathedral Park. Tour Foundry Padel."
         path="/the-club"
       />
       {/* Hero */}
@@ -52,7 +52,7 @@ const TheClub = () => {
               <div className="h-px w-16 bg-primary" />
             </div>
             <p className="font-body text-base text-secondary-foreground max-w-xl mx-auto">
-              More than a venue — a home for the sport. Four courts, a café, social spaces, and a pro shop, all steps from Cathedral Park in Portland.
+              More than a venue — a home for the sport. Four courts, a bar, social spaces, and a pro shop, all steps from Cathedral Park in Portland.
             </p>
           </motion.div>
         </div>
@@ -106,7 +106,7 @@ const TheClub = () => {
             </p>
             <p className="font-body text-sm text-muted-foreground leading-relaxed">
               Evening leagues under low light. Weekend tournaments with spectators on the mezzanine. 
-              Tuesday morning coaching with coffee after. This is padel culture, built from the ground up.
+              Tuesday morning coaching, post-match beers at the bar. This is padel culture, built from the ground up.
             </p>
           </motion.div>
           <div className="section-divider mt-16" />
