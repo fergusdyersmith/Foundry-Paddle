@@ -152,12 +152,9 @@ const Coaching = () => {
       <section className="px-6 py-12 pb-24">
         <div className="mx-auto max-w-4xl">
           <div className="section-divider mb-12" />
-          <h2 className="mb-2 text-center font-display text-3xl text-foreground sm:text-4xl">
+          <h2 className="mb-10 text-center font-display text-3xl text-foreground sm:text-4xl">
             THE COACHING TEAM
           </h2>
-          <p className="mb-10 text-center font-body text-xs uppercase tracking-[0.2em] text-muted-foreground">
-            Listed in random order, rotating every visit
-          </p>
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 lg:gap-6">
             {team.map((coach) => (
               <button
