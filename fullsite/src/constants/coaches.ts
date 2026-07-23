@@ -42,8 +42,9 @@ export const COACHES: CoachProfile[] = [
     name: "Javier Jimenez Peña",
     firstName: "Javi",
     headCoach: true,
-    photo:
-      "https://res.cloudinary.com/playtomic/image/upload/c_limit,w_1280/v1/pro/users/145453/1670277244838",
+    // Playtomic's API still points at a photo its CDN deleted (404 since ~Dec
+    // 2022) — placeholder until Javi re-uploads in Playtomic or sends one.
+    photo: "/coaches/placeholder.svg",
     aliases: ["javier jimenez peña", "javier jimenez pena", "javier", "javi"],
     bio: "Foundry's head coach. Javi leads the club's coaching program and the Padel Progression pathway, bringing European padel fundamentals to Portland players at every level.",
     specialties: "Padel Progression pathway, technique, match play",

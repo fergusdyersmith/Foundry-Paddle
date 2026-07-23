@@ -39,6 +39,14 @@ function useCoachClasses() {
   });
 }
 
+/** If a coach's (Playtomic-hosted) photo 404s, fall back to the placeholder
+ *  instead of a broken image — Playtomic sometimes serves dead photo URLs. */
+const onPhotoError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+  if (!e.currentTarget.src.endsWith("/coaches/placeholder.svg")) {
+    e.currentTarget.src = "/coaches/placeholder.svg";
+  }
+};
+
 /** Fisher-Yates. The team grid order is shuffled per page load so no coach is
  *  permanently "last" — see the rotation policy note on the page. */
 function shuffle<T>(arr: T[]): T[] {
@@ -118,6 +126,7 @@ const Coaching = () => {
             <img
               src={HEAD_COACH.photo}
               alt={HEAD_COACH.name}
+              onError={onPhotoError}
               className="h-64 w-full object-cover sm:h-full"
             />
             <div className="p-8">
@@ -159,6 +168,7 @@ const Coaching = () => {
                 <img
                   src={coach.photo}
                   alt={coach.name}
+                  onError={onPhotoError}
                   loading="lazy"
                   className="aspect-square w-full object-cover"
                 />
@@ -195,6 +205,7 @@ const Coaching = () => {
                 <img
                   src={selected.photo}
                   alt={selected.name}
+                  onError={onPhotoError}
                   className="aspect-square w-full max-w-[240px] object-cover"
                 />
                 {selected.headCoach && (
