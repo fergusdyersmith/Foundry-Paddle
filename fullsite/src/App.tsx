@@ -10,6 +10,7 @@ import Contact from "./pages/Contact";
 import Book from "./pages/Book";
 import NewToPadel from "./pages/NewToPadel";
 import SkillSurvey from "./pages/SkillSurvey";
+import Coaching from "./pages/Coaching";
 import Privacy from "./pages/Privacy";
 import SmsTerms from "./pages/SmsTerms";
 import NotFound from "./pages/NotFound";
@@ -34,6 +35,8 @@ export const routes: RouteRecord[] = [
       { path: "pickleball", element: <NewToPadel /> },
       // Footer-only page: the Kumi skill tree as a public self-assessment.
       { path: "survey", element: <SkillSurvey /> },
+      // Preview (rebrand branch): coaching roster + live sessions per coach.
+      { path: "coaching", element: <Coaching /> },
       { path: "privacy", element: <Privacy /> },
       { path: "sms-terms", element: <SmsTerms /> },
       { path: "terms", element: <SmsTerms /> },

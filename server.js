@@ -550,6 +550,36 @@ app.get("/api/events/range", async (req, res) => {
   }
 });
 
+// Upcoming coach-led classes for the Coaching page, proxied from Kumi's public
+// display/discovery endpoint (it carries per-class coach assignments, which
+// Playtomic's thirdparty bookings API does not). Proxying keeps the browser on
+// our origin (no CORS) and shields padelmaps.org behind a short cache.
+const KUMI_CLASSES_URL =
+  process.env.KUMI_CLASSES_URL ||
+  "https://padelmaps.org/api/coaching/classes?slug=foundry-padel&days=14";
+const COACH_CLASSES_TTL = 5 * 60 * 1000;
+let coachClassesCache = { data: null, fetchedAt: 0 };
+
+app.get("/api/coaching/classes", async (req, res) => {
+  if (coachClassesCache.data && Date.now() - coachClassesCache.fetchedAt < COACH_CLASSES_TTL) {
+    return res.json(coachClassesCache.data);
+  }
+  try {
+    const upstream = await fetch(KUMI_CLASSES_URL, {
+      headers: { Accept: "application/json" },
+    });
+    if (!upstream.ok) throw new Error(`Kumi classes fetch failed (${upstream.status})`);
+    const data = await upstream.json();
+    coachClassesCache = { data, fetchedAt: Date.now() };
+    return res.json(data);
+  } catch (error) {
+    console.error("[coaching] classes proxy failed:", error.message);
+    // Serve stale data if we have it; the page degrades gracefully otherwise.
+    if (coachClassesCache.data) return res.json(coachClassesCache.data);
+    return res.status(502).json({ error: "Couldn't load classes." });
+  }
+});
+
 // Kumi join on-ramp: foundrypadel.com/kumi -> reverse-proxy the club's join
 // page (backend-rendered HTML) so the URL stays on the Foundry domain instead
 // of redirecting visitors to padelmaps.org. The page is self-contained
