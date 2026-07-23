@@ -32,7 +32,7 @@ const Index = () => {
           <div className="court-line h-full" />
           <div className="court-line h-full" />
         </div>
-        <div className="relative z-10 flex h-full flex-col items-center justify-end pb-28 px-6">
+        <div className="relative z-10 flex h-full flex-col items-center justify-end pb-32 px-6">
           <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, ease: [0.25, 0.46, 0.45, 0.94] }} className="mb-4 text-center">
             {/* New-brand lockup, composed from the kit's separate monogram +
                 wordmark files so the gap between them is ours to tune (the
@@ -46,7 +46,7 @@ const Index = () => {
             <img
               src="/rebrand/FP_text_light.svg"
               alt="Foundry Padel"
-              className="mx-auto mt-8 w-72 sm:w-96 md:w-[26rem]"
+              className="mx-auto mt-12 w-72 sm:w-96 md:w-[26rem]"
             />
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.6 }} className="mt-8 flex flex-col items-center gap-4 sm:flex-row">
