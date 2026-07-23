@@ -34,12 +34,19 @@ const Index = () => {
         </div>
         <div className="relative z-10 flex h-full flex-col items-center justify-end pb-24 px-6">
           <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, ease: [0.25, 0.46, 0.45, 0.94] }} className="text-center">
-            {/* New-brand stacked lockup; sr-only h1 keeps the page's keyword heading. */}
+            {/* New-brand lockup, composed from the kit's separate monogram +
+                wordmark files so the gap between them is ours to tune (the
+                delivered stacked file has a much larger built-in gap). */}
             <h1 className="sr-only">Foundry Padel</h1>
             <img
-              src="/rebrand/FP_lockup_stack_light.svg"
+              src="/rebrand/FP_icon_light.svg"
+              alt=""
+              className="mx-auto w-40 sm:w-48 md:w-56"
+            />
+            <img
+              src="/rebrand/FP_text_light.svg"
               alt="Foundry Padel"
-              className="mx-auto w-56 sm:w-72 md:w-80"
+              className="mx-auto mt-3 w-56 sm:w-72 md:w-80"
             />
           </motion.div>
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1, delay: 0.5 }} className="mt-6 max-w-xl font-body text-sm tracking-[0.15em] uppercase text-muted-foreground">
