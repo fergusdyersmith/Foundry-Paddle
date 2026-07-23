@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import BookCTA from "@/components/BookCTA";
 import Seo from "@/components/Seo";
@@ -8,7 +9,7 @@ interface Faq {
   q: string;
   a: string;
   /** Optional CTA rendered under the answer. */
-  cta?: "whatsapp";
+  cta?: "whatsapp" | "coaching";
 }
 
 const faqs: Faq[] = [
@@ -38,7 +39,8 @@ const faqs: Faq[] = [
   },
   {
     q: "Do you offer coaching?",
-    a: "Yes. Our certified padel coaches offer private lessons, group clinics, and structured programmes for all levels — from first-timers to competitive players. See what's on via the Schedule page.",
+    a: "Yes. Our certified padel coaches offer private lessons, group clinics, and structured programmes for all levels — from first-timers to competitive players. Meet the team and see each coach's upcoming sessions on the Coaching page.",
+    cta: "coaching",
   },
   {
     q: "What should I wear?",
@@ -109,6 +111,14 @@ const FAQ = () => {
                       >
                         JOIN THE WHATSAPP GROUP
                       </WhatsAppJoinLink>
+                    )}
+                    {faq.cta === "coaching" && (
+                      <Link
+                        to="/coaching"
+                        className="mt-4 inline-flex items-center gap-2 border border-primary px-4 py-2 font-display text-xs tracking-widest text-primary transition-all hover:bg-primary hover:text-primary-foreground"
+                      >
+                        MEET THE COACHES
+                      </Link>
                     )}
                   </AccordionContent>
                 </AccordionItem>

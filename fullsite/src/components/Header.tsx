@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { BOOK_PAGE_PATH } from "@/constants/booking";
-import { APP_URL } from "@/constants/app";
 import { Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import EventsModal from "@/components/EventsModal";
 import { LOGO_OPTIONS } from "@/theme-lab/themes";
 
 // Rebrand-preview only: the Theme Lab can swap the header logo. Reads the
@@ -34,15 +32,14 @@ type NavItem =
   | { label: string; path: string }
   | { label: string; href: string; external: true };
 
+// Deliberately lean: conversion pages up top; FAQ/Contact/App live in the
+// footer, and the logo covers Home. (See the July 2026 nav consolidation.)
 const navLinks: NavItem[] = [
-  { label: "HOME", path: "/" },
   { label: "THE SPORT", path: "/the-sport" },
   { label: "THE CLUB", path: "/the-club" },
   { label: "SCHEDULE", path: "/schedule" },
+  { label: "COACHING", path: "/coaching" },
   { label: "MEMBERSHIPS", path: "/memberships" },
-  { label: "FAQ", path: "/faq" },
-  { label: "CONTACT", path: "/contact" },
-  { label: "APP", href: APP_URL, external: true },
 ];
 
 const Header = () => {
@@ -88,11 +85,6 @@ const Header = () => {
               </Link>
             ),
           )}
-          <EventsModal>
-            <button className="border border-muted-foreground/40 px-5 py-2 font-display text-xs tracking-widest text-muted-foreground transition-all hover:border-primary hover:text-primary">
-              EVENTS
-            </button>
-          </EventsModal>
           <Link
             to={BOOK_PAGE_PATH}
             className={`border border-primary px-6 py-2 font-display text-sm tracking-widest transition-all hover:bg-primary hover:text-primary-foreground ${
@@ -148,14 +140,6 @@ const Header = () => {
                   </Link>
                 ),
               )}
-              <EventsModal>
-                <button
-                  onClick={() => setMobileOpen(false)}
-                  className="border border-muted-foreground/40 px-6 py-2.5 font-display text-sm tracking-widest text-muted-foreground transition-all hover:border-primary hover:text-primary"
-                >
-                  EVENTS
-                </button>
-              </EventsModal>
               <Link
                 to={BOOK_PAGE_PATH}
                 onClick={() => setMobileOpen(false)}
