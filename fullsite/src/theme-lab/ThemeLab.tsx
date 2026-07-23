@@ -38,7 +38,8 @@ interface LabState {
   faviconShape: FaviconShape;
 }
 
-const STATE_VERSION = 4;
+// v5: reset everyone to the agreed defaults (green/white square favicon).
+const STATE_VERSION = 5;
 
 // Default view for fresh visitors: the working rebrand direction (Rockwood +
 // clay CTA, Schibsted headings, light monogram, new favicon). "Current (Gold)"

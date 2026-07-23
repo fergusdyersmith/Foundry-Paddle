@@ -12,7 +12,7 @@ const spaces = [
   },
   {
     title: "THE CAFÉ",
-    desc: "Post-match coffee, cold-pressed juice, or something stronger. Our café is a gathering point — a place to debrief, strategize, or just hang. Locally roasted coffee, seasonal menus, and a bar program for evening leagues.",
+    desc: "Post-match coffee, cold-pressed juice, or something stronger. Our café is a gathering point — a place to debrief, strategize, or just hang.",
     detail: "Local roasters · Seasonal menu · Bar program",
     image: "cafe.png",
     imageAlt: "Members gathered around a communal table with coffee and pastries at the club café",

@@ -32,8 +32,8 @@ const Index = () => {
           <div className="court-line h-full" />
           <div className="court-line h-full" />
         </div>
-        <div className="relative z-10 flex h-full flex-col items-center justify-end pb-24 px-6">
-          <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, ease: [0.25, 0.46, 0.45, 0.94] }} className="text-center">
+        <div className="relative z-10 flex h-full flex-col items-center justify-end pb-28 px-6">
+          <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, ease: [0.25, 0.46, 0.45, 0.94] }} className="mb-4 text-center">
             {/* New-brand lockup, composed from the kit's separate monogram +
                 wordmark files so the gap between them is ours to tune (the
                 delivered stacked file has a much larger built-in gap). */}
@@ -49,10 +49,7 @@ const Index = () => {
               className="mx-auto mt-3 w-56 sm:w-72 md:w-80"
             />
           </motion.div>
-          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1, delay: 0.5 }} className="mt-6 max-w-xl font-body text-sm tracking-[0.15em] uppercase text-muted-foreground">
-            Never held a padel racket? Most of Portland hasn't. Racket rentals on site, no partner needed. Just book and play.
-          </motion.p>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.8 }} className="mt-10 flex flex-col items-center gap-4 sm:flex-row">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.6 }} className="mt-8 flex flex-col items-center gap-4 sm:flex-row">
             <Link
               to={BOOK_PAGE_PATH}
               className="bg-primary px-7 py-3 font-display text-sm tracking-widest text-primary-foreground shadow-[0_0_30px_-10px_hsl(var(--primary)/0.6)] transition-all hover:brightness-110"
