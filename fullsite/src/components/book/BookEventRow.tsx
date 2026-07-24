@@ -36,13 +36,19 @@ export default function BookEventRow({ event }: { event: PadelEvent }) {
         </p>
       </div>
       {isMatch ? (
-        <span className="shrink-0 text-right text-xs font-medium text-primary">
-          {event.signed_up}/{OPEN_MATCH_CAPACITY}
-          <span className="hidden sm:inline">
-            {" "}
-            · {spotsLeft} {spotsLeft === 1 ? "spot" : "spots"} left
+        spotsLeft === 1 ? (
+          <span className="shrink-0 rounded bg-primary px-2 py-0.5 font-display text-[10px] tracking-wider text-primary-foreground">
+            ALMOST FULL<span className="hidden sm:inline"> · 1 SPOT LEFT</span>
           </span>
-        </span>
+        ) : (
+          <span className="shrink-0 text-right text-xs font-medium text-primary">
+            {event.signed_up}/{OPEN_MATCH_CAPACITY}
+            <span className="hidden sm:inline">
+              {" "}
+              · {spotsLeft} {spotsLeft === 1 ? "spot" : "spots"} left
+            </span>
+          </span>
+        )
       ) : (
         event.signed_up > 0 && (
           <span className="hidden shrink-0 items-center gap-1 text-xs font-medium text-muted-foreground sm:inline-flex">

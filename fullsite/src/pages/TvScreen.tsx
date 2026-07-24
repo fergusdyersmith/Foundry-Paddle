@@ -52,16 +52,8 @@ const WA_LOGO =
       WA_PATH +
       '"/></svg>',
   );
-const SMS_LOGO =
-  "data:image/svg+xml," +
-  encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="5" fill="#2f6df6"/>' +
-      '<path fill="#fff" d="M12 5c-4.2 0-7.5 2.7-7.5 6 0 1.7.9 3.2 2.3 4.3-.1.9-.5 1.9-1.2 2.7 1.4-.2 2.6-.8 3.5-1.4.9.3 1.9.4 2.9.4 4.2 0 7.5-2.7 7.5-6s-3.3-6-7.5-6z"/>' +
-      '<circle cx="9" cy="11" r="1" fill="#2f6df6"/><circle cx="12" cy="11" r="1" fill="#2f6df6"/><circle cx="15" cy="11" r="1" fill="#2f6df6"/></svg>',
-  );
 const KUMI_MARK = "/rebrand/kumi-fp-mark.png";
-const KUMI_WA_URL = "https://wa.me/19714512615?text=" + encodeURIComponent("Hi!");
-const KUMI_SMS_URL = "sms:+15035637442?&body=JOIN";
+const KUMI_JOIN_URL = "https://foundrypadel.com/join";
 
 const WIFI_LOGO =
   "data:image/svg+xml," +
@@ -240,11 +232,20 @@ const TvScreen = () => {
               <p className="truncate font-display text-[22px] tracking-wide">{e.title}</p>
               <p className="font-body text-base text-[#96998D]">
                 {formatTime(e.start_time)} · {e.duration_min} min
-                {e.price
-                  ? ` · ${e.price}${e.booking_type === "OPEN_MATCH" ? "" : "/person"}`
+                {/* Clinic/course prices stay off the wall screen; matches and
+                    tournaments show the per-person price from the API. */}
+                {e.price &&
+                (e.booking_type === "OPEN_MATCH" || e.booking_type === "TOURNAMENT")
+                  ? ` · ${e.price}/person`
                   : ""}
                 {e.booking_type === "OPEN_MATCH" &&
-                  ` · ${4 - e.signed_up} ${4 - e.signed_up === 1 ? "spot" : "spots"} left`}
+                  (4 - e.signed_up === 1 ? (
+                    <span className="ml-2 inline-block rounded bg-[#AE6C56] px-2 py-0.5 align-middle font-display text-sm tracking-wider text-[#EEEFE3]">
+                      1 SPOT LEFT · ALMOST FULL
+                    </span>
+                  ) : (
+                    ` · ${4 - e.signed_up} spots left`
+                  ))}
               </p>
             </div>
             <div className="shrink-0 rounded bg-white p-1">
@@ -322,41 +323,23 @@ const TvScreen = () => {
             sub={`@${IG_HANDLE}`}
           />
           {wifiQr && <QrTile value={wifiQr} logo={WIFI_LOGO} label="Guest wifi" sub={WIFI_SSID} />}
-          {/* Kumi opt-in: WhatsApp primary, SMS secondary */}
-          <div className="flex flex-[1.5] items-center gap-3 rounded-lg bg-[#F4F5EC] p-3">
-            <div className="shrink-0 text-center">
-              <div className="rounded bg-white p-1.5">
-                <QRCodeSVG
-                  value={KUMI_WA_URL}
-                  size={104}
-                  level="H"
-                  bgColor="#ffffff"
-                  fgColor="#101010"
-                  imageSettings={{ src: KUMI_MARK, height: 26, width: 26, excavate: true }}
-                />
-              </div>
-              <p className="mt-0.5 font-body text-[11px] font-semibold text-[#313E39]">WhatsApp</p>
-            </div>
-            <div className="shrink-0 text-center">
-              <div className="rounded bg-white p-1">
-                <QRCodeSVG
-                  value={KUMI_SMS_URL}
-                  size={64}
-                  level="H"
-                  bgColor="#ffffff"
-                  fgColor="#101010"
-                  imageSettings={{ src: SMS_LOGO, height: 17, width: 17, excavate: true }}
-                />
-              </div>
-              <p className="mt-0.5 font-body text-[11px] text-[#6b7268]">SMS "JOIN"</p>
+          {/* Kumi opt-in: one QR to the join page, where WhatsApp/SMS is chosen */}
+          <div className="flex flex-[1.3] items-center gap-3 rounded-lg bg-[#F4F5EC] p-3">
+            <div className="shrink-0 rounded bg-white p-1.5">
+              <QRCodeSVG
+                value={KUMI_JOIN_URL}
+                size={104}
+                level="H"
+                bgColor="#ffffff"
+                fgColor="#101010"
+                imageSettings={{ src: KUMI_MARK, height: 26, width: 26, excavate: true }}
+              />
             </div>
             <div className="min-w-0">
               <p className="font-display text-lg leading-tight text-[#313E39]">
-                Want open match invites? Meet Kumi
+                Want open match invites? Ask Kumi
               </p>
-              <p className="mt-1 font-body text-xs text-[#6b7268]">
-                Match invites at your level · foundrypadel.com/join
-              </p>
+              <p className="mt-1 font-body text-xs text-[#6b7268]">foundrypadel.com/join</p>
             </div>
           </div>
           <div className="flex items-center gap-3 rounded-lg border border-[#48544E] p-3">

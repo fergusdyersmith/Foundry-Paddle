@@ -554,6 +554,19 @@ async function getEvents({ from = null, to = null } = {}) {
     }
   }
 
+  // Open matches: the bookings API reports the court total; four players split
+  // it evenly, so show the per-person share.
+  for (const e of events) {
+    if (e.booking_type !== "OPEN_MATCH") continue;
+    const n = parseFloat(String(e.price ?? "").replace(/[^0-9.]/g, ""));
+    if (!Number.isFinite(n) || n <= 0) {
+      e.price = null;
+      continue;
+    }
+    const per = n / 4;
+    e.price = `$${Number.isInteger(per) ? per : per.toFixed(2)}`;
+  }
+
   for (const e of events) e.price = e.price === "Free" ? "Free" : cleanPrice(e.price);
   return events;
 }
