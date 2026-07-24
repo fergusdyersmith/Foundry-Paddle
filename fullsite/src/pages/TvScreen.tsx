@@ -52,7 +52,7 @@ const WA_LOGO =
       WA_PATH +
       '"/></svg>',
   );
-const KUMI_MARK = "/rebrand/kumi-fp-mark.png";
+const KUMI_MARK = "/rebrand/kumi-fp-mark-circle.png";
 const KUMI_JOIN_URL = "https://foundrypadel.com/join";
 
 const WIFI_LOGO =
@@ -332,7 +332,7 @@ const TvScreen = () => {
                 level="H"
                 bgColor="#ffffff"
                 fgColor="#101010"
-                imageSettings={{ src: KUMI_MARK, height: 26, width: 26, excavate: true }}
+                imageSettings={{ src: KUMI_MARK, height: 30, width: 30, excavate: true }}
               />
             </div>
             <div className="min-w-0">
