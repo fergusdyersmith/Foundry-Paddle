@@ -53,6 +53,17 @@ const WA_LOGO =
       WA_PATH +
       '"/></svg>',
   );
+const SMS_LOGO =
+  "data:image/svg+xml," +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="5" fill="#2f6df6"/>' +
+      '<path fill="#fff" d="M12 5c-4.2 0-7.5 2.7-7.5 6 0 1.7.9 3.2 2.3 4.3-.1.9-.5 1.9-1.2 2.7 1.4-.2 2.6-.8 3.5-1.4.9.3 1.9.4 2.9.4 4.2 0 7.5-2.7 7.5-6s-3.3-6-7.5-6z"/>' +
+      '<circle cx="9" cy="11" r="1" fill="#2f6df6"/><circle cx="12" cy="11" r="1" fill="#2f6df6"/><circle cx="15" cy="11" r="1" fill="#2f6df6"/></svg>',
+  );
+const KUMI_MARK = "/rebrand/kumi-fp-mark.png";
+const KUMI_WA_URL = "https://wa.me/19714512615?text=" + encodeURIComponent("Hi!");
+const KUMI_SMS_URL = "sms:+15035637442?&body=JOIN";
+
 const WIFI_LOGO =
   "data:image/svg+xml," +
   encodeURIComponent(
@@ -87,7 +98,7 @@ function QrTile({
   logo,
   label,
   sub,
-  size = 128,
+  size = 104,
 }: {
   value: string;
   logo?: string;
@@ -121,6 +132,16 @@ const TvScreen = () => {
   const [events, setEvents] = useState<PadelEvent[]>([]);
   const [panelIdx, setPanelIdx] = useState(0);
   const [now, setNow] = useState<Date | null>(null);
+  // Fixed 1920x1080 design canvas, scaled to whatever screen it's on.
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const fit = () =>
+      setScale(Math.min(window.innerWidth / 1920, window.innerHeight / 1080));
+    fit();
+    window.addEventListener("resize", fit);
+    return () => window.removeEventListener("resize", fit);
+  }, []);
 
   // Live data: fetch now + every 5 minutes; hard reload hourly; tick the clock.
   useEffect(() => {
@@ -174,11 +195,20 @@ const TvScreen = () => {
     WIFI_SSID && WIFI_PASS ? `WIFI:T:WPA;S:${WIFI_SSID};P:${WIFI_PASS};;` : null;
 
   return (
-    <main className="flex min-h-screen flex-col bg-[#313E39] px-10 py-8 text-[#EEEFE3]">
+    <div className="relative h-screen w-screen overflow-hidden bg-[#313E39]">
       <Head>
         <title>Foundry Padel — This Week</title>
         <meta name="robots" content="noindex, nofollow" />
       </Head>
+      <style>{`@keyframes tvfill { from { width: 0 } to { width: 100% } }`}</style>
+      <main
+        className="absolute left-1/2 top-1/2 flex flex-col bg-[#313E39] px-10 py-8 text-[#EEEFE3]"
+        style={{
+          width: 1920,
+          height: 1080,
+          transform: `translate(-50%, -50%) scale(${scale})`,
+        }}
+      >
 
       {/* Top bar */}
       <header className="mb-8 flex items-center justify-between">
@@ -197,9 +227,12 @@ const TvScreen = () => {
       <div className="flex min-h-0 flex-1 gap-10">
         {/* Rotating schedule panel */}
         <section className="min-w-0 flex-[2]">
-          <h1 className="mb-6 font-display text-5xl tracking-wide text-[#EEEFE3]">
-            {panel.title}
-          </h1>
+          <div className="mb-6 flex items-end justify-between gap-6">
+            <h1 className="font-display text-5xl tracking-wide text-[#EEEFE3]">{panel.title}</h1>
+            <p className="shrink-0 pb-1 font-body text-lg text-[#96998D]">
+              Scan a code to book →
+            </p>
+          </div>
           {rows.length === 0 ? (
             <p className="font-body text-2xl text-[#96998D]">{panel.empty}</p>
           ) : (
@@ -227,18 +260,33 @@ const TvScreen = () => {
                       {4 - e.signed_up} {4 - e.signed_up === 1 ? "spot" : "spots"} left
                     </p>
                   )}
+                  <div className="shrink-0 rounded bg-white p-1.5">
+                    <QRCodeSVG
+                      value={e.book_url || "https://app.playtomic.io/tenant/70cae734-e32f-4e3a-9f72-516d9f025125"}
+                      size={84}
+                      level="M"
+                      bgColor="#ffffff"
+                      fgColor="#101010"
+                    />
+                  </div>
                 </div>
               ))}
             </div>
           )}
           {/* Panel dots */}
           <div className="mt-6 flex gap-2">
-            {panels.map((p, i) => (
-              <span
-                key={p.key}
-                className={`h-2 w-8 rounded-full ${i === panelIdx % panels.length ? "bg-[#AE6C56]" : "bg-[#48544E]"}`}
-              />
-            ))}
+            {panels.map((p, i) =>
+              i === panelIdx % panels.length ? (
+                <span key={`${p.key}-${panelIdx}`} className="h-2 w-10 overflow-hidden rounded-full bg-[#48544E]">
+                  <span
+                    className="block h-full rounded-full bg-[#AE6C56]"
+                    style={{ animation: `tvfill ${ROTATE_MS}ms linear forwards` }}
+                  />
+                </span>
+              ) : (
+                <span key={p.key} className="h-2 w-4 rounded-full bg-[#48544E]" />
+              ),
+            )}
           </div>
         </section>
 
@@ -259,6 +307,46 @@ const TvScreen = () => {
           {wifiQr && (
             <QrTile value={wifiQr} logo={WIFI_LOGO} label="Guest wifi" sub={`Scan to join · ${WIFI_SSID}`} />
           )}
+          {/* Open match alerts from Kumi: WhatsApp primary, SMS secondary */}
+          <div className="rounded-lg bg-[#F4F5EC] p-4">
+            <p className="mb-3 font-display text-xl leading-tight text-[#313E39]">
+              Want open match invites? Meet Kumi
+            </p>
+            <div className="flex items-end gap-4">
+              <div className="shrink-0 text-center">
+                <div className="rounded bg-white p-2">
+                  <QRCodeSVG
+                    value={KUMI_WA_URL}
+                    size={132}
+                    level="H"
+                    bgColor="#ffffff"
+                    fgColor="#101010"
+                    imageSettings={{ src: KUMI_MARK, height: 32, width: 32, excavate: true }}
+                  />
+                </div>
+                <p className="mt-1 font-body text-xs font-semibold text-[#313E39]">WhatsApp</p>
+              </div>
+              <div className="shrink-0 text-center">
+                <div className="rounded bg-white p-1.5">
+                  <QRCodeSVG
+                    value={KUMI_SMS_URL}
+                    size={76}
+                    level="H"
+                    bgColor="#ffffff"
+                    fgColor="#101010"
+                    imageSettings={{ src: SMS_LOGO, height: 20, width: 20, excavate: true }}
+                  />
+                </div>
+                <p className="mt-1 font-body text-xs text-[#6b7268]">or SMS "JOIN"</p>
+              </div>
+              <p className="min-w-0 pb-1 font-body text-sm leading-snug text-[#6b7268]">
+                Match invites at your level, sent to you.
+              </p>
+            </div>
+            <p className="mt-2 font-body text-xs text-[#6b7268]">
+              Prefer to type? <span className="font-semibold text-[#313E39]">foundrypadel.com/join</span>
+            </p>
+          </div>
           <div className="mt-auto rounded-lg border border-[#48544E] p-4">
             <div className="flex items-center gap-4">
               <div className="shrink-0 rounded bg-white p-1.5">
@@ -275,7 +363,8 @@ const TvScreen = () => {
           </p>
         </aside>
       </div>
-    </main>
+      </main>
+    </div>
   );
 };
 
