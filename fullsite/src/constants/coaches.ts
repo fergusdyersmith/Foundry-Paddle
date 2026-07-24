@@ -136,7 +136,7 @@ export const COACHES: CoachProfile[] = [
     id: "tato",
     name: "Tato",
     firstName: "Tato",
-    photo: "/coaches/tato.svg",
+    photo: "/coaches/tato.jpg",
     aliases: ["tato"],
     bio: "Tato leads Foundry's beginner open play clinics, where first-timers get comfortable on court fast: relaxed pace, lots of rallies, and plenty of encouragement.",
     specialties: "Beginner open play, first-timer onboarding",
