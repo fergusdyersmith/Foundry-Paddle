@@ -11,6 +11,15 @@ const indexHtml = path.join(dist, "index.html");
 const app = express();
 app.use(express.json({ limit: "32kb" }));
 
+// Canonical host: once the apex domain points here (instead of Squarespace,
+// whose redirect drops paths), send it to www WITH the path intact.
+app.use((req, res, next) => {
+  if (req.hostname === "foundrypadel.com") {
+    return res.redirect(301, `https://www.foundrypadel.com${req.originalUrl}`);
+  }
+  next();
+});
+
 /**
  * Signup delivery. We prefer subscribing the lead straight to Klaviyo (robust,
  * no third-party relay). The legacy Make.com webhook is kept only as a fallback
