@@ -134,11 +134,6 @@ const Coaching = () => {
               <h2 className="font-display text-3xl text-foreground sm:text-4xl">{HEAD_COACH.name}</h2>
               <p className="mt-3 font-body text-sm leading-relaxed text-secondary-foreground">
                 {HEAD_COACH.bio}
-                {HEAD_COACH.mock && (
-                  <span className="ml-2 font-body text-[10px] uppercase tracking-wider text-muted-foreground">
-                    (placeholder bio)
-                  </span>
-                )}
               </p>
               <span className="mt-5 inline-flex items-center gap-2 font-display text-xs tracking-[0.2em] text-primary opacity-80 transition-opacity group-hover:opacity-100">
                 SEE {HEAD_COACH.firstName.toUpperCase()}'S SESSIONS <Calendar className="h-3.5 w-3.5" />
@@ -212,11 +207,6 @@ const Coaching = () => {
                 )}
                 <p className="font-body text-sm leading-relaxed text-secondary-foreground">
                   {selected.bio}
-                  {selected.mock && (
-                    <span className="ml-2 font-body text-[10px] uppercase tracking-wider text-muted-foreground">
-                      (placeholder bio)
-                    </span>
-                  )}
                 </p>
 
                 <div className="flex flex-col gap-3">
