@@ -53,7 +53,9 @@ const WA_LOGO =
       '"/></svg>',
   );
 const KUMI_MARK = "/rebrand/kumi-fp-mark-circle.png";
-const KUMI_JOIN_URL = "https://foundrypadel.com/join";
+// www, not apex: the apex domain still lives on Squarespace, whose redirect
+// drops the path (foundrypadel.com/join would land on the homepage).
+const KUMI_JOIN_URL = "https://www.foundrypadel.com/join";
 
 // Official Google Maps pin (Wikimedia Commons, 2020 icon), centered in a 24px box.
 const GMAPS_LOGO =
