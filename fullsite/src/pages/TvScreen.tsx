@@ -21,8 +21,8 @@ const WA_COMMUNITY_URL = "https://chat.whatsapp.com/KrXH7lUsPftHHgOOVVc2Ki";
 const REVIEW_URL =
   "https://www.google.com/maps/search/?api=1&query=Foundry+Padel+Portland+OR";
 // Set both to enable the wifi QR tile (WPA2). Leave blank to hide it.
-const WIFI_SSID = "";
-const WIFI_PASS = "";
+const WIFI_SSID = "Foundry Padel Courts";
+const WIFI_PASS = "PadelPDX";
 
 const ROTATE_MS = 20_000;
 const REFETCH_MS = 5 * 60_000;
