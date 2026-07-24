@@ -111,21 +111,29 @@ function CountdownRing({ cycleKey }: { cycleKey: number }) {
   );
 }
 
+/** A QR tapped anywhere on the screen blows up to this for easy scanning. */
+type ZoomedQr = { value: string; label: string; logo?: string };
+
 function QrTile({
   value,
   logo,
   label,
   sub,
   size = 88,
+  onZoom,
 }: {
   value: string;
   logo?: string;
   label: string;
   sub?: string;
   size?: number;
+  onZoom?: (z: ZoomedQr) => void;
 }) {
   return (
-    <div className="flex flex-1 items-center gap-3 rounded-lg bg-[#F4F5EC] p-3">
+    <div
+      className="flex flex-1 cursor-pointer items-center gap-3 rounded-lg bg-[#F4F5EC] p-3"
+      onClick={() => onZoom?.({ value, label, logo })}
+    >
       <div className="shrink-0 rounded bg-white p-1.5">
         <QRCodeSVG
           value={value}
@@ -149,6 +157,7 @@ function QrTile({
 const TvScreen = () => {
   const [events, setEvents] = useState<PadelEvent[]>([]);
   const [panelIdx, setPanelIdx] = useState(0);
+  const [zoomed, setZoomed] = useState<ZoomedQr | null>(null);
   const [now, setNow] = useState<Date | null>(null);
   // Fixed 1920x1080 design canvas, scaled to whatever screen it's on.
   const [scale, setScale] = useState(1);
@@ -248,7 +257,17 @@ const TvScreen = () => {
                   ))}
               </p>
             </div>
-            <div className="shrink-0 rounded bg-white p-1">
+            <div
+              className="shrink-0 cursor-pointer rounded bg-white p-1"
+              onClick={() =>
+                setZoomed({
+                  value:
+                    e.book_url ||
+                    "https://app.playtomic.io/tenant/70cae734-e32f-4e3a-9f72-516d9f025125",
+                  label: e.title,
+                })
+              }
+            >
               <QRCodeSVG
                 value={e.book_url || "https://app.playtomic.io/tenant/70cae734-e32f-4e3a-9f72-516d9f025125"}
                 size={72}
@@ -315,16 +334,31 @@ const TvScreen = () => {
             logo={WA_LOGO}
             label="WhatsApp community"
             sub="Games, partners & club news"
+            onZoom={setZoomed}
           />
           <QrTile
             value={`https://www.instagram.com/${IG_HANDLE}`}
             logo={IG_LOGO}
             label="Instagram"
             sub={`@${IG_HANDLE}`}
+            onZoom={setZoomed}
           />
-          {wifiQr && <QrTile value={wifiQr} logo={WIFI_LOGO} label="Guest wifi" sub={WIFI_SSID} />}
+          {wifiQr && (
+            <QrTile
+              value={wifiQr}
+              logo={WIFI_LOGO}
+              label="Guest wifi"
+              sub={WIFI_SSID}
+              onZoom={setZoomed}
+            />
+          )}
           {/* Kumi opt-in: one QR to the join page, where WhatsApp/SMS is chosen */}
-          <div className="flex flex-[1.3] items-center gap-3 rounded-lg bg-[#F4F5EC] p-3">
+          <div
+            className="flex flex-[1.3] cursor-pointer items-center gap-3 rounded-lg bg-[#F4F5EC] p-3"
+            onClick={() =>
+              setZoomed({ value: KUMI_JOIN_URL, label: "Ask Kumi — foundrypadel.com/join", logo: KUMI_MARK })
+            }
+          >
             <div className="shrink-0 rounded bg-white p-1.5">
               <QRCodeSVG
                 value={KUMI_JOIN_URL}
@@ -342,7 +376,10 @@ const TvScreen = () => {
               <p className="mt-1 font-body text-xs text-[#6b7268]">foundrypadel.com/join</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 rounded-lg border border-[#48544E] p-3">
+          <div
+            className="flex cursor-pointer items-center gap-3 rounded-lg border border-[#48544E] p-3"
+            onClick={() => setZoomed({ value: REVIEW_URL, label: "Leave a Google review" })}
+          >
             <div className="shrink-0 rounded bg-white p-1">
               <QRCodeSVG value={REVIEW_URL} size={64} level="M" bgColor="#ffffff" fgColor="#101010" />
             </div>
@@ -351,6 +388,33 @@ const TvScreen = () => {
             </p>
           </div>
         </div>
+
+        {/* Fullscreen QR: tap any code to blow it up for scanning, tap to close */}
+        {zoomed && (
+          <div
+            className="absolute inset-0 z-50 flex cursor-pointer flex-col items-center justify-center gap-8 bg-[#1A211E]/95"
+            onClick={() => setZoomed(null)}
+          >
+            <div className="rounded-2xl bg-white p-8">
+              <QRCodeSVG
+                value={zoomed.value}
+                size={560}
+                level="H"
+                bgColor="#ffffff"
+                fgColor="#101010"
+                imageSettings={
+                  zoomed.logo
+                    ? { src: zoomed.logo, height: 134, width: 134, excavate: true }
+                    : undefined
+                }
+              />
+            </div>
+            <p className="max-w-[1400px] truncate px-10 font-display text-4xl tracking-wide">
+              {zoomed.label}
+            </p>
+            <p className="font-body text-xl text-[#96998D]">Tap anywhere to close</p>
+          </div>
+        )}
       </main>
     </div>
   );
