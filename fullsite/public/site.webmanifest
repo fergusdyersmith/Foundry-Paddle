@@ -1,0 +1,13 @@
+{
+  "name": "Foundry Padel",
+  "short_name": "Foundry",
+  "description": "Portland's first indoor padel club — St. Johns, next to Cathedral Park.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#313E39",
+  "theme_color": "#313E39",
+  "icons": [
+    { "src": "/web-app-manifest-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/web-app-manifest-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
