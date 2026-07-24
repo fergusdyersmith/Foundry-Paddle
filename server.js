@@ -526,10 +526,31 @@ async function getEvents({ from = null, to = null } = {}) {
         byTitleDate.get(`${(e.title || "").trim().toLowerCase()}|${e.date}|${e.start_time}`);
       e.price = match || null; // never show a court total as a player price
     }
+
+    const kumiT = await fetchKumiTournaments();
+    const tById = new Map();
+    const tByTitleDate = new Map();
+    for (const t of kumiT.tournaments || []) {
+      const price = cleanPrice(t.price);
+      if (!price) continue;
+      if (t.tournament_id) tById.set(t.tournament_id, price);
+      if (t.name && t.start_utc) {
+        const local = toLocalParts(new Date(t.start_utc), CLUB_TIMEZONE);
+        tByTitleDate.set(`${t.name.trim().toLowerCase()}|${local.date}|${local.time}`, price);
+      }
+    }
+    for (const e of events) {
+      if (e.booking_type !== "TOURNAMENT") continue;
+      const urlId = (String(e.book_url || "").match(/tournaments\/([0-9a-f-]+)/) || [])[1];
+      const match =
+        (urlId && tById.get(urlId)) ||
+        tByTitleDate.get(`${(e.title || "").trim().toLowerCase()}|${e.date}|${e.start_time}`);
+      e.price = match || null;
+    }
   } catch (error) {
     console.error("[events] kumi price enrichment skipped:", error.message);
     for (const e of events) {
-      if (CLASS_TYPES.has(e.booking_type)) e.price = null;
+      if (CLASS_TYPES.has(e.booking_type) || e.booking_type === "TOURNAMENT") e.price = null;
     }
   }
 
@@ -610,6 +631,22 @@ async function fetchKumiClasses() {
   if (!upstream.ok) throw new Error(`Kumi classes fetch failed (${upstream.status})`);
   const data = await upstream.json();
   coachClassesCache = { data, fetchedAt: Date.now() };
+  return data;
+}
+
+const KUMI_TOURNAMENTS_URL =
+  process.env.KUMI_TOURNAMENTS_URL ||
+  "https://padelmaps.org/api/coaching/tournaments?slug=foundry-padel&days=35";
+let kumiTournamentsCache = { data: null, fetchedAt: 0 };
+
+async function fetchKumiTournaments() {
+  if (kumiTournamentsCache.data && Date.now() - kumiTournamentsCache.fetchedAt < COACH_CLASSES_TTL) {
+    return kumiTournamentsCache.data;
+  }
+  const upstream = await fetch(KUMI_TOURNAMENTS_URL, { headers: { Accept: "application/json" } });
+  if (!upstream.ok) throw new Error(`Kumi tournaments fetch failed (${upstream.status})`);
+  const data = await upstream.json();
+  kumiTournamentsCache = { data, fetchedAt: Date.now() };
   return data;
 }
 

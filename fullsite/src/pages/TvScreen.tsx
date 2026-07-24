@@ -24,10 +24,9 @@ const REVIEW_URL =
 const WIFI_SSID = "Foundry Padel Courts";
 const WIFI_PASS = "PadelPDX";
 
-const ROTATE_MS = 20_000;
 const REFETCH_MS = 5 * 60_000;
 const RELOAD_MS = 60 * 60_000;
-const ROWS_PER_PANEL = 7;
+const ROWS_PER_COLUMN = 7;
 
 // ---- QR logos (ported from the open-play podium's BrandConnect) ------------
 const IG_PATH =
@@ -71,8 +70,17 @@ const WIFI_LOGO =
       '<circle cx="12" cy="17.5" r="1.6" fill="#fff"/><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" d="M5.5 12.5a9 9 0 0 1 13 0M8.5 15.2a5 5 0 0 1 7 0"/></svg>',
   );
 
-// ---- Panels -----------------------------------------------------------------
-const PANELS = [
+const ROTATE_MS = 20_000;
+
+// Left column is fixed; the right column rotates between tournaments and open
+// matches — but only when joinable matches exist.
+const LEFT_COLUMN = {
+  key: "clinics",
+  title: "CLINICS & COURSES",
+  types: new Set(["PUBLIC_CLASS", "COURSE_CLASS"]),
+  empty: "New clinic dates drop soon.",
+};
+const RIGHT_PANELS = [
   {
     key: "tournaments",
     title: "TOURNAMENTS & EVENTS",
@@ -80,25 +88,43 @@ const PANELS = [
     empty: "No tournaments on the calendar yet — watch this space.",
   },
   {
-    key: "clinics",
-    title: "CLINICS & COURSES",
-    types: new Set(["PUBLIC_CLASS", "COURSE_CLASS"]),
-    empty: "New clinic dates drop soon.",
-  },
-  {
     key: "matches",
     title: "OPEN MATCHES — JUMP IN",
     types: new Set(["OPEN_MATCH"]),
-    empty: "No open matches right now — start one in the Playtomic app.",
+    empty: "",
   },
 ];
+
+/** Small circular countdown ring — refills over each rotation. */
+function CountdownRing({ cycleKey }: { cycleKey: number }) {
+  const r = 9;
+  const c = 2 * Math.PI * r;
+  return (
+    <svg width="26" height="26" viewBox="0 0 26 26" className="shrink-0">
+      <circle cx="13" cy="13" r={r} fill="none" stroke="#48544E" strokeWidth="3" />
+      <circle
+        key={cycleKey}
+        cx="13"
+        cy="13"
+        r={r}
+        fill="none"
+        stroke="#AE6C56"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeDasharray={c}
+        transform="rotate(-90 13 13)"
+        style={{ animation: `tvring ${ROTATE_MS}ms linear forwards` }}
+      />
+    </svg>
+  );
+}
 
 function QrTile({
   value,
   logo,
   label,
   sub,
-  size = 104,
+  size = 88,
 }: {
   value: string;
   logo?: string;
@@ -107,8 +133,8 @@ function QrTile({
   size?: number;
 }) {
   return (
-    <div className="flex items-center gap-4 rounded-lg bg-[#F4F5EC] p-4">
-      <div className="shrink-0 rounded bg-white p-2">
+    <div className="flex flex-1 items-center gap-3 rounded-lg bg-[#F4F5EC] p-3">
+      <div className="shrink-0 rounded bg-white p-1.5">
         <QRCodeSVG
           value={value}
           size={size}
@@ -175,24 +201,65 @@ const TvScreen = () => {
       if (e.booking_type === "OPEN_MATCH" && e.signed_up >= 4) return false;
       return true;
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [events, now]);
 
-  const activePanels = useMemo(
-    () => PANELS.filter((p) => upcoming.some((e) => p.types.has(e.booking_type))),
-    [upcoming],
-  );
-  const panels = activePanels.length ? activePanels : PANELS.slice(0, 1);
+  const hasMatches = upcoming.some((e) => e.booking_type === "OPEN_MATCH");
+  const rightPanels = hasMatches ? RIGHT_PANELS : RIGHT_PANELS.slice(0, 1);
 
   useEffect(() => {
+    if (rightPanels.length < 2) return;
     const t = setInterval(() => setPanelIdx((i) => i + 1), ROTATE_MS);
     return () => clearInterval(t);
-  }, []);
+  }, [rightPanels.length]);
 
-  const panel = panels[panelIdx % panels.length];
-  const rows = upcoming.filter((e) => panel.types.has(e.booking_type)).slice(0, ROWS_PER_PANEL);
-
+  const rightPanel = rightPanels[panelIdx % rightPanels.length];
   const wifiQr =
     WIFI_SSID && WIFI_PASS ? `WIFI:T:WPA;S:${WIFI_SSID};P:${WIFI_PASS};;` : null;
+
+  const rowsFor = (types: Set<string>) =>
+    upcoming.filter((e) => types.has(e.booking_type)).slice(0, ROWS_PER_COLUMN);
+
+  const renderRows = (rows: PadelEvent[], empty: string) =>
+    rows.length === 0 ? (
+      <p className="font-body text-xl text-[#96998D]">{empty}</p>
+    ) : (
+      <div className="flex flex-col gap-2.5">
+        {rows.map((e) => (
+          <div
+            key={e.id + e.date + e.start_time}
+            className="flex items-center gap-4 overflow-hidden rounded-lg bg-[#28322E] px-5 py-3"
+          >
+            <div className="w-16 shrink-0 text-center">
+              <p className="font-display text-xs uppercase tracking-wider text-[#96998D]">
+                {format(parseISO(e.date), "EEE")}
+              </p>
+              <p className="font-display text-3xl leading-none">{format(parseISO(e.date), "d")}</p>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-display text-[22px] tracking-wide">{e.title}</p>
+              <p className="font-body text-base text-[#96998D]">
+                {formatTime(e.start_time)} · {e.duration_min} min
+                {e.price
+                  ? ` · ${e.price}${e.booking_type === "OPEN_MATCH" ? "" : "/person"}`
+                  : ""}
+                {e.booking_type === "OPEN_MATCH" &&
+                  ` · ${4 - e.signed_up} ${4 - e.signed_up === 1 ? "spot" : "spots"} left`}
+              </p>
+            </div>
+            <div className="shrink-0 rounded bg-white p-1">
+              <QRCodeSVG
+                value={e.book_url || "https://app.playtomic.io/tenant/70cae734-e32f-4e3a-9f72-516d9f025125"}
+                size={72}
+                level="M"
+                bgColor="#ffffff"
+                fgColor="#101010"
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-[#313E39]">
@@ -200,169 +267,107 @@ const TvScreen = () => {
         <title>Foundry Padel — This Week</title>
         <meta name="robots" content="noindex, nofollow" />
       </Head>
-      <style>{`@keyframes tvfill { from { width: 0 } to { width: 100% } }`}</style>
+      <style>{`@keyframes tvring { from { stroke-dashoffset: 0 } to { stroke-dashoffset: ${(2 * Math.PI * 9).toFixed(2)} } }`}</style>
       <main
-        className="absolute left-1/2 top-1/2 flex flex-col bg-[#313E39] px-10 py-8 text-[#EEEFE3]"
+        className="absolute left-1/2 top-1/2 flex flex-col bg-[#313E39] px-10 pb-6 pt-5 text-[#EEEFE3]"
         style={{
           width: 1920,
           height: 1080,
           transform: `translate(-50%, -50%) scale(${scale})`,
         }}
       >
-
-      {/* Top bar */}
-      <header className="mb-8 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <img src="/rebrand/FP_icon_light.svg" alt="" className="h-14 w-auto" />
-          <div>
+        {/* Compact top bar */}
+        <header className="mb-5 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <img src="/rebrand/FP_icon_light.svg" alt="" className="h-12 w-auto" />
             <p className="font-display text-2xl leading-tight tracking-widest">FOUNDRY PADEL</p>
-            <p className="font-body text-sm text-[#96998D]">This week at the club</p>
-          </div>
-        </div>
-        <p className="font-display text-3xl tabular-nums text-[#96998D]">
-          {now ? format(now, "EEE MMM d · h:mm a") : ""}
-        </p>
-      </header>
-
-      <div className="flex min-h-0 flex-1 gap-10">
-        {/* Rotating schedule panel */}
-        <section className="min-w-0 flex-[2]">
-          <div className="mb-6 flex items-end justify-between gap-6">
-            <h1 className="font-display text-5xl tracking-wide text-[#EEEFE3]">{panel.title}</h1>
-            <p className="shrink-0 pb-1 font-body text-lg text-[#96998D]">
-              Scan a code to book →
+            <p className="ml-2 font-body text-base text-[#96998D]">
+              This week at the club · scan any code to book
             </p>
           </div>
-          {rows.length === 0 ? (
-            <p className="font-body text-2xl text-[#96998D]">{panel.empty}</p>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {rows.map((e) => (
-                <div
-                  key={e.id + e.date + e.start_time}
-                  className="flex items-center gap-6 overflow-hidden rounded-lg bg-[#28322E] px-6 py-4"
-                >
-                  <div className="w-20 shrink-0 text-center">
-                    <p className="font-display text-sm uppercase tracking-wider text-[#96998D]">
-                      {format(parseISO(e.date), "EEE")}
-                    </p>
-                    <p className="font-display text-4xl leading-none">{format(parseISO(e.date), "d")}</p>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-display text-2xl tracking-wide">{e.title}</p>
-                    <p className="font-body text-lg text-[#96998D]">
-                      {formatTime(e.start_time)} · {e.duration_min} min
-                      {e.price ? ` · ${e.price.replace(/^(\d+(?:\.\d+)?)\s*USD$/i, "$$$1")}` : ""}
-                    </p>
-                  </div>
-                  {e.booking_type === "OPEN_MATCH" && (
-                    <p className="shrink-0 font-display text-xl text-[#AE6C56]">
-                      {4 - e.signed_up} {4 - e.signed_up === 1 ? "spot" : "spots"} left
-                    </p>
-                  )}
-                  <div className="shrink-0 rounded bg-white p-1.5">
-                    <QRCodeSVG
-                      value={e.book_url || "https://app.playtomic.io/tenant/70cae734-e32f-4e3a-9f72-516d9f025125"}
-                      size={84}
-                      level="M"
-                      bgColor="#ffffff"
-                      fgColor="#101010"
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-          {/* Panel dots */}
-          <div className="mt-6 flex gap-2">
-            {panels.map((p, i) =>
-              i === panelIdx % panels.length ? (
-                <span key={`${p.key}-${panelIdx}`} className="h-2 w-10 overflow-hidden rounded-full bg-[#48544E]">
-                  <span
-                    className="block h-full rounded-full bg-[#AE6C56]"
-                    style={{ animation: `tvfill ${ROTATE_MS}ms linear forwards` }}
-                  />
-                </span>
-              ) : (
-                <span key={p.key} className="h-2 w-4 rounded-full bg-[#48544E]" />
-              ),
-            )}
-          </div>
-        </section>
+          <p className="font-display text-2xl tabular-nums text-[#96998D]">
+            {now ? format(now, "EEE MMM d · h:mm a") : ""}
+          </p>
+        </header>
 
-        {/* Connect rail */}
-        <aside className="flex w-[380px] shrink-0 flex-col gap-4">
+        {/* Two columns */}
+        <div className="flex min-h-0 flex-1 gap-8">
+          <section className="min-w-0 flex-1">
+            <h1 className="mb-4 font-display text-4xl tracking-wide">{LEFT_COLUMN.title}</h1>
+            {renderRows(rowsFor(LEFT_COLUMN.types), LEFT_COLUMN.empty)}
+          </section>
+          <section className="min-w-0 flex-1">
+            <div className="mb-4 flex items-center gap-3">
+              <h1 className="font-display text-4xl tracking-wide">{rightPanel.title}</h1>
+              {rightPanels.length > 1 && (
+                <CountdownRing cycleKey={panelIdx % rightPanels.length} />
+              )}
+            </div>
+            {renderRows(rowsFor(rightPanel.types), rightPanel.empty)}
+          </section>
+        </div>
+
+        {/* Connect strip */}
+        <div className="mt-5 flex items-stretch gap-4">
           <QrTile
             value={WA_COMMUNITY_URL}
             logo={WA_LOGO}
-            label="Join the WhatsApp community"
-            sub="Games, partners, and club news"
+            label="WhatsApp community"
+            sub="Games, partners & club news"
           />
           <QrTile
             value={`https://www.instagram.com/${IG_HANDLE}`}
             logo={IG_LOGO}
-            label="Follow us on Instagram"
+            label="Instagram"
             sub={`@${IG_HANDLE}`}
           />
-          {wifiQr && (
-            <QrTile value={wifiQr} logo={WIFI_LOGO} label="Guest wifi" sub={`Scan to join · ${WIFI_SSID}`} />
-          )}
-          {/* Open match alerts from Kumi: WhatsApp primary, SMS secondary */}
-          <div className="rounded-lg bg-[#F4F5EC] p-4">
-            <p className="mb-3 font-display text-xl leading-tight text-[#313E39]">
-              Want open match invites? Meet Kumi
-            </p>
-            <div className="flex items-end gap-4">
-              <div className="shrink-0 text-center">
-                <div className="rounded bg-white p-2">
-                  <QRCodeSVG
-                    value={KUMI_WA_URL}
-                    size={132}
-                    level="H"
-                    bgColor="#ffffff"
-                    fgColor="#101010"
-                    imageSettings={{ src: KUMI_MARK, height: 32, width: 32, excavate: true }}
-                  />
-                </div>
-                <p className="mt-1 font-body text-xs font-semibold text-[#313E39]">WhatsApp</p>
+          {wifiQr && <QrTile value={wifiQr} logo={WIFI_LOGO} label="Guest wifi" sub={WIFI_SSID} />}
+          {/* Kumi opt-in: WhatsApp primary, SMS secondary */}
+          <div className="flex flex-[1.5] items-center gap-3 rounded-lg bg-[#F4F5EC] p-3">
+            <div className="shrink-0 text-center">
+              <div className="rounded bg-white p-1.5">
+                <QRCodeSVG
+                  value={KUMI_WA_URL}
+                  size={104}
+                  level="H"
+                  bgColor="#ffffff"
+                  fgColor="#101010"
+                  imageSettings={{ src: KUMI_MARK, height: 26, width: 26, excavate: true }}
+                />
               </div>
-              <div className="shrink-0 text-center">
-                <div className="rounded bg-white p-1.5">
-                  <QRCodeSVG
-                    value={KUMI_SMS_URL}
-                    size={76}
-                    level="H"
-                    bgColor="#ffffff"
-                    fgColor="#101010"
-                    imageSettings={{ src: SMS_LOGO, height: 20, width: 20, excavate: true }}
-                  />
-                </div>
-                <p className="mt-1 font-body text-xs text-[#6b7268]">or SMS "JOIN"</p>
-              </div>
-              <p className="min-w-0 pb-1 font-body text-sm leading-snug text-[#6b7268]">
-                Match invites at your level, sent to you.
-              </p>
+              <p className="mt-0.5 font-body text-[11px] font-semibold text-[#313E39]">WhatsApp</p>
             </div>
-            <p className="mt-2 font-body text-xs text-[#6b7268]">
-              Prefer to type? <span className="font-semibold text-[#313E39]">foundrypadel.com/join</span>
-            </p>
-          </div>
-          <div className="mt-auto rounded-lg border border-[#48544E] p-4">
-            <div className="flex items-center gap-4">
-              <div className="shrink-0 rounded bg-white p-1.5">
-                <QRCodeSVG value={REVIEW_URL} size={84} level="M" bgColor="#ffffff" fgColor="#101010" />
+            <div className="shrink-0 text-center">
+              <div className="rounded bg-white p-1">
+                <QRCodeSVG
+                  value={KUMI_SMS_URL}
+                  size={64}
+                  level="H"
+                  bgColor="#ffffff"
+                  fgColor="#101010"
+                  imageSettings={{ src: SMS_LOGO, height: 17, width: 17, excavate: true }}
+                />
               </div>
-              <p className="font-body text-sm leading-relaxed text-[#96998D]">
-                Enjoying Foundry? A quick Google review helps more people find padel. ⭐
+              <p className="mt-0.5 font-body text-[11px] text-[#6b7268]">SMS "JOIN"</p>
+            </div>
+            <div className="min-w-0">
+              <p className="font-display text-lg leading-tight text-[#313E39]">
+                Want open match invites? Meet Kumi
+              </p>
+              <p className="mt-1 font-body text-xs text-[#6b7268]">
+                Match invites at your level · foundrypadel.com/join
               </p>
             </div>
           </div>
-          <p className="text-center font-body text-sm text-[#6b7268]">
-            Book courts, clinics &amp; matches at{" "}
-            <span className="text-[#EEEFE3]">foundrypadel.com/book</span>
-          </p>
-        </aside>
-      </div>
+          <div className="flex items-center gap-3 rounded-lg border border-[#48544E] p-3">
+            <div className="shrink-0 rounded bg-white p-1">
+              <QRCodeSVG value={REVIEW_URL} size={64} level="M" bgColor="#ffffff" fgColor="#101010" />
+            </div>
+            <p className="max-w-[170px] font-body text-xs leading-snug text-[#96998D]">
+              Enjoying Foundry? A quick Google review helps. ⭐
+            </p>
+          </div>
+        </div>
       </main>
     </div>
   );
