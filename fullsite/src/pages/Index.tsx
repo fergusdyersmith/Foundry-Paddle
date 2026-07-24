@@ -32,7 +32,7 @@ const Index = () => {
           <div className="court-line h-full" />
           <div className="court-line h-full" />
         </div>
-        <div className="relative z-10 flex h-full flex-col items-center justify-end pb-32 px-6">
+        <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 pt-10">
           <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, ease: [0.25, 0.46, 0.45, 0.94] }} className="mb-4 text-center">
             {/* New-brand lockup, composed from the kit's separate monogram +
                 wordmark files so the gap between them is ours to tune (the
@@ -41,15 +41,15 @@ const Index = () => {
             <img
               src="/rebrand/FP_icon_light.svg"
               alt=""
-              className="mx-auto w-48 sm:w-64 md:w-72"
+              className="mx-auto w-[clamp(12rem,20vw,20rem)]"
             />
             <img
               src="/rebrand/FP_text_light.svg"
               alt="Foundry Padel"
-              className="mx-auto mt-12 w-72 sm:w-96 md:w-[26rem]"
+              className="mx-auto mt-[clamp(1.75rem,3vw,3rem)] w-[clamp(16rem,28vw,28rem)]"
             />
           </motion.div>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.6 }} className="mt-8 flex flex-col items-center gap-4 sm:flex-row">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.6 }} className="mt-[clamp(2rem,5vh,3.5rem)] flex flex-col items-center gap-4 sm:flex-row">
             <Link
               to={BOOK_PAGE_PATH}
               className="bg-primary px-7 py-3 font-display text-sm tracking-widest text-primary-foreground shadow-[0_0_30px_-10px_hsl(var(--primary)/0.6)] transition-all hover:brightness-110"

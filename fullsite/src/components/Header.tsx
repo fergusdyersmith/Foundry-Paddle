@@ -49,7 +49,7 @@ const Header = () => {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+      <div className="flex items-center justify-between px-6 py-4 lg:px-10">
         <Link to="/" className="flex items-center" aria-label="Foundry Padel home">
           <img
             src={labLogo?.src ?? "/rebrand/FP_icon_light.svg"}

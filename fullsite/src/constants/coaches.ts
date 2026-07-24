@@ -133,6 +133,18 @@ export const COACHES: CoachProfile[] = [
     },
   },
   {
+    id: "jack",
+    name: "Jack Wang",
+    firstName: "Jack",
+    photo:
+      "https://res.cloudinary.com/playtomic/image/upload/c_limit,w_1280/v1/pro/users/3448382/1782527321574",
+    aliases: ["jack wang", "jack"],
+    bio: "Full-time tennis coach bringing years of racquet-sport teaching to the court. Jack leads Foundry's 6-week padel course, taking players from first fundamentals to confident match play.",
+    specialties: "6-week padel course, tennis-to-padel transition, fundamentals",
+    levelRange: "All levels",
+    mock: true,
+  },
+  {
     id: "tato",
     name: "Tato",
     firstName: "Tato",
