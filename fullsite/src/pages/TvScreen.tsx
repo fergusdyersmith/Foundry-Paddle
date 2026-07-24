@@ -26,7 +26,7 @@ const WIFI_PASS = "PadelPDX";
 
 const REFETCH_MS = 5 * 60_000;
 const RELOAD_MS = 60 * 60_000;
-const ROWS_PER_COLUMN = 7;
+const ROWS_PER_COLUMN = 6;
 
 // ---- QR logos (ported from the open-play podium's BrandConnect) ------------
 const IG_PATH =
@@ -291,7 +291,7 @@ const TvScreen = () => {
         </header>
 
         {/* Two columns */}
-        <div className="flex min-h-0 flex-1 gap-8">
+        <div className="flex min-h-0 flex-1 gap-8 overflow-hidden">
           <section className="min-w-0 flex-1">
             <h1 className="mb-4 font-display text-4xl tracking-wide">{LEFT_COLUMN.title}</h1>
             {renderRows(rowsFor(LEFT_COLUMN.types), LEFT_COLUMN.empty)}
