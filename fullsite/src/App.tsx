@@ -11,6 +11,7 @@ import Book from "./pages/Book";
 import NewToPadel from "./pages/NewToPadel";
 import SkillSurvey from "./pages/SkillSurvey";
 import Coaching from "./pages/Coaching";
+import TvScreen from "./pages/TvScreen";
 import Privacy from "./pages/Privacy";
 import SmsTerms from "./pages/SmsTerms";
 import NotFound from "./pages/NotFound";
@@ -43,4 +44,6 @@ export const routes: RouteRecord[] = [
       { path: "*", element: <NotFound /> },
     ],
   },
+  // Operator wall-screen (hidden, noindex, no site chrome).
+  { path: "/tv", element: <TvScreen /> },
 ];

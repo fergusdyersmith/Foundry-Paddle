@@ -225,7 +225,7 @@ const Book = () => {
             {/* Learn the basics */}
             <motion.div
               id="clinics"
-              className="scroll-mt-28"
+              className="min-w-0 scroll-mt-28"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -271,7 +271,7 @@ const Book = () => {
             {/* Open matches */}
             <motion.div
               id="matches"
-              className="scroll-mt-28"
+              className="min-w-0 scroll-mt-28"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}

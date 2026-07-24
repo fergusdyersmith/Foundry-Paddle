@@ -580,11 +580,13 @@ app.get("/api/coaching/classes", async (req, res) => {
   }
 });
 
-// Kumi join on-ramp: foundrypadel.com/kumi -> reverse-proxy the club's join
+// Kumi join on-ramp: foundrypadel.com/join -> reverse-proxy the club's join
 // page (backend-rendered HTML) so the URL stays on the Foundry domain instead
 // of redirecting visitors to padelmaps.org. The page is self-contained
 // (inline styles + SVG QR, absolute wa.me links), so no rewriting is needed.
-app.get(["/kumi", "/kumi/"], async (req, res) => {
+// /kumi is the legacy path (printed materials) and redirects to /join.
+app.get(["/kumi", "/kumi/"], (req, res) => res.redirect(301, "/join"));
+app.get(["/join", "/join/"], async (req, res) => {
   const joinUrl = "https://padelmaps.org/join/foundry-padel";
   try {
     const upstream = await fetch(joinUrl, {

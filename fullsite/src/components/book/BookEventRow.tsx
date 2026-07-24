@@ -16,7 +16,7 @@ export default function BookEventRow({ event }: { event: PadelEvent }) {
       href={eventBookingUrl(event)}
       target="_blank"
       rel="noopener noreferrer"
-      className="group flex items-center gap-4 border border-border bg-card px-4 py-3 transition-colors hover:border-primary"
+      className="group flex items-center gap-3 overflow-hidden border border-border bg-card px-4 py-3 transition-colors hover:border-primary sm:gap-4"
     >
       <div className="w-11 shrink-0 text-center">
         <p className="font-display text-[10px] uppercase tracking-wider text-muted-foreground">
