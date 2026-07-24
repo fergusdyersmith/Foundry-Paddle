@@ -179,7 +179,10 @@ const Coaching = () => {
                     </p>
                     <p className="font-body text-xs text-muted-foreground">
                       {c.start_local} · {c.price}
-                      {c.spots_left != null && ` · ${c.spots_left} spots left`}
+                      {c.spots_left != null &&
+                        (c.spots_left === 0
+                          ? " · Full"
+                          : ` · ${c.spots_left} ${c.spots_left === 1 ? "spot" : "spots"} left`)}
                       {c.tentative && " · subject to change"}
                     </p>
                   </div>
@@ -261,7 +264,10 @@ const Coaching = () => {
                             </p>
                             <p className="font-body text-xs text-muted-foreground">
                               {c.start_local} · {c.price}
-                              {c.spots_left != null && ` · ${c.spots_left} spots left`}
+                              {c.spots_left != null &&
+                        (c.spots_left === 0
+                          ? " · Full"
+                          : ` · ${c.spots_left} ${c.spots_left === 1 ? "spot" : "spots"} left`)}
                               {c.tentative && " · subject to change"}
                             </p>
                           </div>

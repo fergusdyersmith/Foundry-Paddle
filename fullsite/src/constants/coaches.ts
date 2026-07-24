@@ -47,7 +47,7 @@ export const COACHES: CoachProfile[] = [
     specialties:
       "Helping beginner and intermediate players build confidence: proper fundamentals, sound technique, and smart court habits for long-term development.",
     languages: "English",
-    levelRange: "Beginner and intermediate",
+    levelRange: "Beginner & intermediate",
     privateLessons: {
       playtomicBookable: false,
       rate: "$60 for 60 minutes (1-on-1)",
@@ -66,7 +66,7 @@ export const COACHES: CoachProfile[] = [
       "Tactics, technique, footwork. Intermediate+: back glass, side glass, double-wall, lobs, bandeja, bajadas. Beginners: volleys, lobs, core technique.",
     certifications: "RPP",
     languages: "English",
-    levelRange: "Beginner, intermediate",
+    levelRange: "Beginner & intermediate",
     privateLessons: {
       playtomicBookable: false,
       rate: "$60 / hour · group add-on: +$60/hr Play-with-Coach (group lessons only)",
@@ -106,7 +106,7 @@ export const COACHES: CoachProfile[] = [
       "Player development at every level, racquet-sports-to-padel transition, stroke development, match strategy and court positioning, fitness and conditioning for padel",
     certifications: "RPP Padel Coach (Levels 1 & 2), ISSA Personal Trainer",
     languages: "English, Spanish",
-    levelRange: "Beginner to advanced",
+    levelRange: "All levels",
     privateLessons: {
       playtomicBookable: false,
       rate: "1 person: $60/hr · 2: $80/hr · 3: $90/hr · 4: $100/hr (court fee not included). Packages available.",
@@ -125,7 +125,7 @@ export const COACHES: CoachProfile[] = [
       "All levels; strategy and on-court tactics; extra experience with young and junior players (also coaches tennis at Cleveland High School)",
     certifications: "RPP Level 2 Padel Certified",
     languages: "English, Spanish",
-    levelRange: "Beginner to advanced",
+    levelRange: "All levels",
     privateLessons: {
       playtomicBookable: false,
       rate: "$75/hour (negotiable)",
