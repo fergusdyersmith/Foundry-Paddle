@@ -38,21 +38,6 @@ export interface CoachProfile {
 
 export const COACHES: CoachProfile[] = [
   {
-    id: "javier",
-    name: "Javier Jimenez Peña",
-    firstName: "Javi",
-    headCoach: true,
-    // Current photo from the Playtomic tenant profile (the classes API serves
-    // a stale, deleted URL for him — tenant_profiles has the live one).
-    photo:
-      "https://res.cloudinary.com/playtomic/image/upload/c_limit,w_1280/v1/pro/users/145453/1784592266394",
-    aliases: ["javier jimenez peña", "javier jimenez pena", "javier", "javi"],
-    bio: "Foundry's head coach. Javi leads the club's coaching program and the Padel Progression pathway, bringing European padel fundamentals to Portland players at every level.",
-    specialties: "Padel Progression pathway, technique, match play",
-    levelRange: "All levels",
-    mock: true,
-  },
-  {
     id: "eugene",
     name: "Eugene Jung",
     firstName: "Eugene",
@@ -172,8 +157,7 @@ export const COACHES: CoachProfile[] = [
   },
 ];
 
-export const HEAD_COACH = COACHES.find((c) => c.headCoach)!;
-export const TEAM_COACHES = COACHES.filter((c) => !c.headCoach);
+export const TEAM_COACHES = COACHES;
 
 /** Match a class's coach_name (from Playtomic via Kumi) to a roster entry. */
 export function coachMatchesName(coach: CoachProfile, coachName: string | null): boolean {

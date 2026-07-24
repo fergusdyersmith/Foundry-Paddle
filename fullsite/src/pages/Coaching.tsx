@@ -1,15 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
-import { Award, Calendar, ExternalLink, Globe, Loader2, Mail, Target } from "lucide-react";
+import { Award, ExternalLink, Globe, Loader2, Mail, Target } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import {
-  COACHES,
-  type CoachProfile,
-  coachMatchesName,
-  HEAD_COACH,
-  TEAM_COACHES,
-} from "@/constants/coaches";
+import { type CoachProfile, coachMatchesName, TEAM_COACHES } from "@/constants/coaches";
 import { PLAYTOMIC_TENANT_URL } from "@/constants/booking";
 import Seo from "@/components/Seo";
 
@@ -112,37 +106,6 @@ const Coaching = () => {
         </div>
       </section>
 
-      {/* Head coach */}
-      <section className="px-6 py-8">
-        <div className="mx-auto max-w-4xl">
-          <motion.button
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            onClick={() => setSelected(HEAD_COACH)}
-            className="group grid w-full border border-border bg-card text-left transition-colors hover:border-primary sm:grid-cols-[240px_1fr]"
-          >
-            <img
-              src={HEAD_COACH.photo}
-              alt={HEAD_COACH.name}
-              onError={onPhotoError}
-              className="h-64 w-full object-cover sm:h-full"
-            />
-            <div className="p-8">
-              <p className="mb-1 font-body text-xs uppercase tracking-[0.25em] text-primary">Head Coach</p>
-              <h2 className="font-display text-3xl text-foreground sm:text-4xl">{HEAD_COACH.name}</h2>
-              <p className="mt-3 font-body text-sm leading-relaxed text-secondary-foreground">
-                {HEAD_COACH.bio}
-              </p>
-              <span className="mt-5 inline-flex items-center gap-2 font-display text-xs tracking-[0.2em] text-primary opacity-80 transition-opacity group-hover:opacity-100">
-                SEE {HEAD_COACH.firstName.toUpperCase()}'S SESSIONS <Calendar className="h-3.5 w-3.5" />
-              </span>
-            </div>
-          </motion.button>
-        </div>
-      </section>
-
       {/* Team grid — order rotates every page load */}
       <section className="px-6 py-12 pb-24">
         <div className="mx-auto max-w-4xl">
@@ -200,11 +163,6 @@ const Coaching = () => {
                   onError={onPhotoError}
                   className="aspect-square w-full max-w-[240px] object-cover"
                 />
-                {selected.headCoach && (
-                  <p className="-mt-3 font-body text-xs uppercase tracking-[0.25em] text-primary">
-                    Head Coach
-                  </p>
-                )}
                 <p className="font-body text-sm leading-relaxed text-secondary-foreground">
                   {selected.bio}
                 </p>
