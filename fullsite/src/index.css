@@ -58,6 +58,13 @@
     @apply border-border;
   }
 
+  html,
+  body {
+    /* Belt-and-suspenders: never allow stray horizontal overflow to shift the
+       page on phones (reported once on /book; not reproducible in testing). */
+    overflow-x: clip;
+  }
+
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-body);

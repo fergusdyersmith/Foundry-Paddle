@@ -27,7 +27,6 @@ const tiers = [
       "50% discount on padel rentals",
       "25% discount on pro lessons",
       "Free Foundry Padel T-shirt",
-      "4-day booking window",
     ],
     highlight: false,
   },
