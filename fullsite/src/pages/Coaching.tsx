@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { Award, ExternalLink, Globe, Loader2, Mail, Target } from "lucide-react";
@@ -107,12 +108,9 @@ const Coaching = () => {
       </section>
 
       {/* Team grid — order rotates every page load */}
-      <section className="px-6 py-12 pb-24">
+      <section className="px-6 py-8">
         <div className="mx-auto max-w-4xl">
           <div className="section-divider mb-12" />
-          <h2 className="mb-10 text-center font-display text-3xl text-foreground sm:text-4xl">
-            THE COACHING TEAM
-          </h2>
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 lg:gap-6">
             {team.map((coach) => (
               <button
@@ -142,6 +140,63 @@ const Coaching = () => {
                 </div>
               </button>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* All upcoming coach-led sessions (includes classes whose coach isn't
+          on the roster grid) */}
+      <section className="px-6 py-12 pb-24">
+        <div className="mx-auto max-w-4xl">
+          <div className="section-divider mb-12" />
+          <h2 className="mb-2 text-center font-display text-3xl text-foreground sm:text-4xl">
+            UPCOMING SESSIONS
+          </h2>
+          <p className="mb-10 text-center font-body text-sm text-muted-foreground">
+            Clinics and group lessons over the next two weeks. Book on Playtomic.
+          </p>
+          {isLoading ? (
+            <div className="flex justify-center py-10">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          ) : isError || !data?.classes?.length ? (
+            <p className="text-center font-body text-sm text-muted-foreground">
+              Couldn't load sessions right now. See the full schedule instead.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-2.5">
+              {data.classes.slice(0, 10).map((c) => (
+                <a
+                  key={c.academy_class_id + c.start_local}
+                  href={c.join_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex items-center gap-4 border border-border bg-card px-4 py-3 transition-colors hover:border-primary"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-body text-sm font-medium text-foreground">
+                      {c.name}
+                    </p>
+                    <p className="font-body text-xs text-muted-foreground">
+                      {c.start_local} · {c.price}
+                      {c.spots_left != null && ` · ${c.spots_left} spots left`}
+                      {c.tentative && " · subject to change"}
+                    </p>
+                  </div>
+                  <span className="inline-flex shrink-0 items-center gap-1.5 bg-primary px-4 py-2 font-display text-xs tracking-widest text-primary-foreground transition-all group-hover:brightness-110">
+                    BOOK <ExternalLink className="h-3 w-3" />
+                  </span>
+                </a>
+              ))}
+            </div>
+          )}
+          <div className="mt-6 text-center">
+            <Link
+              to="/schedule"
+              className="inline-flex items-center gap-2 font-display text-xs tracking-[0.2em] text-muted-foreground transition-colors hover:text-primary"
+            >
+              VIEW FULL SCHEDULE
+            </Link>
           </div>
         </div>
       </section>
