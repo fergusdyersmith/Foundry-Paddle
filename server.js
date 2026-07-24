@@ -483,9 +483,16 @@ function inclusiveDaySpan(start, end) {
 // Shared: fetch Playtomic bookings, group multi-court activities, map to the
 // client shape, optionally filter to [from, to] (inclusive YYYY-MM-DD), and
 // sort by date then start time.
+// Zero/empty prices read as noise ("$0") — treat them as unknown.
+function cleanPrice(price) {
+  if (!price) return null;
+  const n = parseFloat(String(price).replace(/[^0-9.]/g, ""));
+  return Number.isFinite(n) && n > 0 ? price : null;
+}
+
 async function getEvents({ from = null, to = null } = {}) {
   const bookings = await fetchPlaytomicBookings();
-  return groupEventBookings(bookings)
+  const events = groupEventBookings(bookings)
     .map(mapBookingGroup)
     .filter((e) => (from ? e.date >= from : true) && (to ? e.date <= to : true))
     .sort((a, b) =>
@@ -493,6 +500,41 @@ async function getEvents({ from = null, to = null } = {}) {
         ? a.start_time.localeCompare(b.start_time)
         : a.date.localeCompare(b.date),
     );
+
+  // The bookings API reports court-booking TOTALS for classes (or 0), not what
+  // a player pays. Kumi's classes feed carries the real per-person price —
+  // swap it in for clinics/courses, matched by class id (activity_id ==
+  // academy_class_id) with a title+date fallback.
+  const CLASS_TYPES = new Set(["PUBLIC_CLASS", "COURSE_CLASS"]);
+  try {
+    const kumi = await fetchKumiClasses();
+    const byId = new Map();
+    const byTitleDate = new Map();
+    for (const c of kumi.classes || []) {
+      const price = cleanPrice(c.price) || (c.price === "Free" ? "Free" : null);
+      if (!price) continue;
+      if (c.academy_class_id) byId.set(c.academy_class_id, price);
+      if (c.name && c.start_utc) {
+        const local = toLocalParts(new Date(c.start_utc), CLUB_TIMEZONE);
+        byTitleDate.set(`${c.name.trim().toLowerCase()}|${local.date}|${local.time}`, price);
+      }
+    }
+    for (const e of events) {
+      if (!CLASS_TYPES.has(e.booking_type)) continue;
+      const match =
+        byId.get(e.id) ||
+        byTitleDate.get(`${(e.title || "").trim().toLowerCase()}|${e.date}|${e.start_time}`);
+      e.price = match || null; // never show a court total as a player price
+    }
+  } catch (error) {
+    console.error("[events] kumi price enrichment skipped:", error.message);
+    for (const e of events) {
+      if (CLASS_TYPES.has(e.booking_type)) e.price = null;
+    }
+  }
+
+  for (const e of events) e.price = e.price === "Free" ? "Free" : cleanPrice(e.price);
+  return events;
 }
 
 function eventsNotConfigured(res) {
@@ -560,18 +602,20 @@ const KUMI_CLASSES_URL =
 const COACH_CLASSES_TTL = 5 * 60 * 1000;
 let coachClassesCache = { data: null, fetchedAt: 0 };
 
-app.get("/api/coaching/classes", async (req, res) => {
+async function fetchKumiClasses() {
   if (coachClassesCache.data && Date.now() - coachClassesCache.fetchedAt < COACH_CLASSES_TTL) {
-    return res.json(coachClassesCache.data);
+    return coachClassesCache.data;
   }
+  const upstream = await fetch(KUMI_CLASSES_URL, { headers: { Accept: "application/json" } });
+  if (!upstream.ok) throw new Error(`Kumi classes fetch failed (${upstream.status})`);
+  const data = await upstream.json();
+  coachClassesCache = { data, fetchedAt: Date.now() };
+  return data;
+}
+
+app.get("/api/coaching/classes", async (req, res) => {
   try {
-    const upstream = await fetch(KUMI_CLASSES_URL, {
-      headers: { Accept: "application/json" },
-    });
-    if (!upstream.ok) throw new Error(`Kumi classes fetch failed (${upstream.status})`);
-    const data = await upstream.json();
-    coachClassesCache = { data, fetchedAt: Date.now() };
-    return res.json(data);
+    return res.json(await fetchKumiClasses());
   } catch (error) {
     console.error("[coaching] classes proxy failed:", error.message);
     // Serve stale data if we have it; the page degrades gracefully otherwise.
