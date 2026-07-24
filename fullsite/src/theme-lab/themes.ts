@@ -51,8 +51,8 @@ const rockwoodBase = {
 export const PRESETS: ThemePreset[] = [
   {
     id: "current",
-    name: "Current (Gold)",
-    swatch: ["#0f0f0f", "#e59A2f"],
+    name: "Site default (Rockwood · Clay)",
+    swatch: ["#313E39", "#AE6C56"],
     colors: {},
   },
   {
@@ -130,7 +130,12 @@ export const DISPLAY_FONTS: {
   /** Stylesheet URL to inject when selected (null = already loaded). */
   css: string | null;
 }[] = [
-  { id: "bebas", name: "Bebas Neue (current site)", family: "'Bebas Neue', sans-serif", css: null },
+  {
+    id: "schibsted",
+    name: "Schibsted Grotesk (site default)",
+    family: "'Schibsted Grotesk', sans-serif",
+    css: null,
+  },
   {
     id: "archivo",
     name: "Archivo — CHOSEN (Suite 3)",
@@ -142,12 +147,6 @@ export const DISPLAY_FONTS: {
     name: "Archivo Black (≈ Akzidenz Black Ext.)",
     family: "'Archivo Black', sans-serif",
     css: "https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap",
-  },
-  {
-    id: "schibsted",
-    name: "Schibsted Grotesk (Suites 2/4)",
-    family: "'Schibsted Grotesk', sans-serif",
-    css: "https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;700;800&display=swap",
   },
   {
     id: "ranade",
@@ -168,7 +167,7 @@ export const LOGO_OPTIONS: {
   /** Tailwind height class for the header <img>. */
   heightClass: string;
 }[] = [
-  { id: "current", name: "Current text wordmark", src: null, heightClass: "" },
+  { id: "current", name: "Site default (light monogram)", src: null, heightClass: "h-10" },
   {
     id: "lockup-light",
     name: "Horizontal lockup · light (dark themes)",
@@ -214,7 +213,7 @@ export const FAVICON_OPTIONS: {
   srcSquare: string | null;
   srcCircle: string | null;
 }[] = [
-  { id: "current", name: "Current (gold)", srcSquare: null, srcCircle: null },
+  { id: "current", name: "Site default (green · white)", srcSquare: null, srcCircle: null },
   {
     id: "green-white",
     name: "Green · white",
@@ -249,7 +248,7 @@ export const FAVICON_OPTIONS: {
 
 /** Transparent-background options: just the mark, in each brand color. */
 export const TRANSPARENT_FAVICONS: { id: string; name: string; src: string | null }[] = [
-  { id: "current", name: "Current (gold)", src: null },
+  { id: "current", name: "Site default", src: null },
   { id: "mark-white", name: "White mark", src: "/rebrand/favicon-mark-white.svg" },
   { id: "mark-black", name: "Black mark", src: "/rebrand/favicon-mark-black.svg" },
   { id: "mark-clay", name: "Clay mark", src: "/rebrand/favicon-mark-clay.svg" },

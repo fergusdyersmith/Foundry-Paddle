@@ -5,8 +5,8 @@ import { Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LOGO_OPTIONS } from "@/theme-lab/themes";
 
-// Rebrand-preview only: the Theme Lab can swap the header logo. Reads the
-// lab's localStorage state; inert (always the text wordmark) in plain builds.
+// The Theme Lab (preview builds only) can swap the header logo; production
+// always renders the default light monogram.
 const THEME_LAB_ENABLED = import.meta.env.VITE_THEME_LAB === "1";
 
 function useLabLogo() {
@@ -50,15 +50,13 @@ const Header = () => {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-        {labLogo ? (
-          <Link to="/" className="flex items-center" aria-label="Foundry Padel home">
-            <img src={labLogo.src!} alt="Foundry Padel" className={`${labLogo.heightClass} w-auto`} />
-          </Link>
-        ) : (
-          <Link to="/" className="font-display text-2xl tracking-widest text-foreground">
-            FOUNDRY <span className="text-primary">PADEL</span>
-          </Link>
-        )}
+        <Link to="/" className="flex items-center" aria-label="Foundry Padel home">
+          <img
+            src={labLogo?.src ?? "/rebrand/FP_icon_light.svg"}
+            alt="Foundry Padel"
+            className={`${labLogo?.heightClass ?? "h-10"} w-auto`}
+          />
+        </Link>
 
         {/* Desktop nav */}
         <nav className="hidden lg:flex items-center gap-8">

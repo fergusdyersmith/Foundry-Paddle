@@ -38,19 +38,19 @@ interface LabState {
   faviconShape: FaviconShape;
 }
 
-// v5: reset everyone to the agreed defaults (green/white square favicon).
-const STATE_VERSION = 5;
+// v6: the chosen direction is baked into the site; defaults = baseline.
+const STATE_VERSION = 6;
 
 // Default view for fresh visitors: the working rebrand direction (Rockwood +
 // clay CTA, Schibsted headings, light monogram, new favicon). "Current (Gold)"
 // stays available in the picker for comparison.
 const DEFAULT_STATE: LabState = {
   v: STATE_VERSION,
-  presetId: "rockwood-clay",
+  presetId: "current",
   overrides: {},
   fontId: "schibsted",
-  logoId: "icon-light",
-  faviconId: "green-white",
+  logoId: "current",
+  faviconId: "current",
   faviconShape: "square",
 };
 
@@ -130,9 +130,8 @@ export default function ThemeLab() {
       link.dataset.themeLabFont = font.id;
       document.head.appendChild(link);
     }
-    if (font.id === "bebas") {
+    if (font.css === null) {
       root.style.removeProperty("--font-display");
-      root.style.removeProperty("letter-spacing");
     } else {
       root.style.setProperty("--font-display", font.family);
     }
