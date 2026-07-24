@@ -55,6 +55,19 @@ const WA_LOGO =
 const KUMI_MARK = "/rebrand/kumi-fp-mark-circle.png";
 const KUMI_JOIN_URL = "https://foundrypadel.com/join";
 
+// Official Google Maps pin (Wikimedia Commons, 2020 icon), centered in a 24px box.
+const GMAPS_LOGO =
+  "data:image/svg+xml," +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g transform="translate(6 3.3) scale(0.131)">' +
+      '<path fill="#1a73e8" d="M60.2 2.2C55.8.8 51 0 46.1 0 32 0 19.3 6.4 10.8 16.5l21.8 18.3L60.2 2.2z"/>' +
+      '<path fill="#ea4335" d="M10.8 16.5C4.1 24.5 0 34.9 0 46.1c0 8.7 1.7 15.7 4.6 22l28-33.3-21.8-18.3z"/>' +
+      '<path fill="#4285f4" d="M46.2 28.5c9.8 0 17.7 7.9 17.7 17.7 0 4.3-1.6 8.3-4.2 11.4 0 0 13.9-16.6 27.5-32.7-5.6-10.8-15.3-19-27-22.7L32.6 34.8c3.3-3.8 8.1-6.3 13.6-6.3"/>' +
+      '<path fill="#fbbc04" d="M46.2 63.8c-9.8 0-17.7-7.9-17.7-17.7 0-4.3 1.5-8.3 4.1-11.3l-28 33.3c4.8 10.6 12.8 19.2 21 29.9l34.1-40.5c-3.3 3.9-8.1 6.3-13.5 6.3"/>' +
+      '<path fill="#34a853" d="M59.1 109.2c15.4-24.1 33.3-35 33.3-63 0-7.7-1.9-14.9-5.2-21.3L25.6 98c2.6 3.4 5.3 7.3 7.9 11.3 9.4 14.5 6.8 23.1 12.8 23.1s3.4-8.7 12.8-23.2"/>' +
+      "</g></svg>",
+  );
+
 const WIFI_LOGO =
   "data:image/svg+xml," +
   encodeURIComponent(
@@ -247,6 +260,11 @@ const TvScreen = () => {
                 (e.booking_type === "OPEN_MATCH" || e.booking_type === "TOURNAMENT")
                   ? ` · ${e.price}/person`
                   : ""}
+                {e.booking_type !== "OPEN_MATCH" &&
+                  e.capacity != null &&
+                  (e.signed_up >= e.capacity
+                    ? " · Full"
+                    : ` · ${e.signed_up}/${e.capacity} signed up`)}
                 {e.booking_type === "OPEN_MATCH" &&
                   (4 - e.signed_up === 1 ? (
                     <span className="ml-2 inline-block rounded bg-[#AE6C56] px-2 py-0.5 align-middle font-display text-sm tracking-wider text-[#EEEFE3]">
@@ -376,17 +394,13 @@ const TvScreen = () => {
               <p className="mt-1 font-body text-xs text-[#6b7268]">foundrypadel.com/join</p>
             </div>
           </div>
-          <div
-            className="flex cursor-pointer items-center gap-3 rounded-lg border border-[#48544E] p-3"
-            onClick={() => setZoomed({ value: REVIEW_URL, label: "Leave a Google review" })}
-          >
-            <div className="shrink-0 rounded bg-white p-1">
-              <QRCodeSVG value={REVIEW_URL} size={64} level="M" bgColor="#ffffff" fgColor="#101010" />
-            </div>
-            <p className="max-w-[170px] font-body text-xs leading-snug text-[#96998D]">
-              Enjoying Foundry? A quick Google review helps. ⭐
-            </p>
-          </div>
+          <QrTile
+            value={REVIEW_URL}
+            logo={GMAPS_LOGO}
+            label="Google review"
+            sub="Enjoying Foundry? A quick ⭐ helps"
+            onZoom={setZoomed}
+          />
         </div>
 
         {/* Fullscreen QR: tap any code to blow it up for scanning, tap to close */}

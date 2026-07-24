@@ -13,8 +13,11 @@ export interface PadelEvent {
   price: string | null;
   booking_type: string;
   court: string | null;
-  /** Live roster count from Playtomic. Often 0 for clinics (sparse upstream data). */
+  /** Live roster count from Playtomic. Often 0 for clinics (sparse upstream data);
+   *  for clinics and tournaments the server swaps in kumi's registration count. */
   signed_up: number;
+  /** Max players, when known (kumi enrichment for clinics/tournaments). */
+  capacity?: number | null;
   /** Deep link to the specific item on Playtomic (built server-side per type). */
   book_url: string;
 }

@@ -511,12 +511,16 @@ async function getEvents({ from = null, to = null } = {}) {
     const byId = new Map();
     const byTitleDate = new Map();
     for (const c of kumi.classes || []) {
-      const price = cleanPrice(c.price) || (c.price === "Free" ? "Free" : null);
-      if (!price) continue;
-      if (c.academy_class_id) byId.set(c.academy_class_id, price);
+      const info = {
+        price: cleanPrice(c.price) || (c.price === "Free" ? "Free" : null),
+        capacity: Number.isFinite(c.max_players) ? c.max_players : null,
+        registered: Number.isFinite(c.num_registered) ? c.num_registered : null,
+      };
+      if (!info.price && info.capacity == null) continue;
+      if (c.academy_class_id) byId.set(c.academy_class_id, info);
       if (c.name && c.start_utc) {
         const local = toLocalParts(new Date(c.start_utc), CLUB_TIMEZONE);
-        byTitleDate.set(`${c.name.trim().toLowerCase()}|${local.date}|${local.time}`, price);
+        byTitleDate.set(`${c.name.trim().toLowerCase()}|${local.date}|${local.time}`, info);
       }
     }
     for (const e of events) {
@@ -524,19 +528,25 @@ async function getEvents({ from = null, to = null } = {}) {
       const match =
         byId.get(e.id) ||
         byTitleDate.get(`${(e.title || "").trim().toLowerCase()}|${e.date}|${e.start_time}`);
-      e.price = match || null; // never show a court total as a player price
+      e.price = match?.price || null; // never show a court total as a player price
+      e.capacity = match?.capacity ?? null;
+      if (match?.registered != null) e.signed_up = match.registered;
     }
 
     const kumiT = await fetchKumiTournaments();
     const tById = new Map();
     const tByTitleDate = new Map();
     for (const t of kumiT.tournaments || []) {
-      const price = cleanPrice(t.price);
-      if (!price) continue;
-      if (t.tournament_id) tById.set(t.tournament_id, price);
+      const info = {
+        price: cleanPrice(t.price),
+        capacity: Number.isFinite(t.max_players) ? t.max_players : null,
+        registered: Number.isFinite(t.registered_count) ? t.registered_count : null,
+      };
+      if (!info.price && info.capacity == null) continue;
+      if (t.tournament_id) tById.set(t.tournament_id, info);
       if (t.name && t.start_utc) {
         const local = toLocalParts(new Date(t.start_utc), CLUB_TIMEZONE);
-        tByTitleDate.set(`${t.name.trim().toLowerCase()}|${local.date}|${local.time}`, price);
+        tByTitleDate.set(`${t.name.trim().toLowerCase()}|${local.date}|${local.time}`, info);
       }
     }
     for (const e of events) {
@@ -545,7 +555,9 @@ async function getEvents({ from = null, to = null } = {}) {
       const match =
         (urlId && tById.get(urlId)) ||
         tByTitleDate.get(`${(e.title || "").trim().toLowerCase()}|${e.date}|${e.start_time}`);
-      e.price = match || null;
+      e.price = match?.price || null;
+      e.capacity = match?.capacity ?? null;
+      if (match?.registered != null) e.signed_up = match.registered;
     }
   } catch (error) {
     console.error("[events] kumi price enrichment skipped:", error.message);
