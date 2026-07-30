@@ -29,6 +29,10 @@ const rateCard = [
   { item: "Guest of a member", price: "$15", note: "Member guest passes cover this" },
 ];
 
+// The club opens 100 memberships in total. Only that total is published: the
+// working internal split is ~50 student / 30 regular / 20 padelhead, but it is
+// a planning assumption, not a commitment, and per-tier caps would box us in if
+// demand lands differently. Corporate/partner seats sit outside the 100.
 const tiers = [
   {
     name: "STUDENT / LONGEVITY",
@@ -44,6 +48,7 @@ const tiers = [
       "50% discount on padel rentals",
       "25% discount on pro lessons",
       "Free Foundry Padel T-shirt",
+      "7-day booking window",
     ],
     highlight: false,
   },
@@ -91,7 +96,7 @@ const Memberships = () => {
     <main className="bg-background min-h-screen pt-24">
       <Seo
         title="Padel Memberships in Portland — From $99/mo | Foundry Padel"
-        description="Foundry Padel memberships from $99/mo: free off-peak play, discounts on lessons and rentals, priority booking, and members-only events. Or drop in for $15 per player."
+        description="Foundry Padel memberships from $99/mo, limited to 100 founding members: free off-peak play, discounts on lessons and rentals, and members-only events."
         path="/memberships"
       />
       {/* Hero */}
@@ -106,6 +111,9 @@ const Memberships = () => {
             </div>
             <p className="font-body text-base text-secondary-foreground max-w-xl mx-auto">
               From casual play to unlimited access — find the membership that fits your game.
+            </p>
+            <p className="font-body text-sm tracking-[0.15em] uppercase text-primary mt-6">
+              Limited to 100 founding memberships
             </p>
           </motion.div>
         </div>
@@ -364,10 +372,20 @@ const Memberships = () => {
           transition={{ duration: 0.6 }}
           className="mx-auto max-w-3xl text-center"
         >
-          <h2 className="font-display text-3xl sm:text-4xl text-foreground mb-4">NO INITIATION FEE</h2>
+          <h2 className="font-display text-3xl sm:text-4xl text-foreground mb-4">FOUNDING MEMBERSHIPS</h2>
+          <p className="font-body text-base text-secondary-foreground max-w-lg mx-auto mb-4">
+            We are opening <span className="text-foreground font-semibold">100 memberships</span>{" "}
+            in total across the three tiers. We cap them on purpose: a club where members cannot
+            get on court is not a club worth joining. Once the hundred are taken, new members join
+            a waitlist and come in as places open up.
+          </p>
           <p className="font-body text-base text-secondary-foreground max-w-lg mx-auto">
-            We ask for a 12-month commitment but are not charging an initiation fee during our first year.
-            Due at signing is first and 12th month fees.
+            There is <span className="text-foreground font-semibold">no initiation fee</span> in
+            our first year. We ask for a 12-month commitment, and due at signing is the first and
+            twelfth month.
+          </p>
+          <p className="font-body text-xs text-muted-foreground max-w-lg mx-auto mt-6">
+            Corporate and partner memberships are arranged separately and sit outside the 100.
           </p>
         </motion.div>
       </section>
