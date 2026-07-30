@@ -91,7 +91,7 @@ const Memberships = () => {
     <main className="bg-background min-h-screen pt-24">
       <Seo
         title="Padel Memberships in Portland — From $99/mo | Foundry Padel"
-        description="Foundry Padel memberships from $99/mo: free non-peak court time, discounts on lessons and rentals, priority booking, and members-only events. Or drop in for $15 per player."
+        description="Foundry Padel memberships from $99/mo: free off-peak play, discounts on lessons and rentals, priority booking, and members-only events. Or drop in for $15 per player."
         path="/memberships"
       />
       {/* Hero */}
