@@ -76,12 +76,13 @@ const Index = () => {
             ))}
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.8, delay: 0.2 }} className="max-w-2xl mx-auto text-center">
-            <h2 className="font-display text-4xl sm:text-5xl text-foreground mb-6">NOT PICKLEBALL.</h2>
+            <h2 className="font-display text-4xl sm:text-5xl text-foreground mb-6">EASY TO START. HARD TO PUT DOWN.</h2>
             <p className="font-body text-base leading-relaxed text-secondary-foreground">
-              Padel is the fastest-growing racquet sport on the planet. Enclosed glass courts,
-              strategic wall play, and an energy that's part tennis, part squash, and entirely addictive.
-              Foundry Padel is bringing this to Portland —
-              four indoor courts, a curated social space, bar, and retail, all next to Cathedral Park.
+              Padel is the fastest-growing racquet sport in the world: enclosed glass courts,
+              walls that keep the ball alive, and rallies that last. If you have played tennis,
+              squash or pickleball, you will be rallying in your first hour. Foundry Padel brings
+              it to Portland with four indoor courts, a curated social space, bar, and retail,
+              all next to Cathedral Park.
             </p>
           </motion.div>
           <motion.div
@@ -93,7 +94,7 @@ const Index = () => {
           >
             <p className="font-body text-sm leading-relaxed text-muted-foreground">
               Serious but approachable. Competitive but community-driven.
-              This is a home for players who want more than a casual hit —
+              This is a home for players who want more than a casual hit:
               coaching, tournaments, pro workshops, and a space designed to
               elevate the game and the culture around it.
             </p>

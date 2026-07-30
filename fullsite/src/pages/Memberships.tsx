@@ -10,8 +10,14 @@ const sharedBenefits = [
   "Special Members Only events",
   "10% Discount on In-Store Merchandise",
   "Free Stuff — when we get free stuff, you get free stuff!",
-  "Membership benefits at clubs opening in the Pacific Northwest",
 ];
+
+// Peak / off-peak. Every tier above is priced against these windows, so they
+// are stated on the page rather than left to the booking system.
+const peakWindows = {
+  offPeak: ["Monday to Thursday, 8am–4pm", "Friday, 8am–12pm"],
+  peak: ["Monday to Thursday, 4pm–10pm", "Friday, 12pm–10pm", "Saturday & Sunday, all day"],
+};
 
 // Published pay-as-you-go rates, repeated here so the member value figures
 // above can be checked against them without leaving the page.
@@ -32,7 +38,7 @@ const tiers = [
     value: "$245+",
     desc: "Discounted access for students and retirees.",
     features: [
-      "Up to 5 hours/week free court time during non-peak hours (incl. organized games)",
+      "Up to 5 hours/week of free off-peak play (your spot on a court, incl. organized games)",
       "50% discount filling in last-minute open matches within 3 hours (incl. peak)",
       "2 Free 'New Guest' passes/month or 1 off-peak 90-min full court",
       "50% discount on padel rentals",
@@ -49,8 +55,8 @@ const tiers = [
     value: "$345+",
     desc: "For regulars who want priority and perks.",
     features: [
-      "5 hours/week free court time during non-peak hours (incl. organized games)",
-      "4.5 hours/week half-price court time during peak hours (incl. organized games)",
+      "5 hours/week of free off-peak play (your spot on a court, incl. organized games)",
+      "4.5 hours/week of half-price peak play (your spot on a court, incl. organized games)",
       "2 Free 'New Guest' passes/month or 1 off-peak 90-min full court",
       "25% discount on pro lessons",
       "50% discount on padel rentals",
@@ -67,8 +73,8 @@ const tiers = [
     value: "$505+",
     desc: "All-in. Unlimited play, maximum perks.",
     features: [
-      "Unlimited free court time during non-peak hours (incl. organized games)",
-      "3 hours/week free court time during peak hours (incl. organized games)",
+      "Unlimited free off-peak play (your spot on a court, incl. organized games)",
+      "3 hours/week of free peak play (your spot on a court, incl. organized games)",
       "50% discount filling in last-minute open matches within 5 hours (incl. peak)",
       "2 Free 'New Guest' passes/month or 1 off-peak 90-min full court session",
       "25% discount on pro lessons",
@@ -130,8 +136,31 @@ const Memberships = () => {
         </motion.div>
       </section>
 
+      {/* How membership play works. Stated before the tiers because "free court
+          time" is the single most likely thing to be misread on this page. */}
+      <section className="pt-4 pb-8 px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="mx-auto max-w-3xl border border-primary/40 p-6 sm:p-8 text-center"
+        >
+          <h3 className="font-body text-xs tracking-[0.2em] uppercase text-primary mb-3">
+            How membership play works
+          </h3>
+          <p className="font-body text-sm leading-relaxed text-secondary-foreground">
+            Your membership covers <span className="text-foreground font-semibold">your spot on
+            a court</span>, not the whole court. Free and discounted hours are one player's place
+            in an open match or an organized session, and we match you by skill so you never need
+            a partner. To take a full court for yourself and three others, book it at the rates
+            below or use your monthly guest-pass allowance.
+          </p>
+        </motion.div>
+      </section>
+
       {/* Tiers */}
-      <section className="py-12 px-6">
+      <section className="pt-4 pb-12 px-6">
         <div className="mx-auto max-w-5xl grid md:grid-cols-3 gap-6">
           {tiers.map((tier, i) => (
             <motion.div
@@ -181,14 +210,60 @@ const Memberships = () => {
           className="mx-auto max-w-3xl mt-10 space-y-3 text-center"
         >
           <p className="font-body text-xs leading-relaxed text-muted-foreground">
-            Value is what the same play would cost at our published drop-in rates
-            ($15 per player, 90-minute sessions), assuming typical member usage.
+            Value is what the same play would cost at our published $15 per-player
+            drop-in rate for 90-minute sessions, assuming typical member usage.
             Unlimited tiers are figured at 8 hours per week. Your actual value
             depends on how often you play.
           </p>
           <p className="font-body text-xs leading-relaxed text-muted-foreground">
             Memberships are personal and non-transferable. Companies and partners
             looking for transferable or multi-seat access, see below.
+          </p>
+        </motion.div>
+      </section>
+
+      {/* Peak / off-peak windows. Every tier is priced against these, so they
+          belong on the page rather than only inside the booking system. */}
+      <section className="py-12 px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="mx-auto max-w-3xl"
+        >
+          <div className="flex items-center justify-center gap-4 mb-8">
+            <div className="h-px w-12 bg-primary" />
+            <h2 className="font-display text-2xl sm:text-3xl text-foreground text-center">
+              PEAK &amp; OFF-PEAK
+            </h2>
+            <div className="h-px w-12 bg-primary" />
+          </div>
+          <div className="grid sm:grid-cols-2 gap-px bg-border border border-border">
+            <div className="bg-background p-6 sm:p-8">
+              <h3 className="font-body text-xs tracking-[0.2em] uppercase text-primary mb-4">
+                Off-Peak
+              </h3>
+              <ul className="space-y-2">
+                {peakWindows.offPeak.map((w) => (
+                  <li key={w} className="font-body text-sm text-secondary-foreground">{w}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="bg-background p-6 sm:p-8">
+              <h3 className="font-body text-xs tracking-[0.2em] uppercase text-primary mb-4">
+                Peak
+              </h3>
+              <ul className="space-y-2">
+                {peakWindows.peak.map((w) => (
+                  <li key={w} className="font-body text-sm text-secondary-foreground">{w}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          <p className="font-body text-xs text-muted-foreground text-center mt-4">
+            The club is open 8am to 10pm every day. Drop-in and guest pricing is the same at any
+            hour; peak and off-peak apply to member play only.
           </p>
         </motion.div>
       </section>
@@ -229,7 +304,7 @@ const Memberships = () => {
             ))}
           </div>
           <p className="font-body text-xs text-muted-foreground text-center mt-4">
-            Private coaching is booked separately — see{" "}
+            Private coaching is booked separately, see{" "}
             <Link to="/coaching" className="text-primary underline underline-offset-2">
               Coaching
             </Link>
@@ -260,6 +335,11 @@ const Memberships = () => {
             these are transferable between named holders, carry an extended
             booking window and guest allowance, and include use of the upstairs
             lounge for private meetings and events.
+          </p>
+          <p className="font-body text-sm text-secondary-foreground leading-relaxed mb-4">
+            Packages can also include coaching for a whole group, up to four of
+            our certified coaches with one on each court, and food and beverage
+            service from our bar and kitchen.
           </p>
           <p className="font-body text-sm text-secondary-foreground leading-relaxed mb-8">
             Court access, event nights and facility buyouts can be built into the
