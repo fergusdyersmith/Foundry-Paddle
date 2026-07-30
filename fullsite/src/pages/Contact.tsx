@@ -17,7 +17,7 @@ const Contact = () => {
     <main className="bg-background min-h-screen pt-24">
       <Seo
         title="Contact & Location — 8613 N Crawford St | Foundry Padel Portland"
-        description="Find Foundry Padel at 8613 N Crawford St, Portland, OR 97203 — in St. Johns near Cathedral Park. Open daily 8am–10pm. Email, socials, map and directions."
+        description="Find Foundry Padel at 8613 N Crawford St, Portland, OR 97203 — in St. Johns near Cathedral Park. Open daily 7am–10pm. Email, socials, map and directions."
         path="/contact"
       />
       <section className="py-20 px-6">
@@ -53,7 +53,7 @@ const Contact = () => {
                 <div className="flex items-start gap-4">
                   <Clock size={18} className="text-primary mt-1 shrink-0" />
                   <div>
-                    <p className="font-body text-sm text-foreground">Open Daily · 8AM–10PM</p>
+                    <p className="font-body text-sm text-foreground">Open Daily · 7AM–10PM</p>
                     <p className="font-body text-xs text-muted-foreground">All 4 courts · 7 days a week</p>
                   </div>
                 </div>

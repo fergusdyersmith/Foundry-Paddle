@@ -61,7 +61,7 @@ const faqs: Faq[] = [
   },
   {
     q: "What are your hours?",
-    a: "We're open! All four courts are available every day from 8:00 AM to 10:00 PM. Book a court online or through the Playtomic app, and check the Schedule page for clinics, open play, lessons, and tournaments.",
+    a: "We're open! All four courts are available every day from 7:00 AM to 10:00 PM. Book a court online or through the Playtomic app, and check the Schedule page for clinics, open play, lessons, and tournaments.",
   },
 ];
 
@@ -70,7 +70,7 @@ const FAQ = () => {
     <main className="bg-background min-h-screen pt-24">
       <Seo
         title="Padel FAQ — Beginners, Gear, Hours & Location | Foundry Padel"
-        description="Never played padel? A first-timer's guide: no partner needed, racket rentals from $5, hours (8am–10pm daily), pricing, and how to find us in St. Johns, Portland."
+        description="Never played padel? A first-timer's guide: no partner needed, racket rentals from $5, hours (7am–10pm daily), pricing, and how to find us in St. Johns, Portland."
         path="/faq"
       />
       <section className="py-20 px-6">

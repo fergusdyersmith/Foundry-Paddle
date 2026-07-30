@@ -103,7 +103,7 @@ const Book = () => {
     <main className="bg-background min-h-screen pt-24">
       <Seo
         title="Book a Padel Court in Portland — $60 / 90 min | Foundry Padel"
-        description="Book an indoor padel court at Foundry in Portland — $60 per court for 90 minutes ($15 per player). Join a beginner clinic or an open match, racket rentals from $5. Open daily 8am–10pm."
+        description="Book an indoor padel court at Foundry in Portland — $60 per court for 90 minutes ($15 per player). Join a beginner clinic or an open match, racket rentals from $5. Open daily 7am–10pm."
         path="/book"
       />
 
@@ -167,7 +167,7 @@ const Book = () => {
           >
             <SectionHeading
               title="RESERVE A COURT"
-              sub="Have your four? Choose a time and court below. Open daily 8am–10pm · 90-minute sessions · 4 WPT-spec glass courts."
+              sub="Have your four? Choose a time and court below. Open daily 7am–10pm · 90-minute sessions · 4 WPT-spec glass courts."
             />
             <div className="overflow-hidden rounded-sm border border-border bg-muted/30">
               <iframe

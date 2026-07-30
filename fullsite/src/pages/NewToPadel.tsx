@@ -51,7 +51,7 @@ const firstVisitSteps = [
 const quickFacts = [
   { stat: "$15", label: "First play, per player" },
   { stat: "$5", label: "Racket rental" },
-  { stat: "8AM–10PM", label: "Open daily" },
+  { stat: "7AM–10PM", label: "Open daily" },
   { stat: "0", label: "Experience needed" },
 ];
 

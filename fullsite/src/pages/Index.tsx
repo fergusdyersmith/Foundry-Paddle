@@ -19,7 +19,7 @@ const Index = () => {
     <main className="bg-background min-h-screen">
       <Seo
         title="Foundry Padel — Portland's First Indoor Padel Club | St. Johns"
-        description="Play padel in Portland at Foundry — 4 indoor glass courts in St. Johns, next to Cathedral Park. $15 per player, $60 per 90-min court. Racket rentals from $5, no partner needed. Open daily 8am–10pm."
+        description="Play padel in Portland at Foundry — 4 indoor glass courts in St. Johns, next to Cathedral Park. $15 per player, $60 per 90-min court. Racket rentals from $5, no partner needed. Open daily 7am–10pm."
         path="/"
       />
       {/* Hero */}
@@ -129,7 +129,7 @@ const Index = () => {
               <div>
                 <h3 className="font-body text-xs tracking-[0.2em] uppercase text-primary mb-2">Hours</h3>
                 <p className="font-body text-base text-secondary-foreground">
-                  Open daily, 8:00 AM to 10:00 PM. All four indoor courts, morning to night.
+                  Open daily, 7:00 AM to 10:00 PM. All four indoor courts, morning to night.
                 </p>
               </div>
               <div>
