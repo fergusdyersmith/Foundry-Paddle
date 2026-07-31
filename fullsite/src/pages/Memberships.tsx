@@ -43,7 +43,6 @@ const tiers = [
     desc: "Discounted access for students and retirees.",
     features: [
       "Up to 5 hours/week of free off-peak play (your spot on a court, incl. organized games)",
-      "50% discount filling in last-minute open matches within 3 hours (incl. peak)",
       "2 Free 'New Guest' passes/month or 1 off-peak 90-min full court",
       "50% discount on padel rentals",
       "25% discount on pro lessons",
@@ -80,7 +79,6 @@ const tiers = [
     features: [
       "Unlimited free off-peak play (your spot on a court, incl. organized games)",
       "3 hours/week of free peak play (your spot on a court, incl. organized games)",
-      "50% discount filling in last-minute open matches within 5 hours (incl. peak)",
       "2 Free 'New Guest' passes/month or 1 off-peak 90-min full court session",
       "25% discount on pro lessons",
       "50% discount on padel rentals",
