@@ -152,7 +152,7 @@ export const COACHES: CoachProfile[] = [
     aliases: ["tato"],
     bio: "Tato leads Foundry's beginner open play clinics, where first-timers get comfortable on court fast: relaxed pace, lots of rallies, and plenty of encouragement.",
     specialties: "Beginner open play, first-timer onboarding",
-    levelRange: "Beginner",
+    levelRange: "Beginner & intermediate",
     mock: true,
   },
   {

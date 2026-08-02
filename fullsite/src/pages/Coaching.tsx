@@ -74,10 +74,19 @@ const Coaching = () => {
     setTeam(shuffle(TEAM_COACHES));
   }, []);
 
+  // A full session is a dead end on the marketing site: a BOOK button that cannot be
+  // booked, shown to someone deciding whether this club is worth a visit. Hidden from both
+  // lists. spots_left == null means Playtomic did not give us a capacity, so it is kept
+  // (unknown is not the same as full, and dropping those would silently hide real classes).
+  const bookable = useMemo(
+    () => (data?.classes || []).filter((c) => c.spots_left == null || c.spots_left > 0),
+    [data],
+  );
+
   const selectedClasses = useMemo(() => {
-    if (!selected || !data?.classes) return [];
-    return data.classes.filter((c) => coachMatchesName(selected, c.coach_name));
-  }, [selected, data]);
+    if (!selected) return [];
+    return bookable.filter((c) => coachMatchesName(selected, c.coach_name));
+  }, [selected, bookable]);
 
   return (
     <main className="bg-background min-h-screen pt-24">
@@ -159,13 +168,13 @@ const Coaching = () => {
             <div className="flex justify-center py-10">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
-          ) : isError || !data?.classes?.length ? (
+          ) : isError || !bookable.length ? (
             <p className="text-center font-body text-sm text-muted-foreground">
               Couldn't load sessions right now. See the full schedule instead.
             </p>
           ) : (
             <div className="flex flex-col gap-2.5">
-              {data.classes.slice(0, 10).map((c) => (
+              {bookable.slice(0, 10).map((c) => (
                 <a
                   key={c.academy_class_id + c.start_local}
                   href={c.join_url}
@@ -179,10 +188,10 @@ const Coaching = () => {
                     </p>
                     <p className="font-body text-xs text-muted-foreground">
                       {c.start_local} · {c.price}
+                      {/* No "Full" branch: full sessions are filtered out of `bookable`
+                          above, so anything rendered here has room. */}
                       {c.spots_left != null &&
-                        (c.spots_left === 0
-                          ? " · Full"
-                          : ` · ${c.spots_left} ${c.spots_left === 1 ? "spot" : "spots"} left`)}
+                        ` · ${c.spots_left} ${c.spots_left === 1 ? "spot" : "spots"} left`}
                       {c.tentative && " · subject to change"}
                     </p>
                   </div>
@@ -264,10 +273,10 @@ const Coaching = () => {
                             </p>
                             <p className="font-body text-xs text-muted-foreground">
                               {c.start_local} · {c.price}
-                              {c.spots_left != null &&
-                        (c.spots_left === 0
-                          ? " · Full"
-                          : ` · ${c.spots_left} ${c.spots_left === 1 ? "spot" : "spots"} left`)}
+                              {/* No "Full" branch: full sessions are filtered out of `bookable`
+                          above, so anything rendered here has room. */}
+                      {c.spots_left != null &&
+                        ` · ${c.spots_left} ${c.spots_left === 1 ? "spot" : "spots"} left`}
                               {c.tentative && " · subject to change"}
                             </p>
                           </div>
