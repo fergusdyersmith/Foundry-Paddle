@@ -8,7 +8,9 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
-    include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    // server/** holds the Express-side tests (the chatbot trust boundary); they opt into the
+    // node environment with a `@vitest-environment node` docblock.
+    include: ["src/**/*.{test,spec}.{ts,tsx}", "server/**/*.{test,spec}.{js,ts}"],
   },
   resolve: {
     alias: {

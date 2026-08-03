@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ScrollToTop from "@/components/ScrollToTop";
+import ChatWidget from "@/components/ChatWidget";
 
 // Rebrand preview overlay — only in builds with VITE_THEME_LAB=1 (the Railway
 // test service). The flag is compile-time, so production bundles exclude the
@@ -32,6 +33,7 @@ const Layout = () => (
       <Header />
       <Outlet />
       <Footer />
+      <ChatWidget />
       {ThemeLab && (
         <Suspense fallback={null}>
           <ThemeLab />

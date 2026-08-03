@@ -3,6 +3,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { existsSync } from "fs";
 import { z } from "zod";
+import { createChatRouter } from "./server/chat.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dist = path.join(__dirname, "dist");
@@ -694,6 +695,23 @@ app.get("/api/coaching/classes", async (req, res) => {
     return res.status(502).json({ error: "Couldn't load classes." });
   }
 });
+
+// Website chatbot. It is handed read-only accessors for the two feeds this server already
+// caches, so answering a visitor costs no extra upstream calls; it gets nothing else from
+// this process. See server/chat.js for the trust boundary.
+app.use(
+  createChatRouter({
+    getClasses: () => fetchKumiClasses(),
+    getEvents: () => {
+      const today = toLocalParts(new Date(), CLUB_TIMEZONE).date;
+      const to = toLocalParts(
+        new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+        CLUB_TIMEZONE,
+      ).date;
+      return getEvents({ from: today, to });
+    },
+  }),
+);
 
 // Kumi join on-ramp: foundrypadel.com/join -> reverse-proxy the club's join
 // page (backend-rendered HTML) so the URL stays on the Foundry domain instead
