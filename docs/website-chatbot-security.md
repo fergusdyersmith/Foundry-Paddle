@@ -73,6 +73,7 @@ filtered on the way out.
 | 23 | Per-IP rate limit | PASS: 12 per 10 minutes, 60 per day |
 | 24 | Per-conversation cap that survives an IP change | PASS: 30 per hour, `caps a single conversation even if the visitor changes IP` |
 | 25 | Hard daily spend ceiling that fails closed | PASS: `$3` default; past it the endpoint stops calling OpenAI entirely and the widget hides itself |
+| 25b | The bot cannot go live before anyone has published a fact for it to answer from | PASS: an empty knowledge set hides the widget and refuses the endpoint (`hides the widget when nothing has been published to answer from`) |
 | 26 | Input length capped server-side | PASS: 600 characters, truncated rather than rejected |
 | 27 | Reply length capped | PASS: 700 output tokens |
 | 28 | The public knowledge read cannot be turned into a query amplifier against Postgres | PASS: 60-second in-process cache, `test_the_public_read_is_cached_so_a_flood_does_not_reach_postgres` |
@@ -137,3 +138,13 @@ but the widget also tells visitors it can be wrong and points them to /contact.
 4. Publish knowledge rows deliberately. Do **not** publish: the guest WiFi password, the
    internal matchmaking guidance, or the coach roster row that is out of date.
 5. Deploy Kumi first, so `/api/public-knowledge` exists before the website asks for it.
+
+Steps 4 and 5 are enforced rather than remembered: with nothing published, the widget does
+not appear and the endpoint refuses, so shipping the code early is a no-op rather than a bad
+first impression.
+
+**Note on the Kumi schema.** Production tables come from `SQLModel.metadata.create_all()` at
+startup, not from alembic (which is several revisions behind reality). That creates NEW
+tables but never alters existing ones, so `web_chat_log` appeared by itself while
+`club_knowledge.public` did not, and the read endpoint returned 500 until the column was
+added by hand. The migration file is idempotent and matches what was applied.

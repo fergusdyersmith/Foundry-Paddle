@@ -47,7 +47,9 @@ async function boot(env = {}) {
 }
 
 /** Captures what the server sends upstream, and replies as OpenAI would. */
-function stubUpstream({ reply = "Sure thing.", kb = [], openaiStatus = 200 } = {}) {
+const DEFAULT_KB = [{ topic: "Court rental price", answer: "$40 for 1 hour." }];
+
+function stubUpstream({ reply = "Sure thing.", kb = DEFAULT_KB, openaiStatus = 200 } = {}) {
   const calls = [];
   vi.stubGlobal("fetch", async (url, init = {}) => {
     const href = String(url);
@@ -136,6 +138,15 @@ describe("spend controls", () => {
     const r = await ask(ctx.base, {});
     expect(r.status).toBe(503);
     expect(calls.some((c) => c.href.includes("openai"))).toBe(false);
+  });
+
+  it("hides the widget when nothing has been published to answer from", async () => {
+    // Shipping the code before anyone ticks "publish to website" would put a chat bubble on
+    // the site that says "I'm not sure" to every question.
+    stubUpstream({ kb: [] });
+    ctx = await boot();
+    expect(await (await realFetch(`${ctx.base}/api/chat/status`)).json()).toEqual({ enabled: false });
+    expect((await ask(ctx.base, {})).status).toBe(503);
   });
 
   it("hides the widget when the bot is not configured or is capped", async () => {
@@ -327,7 +338,7 @@ describe("logging back to Kumi", () => {
       if (href.startsWith("http://127.0.0.1")) return realFetch(url, init);
       if (href.includes("web-chat-log")) throw new Error("kumi is down");
       if (href.includes("public-knowledge"))
-        return new Response(JSON.stringify({ entries: [] }), { status: 200 });
+        return new Response(JSON.stringify({ entries: DEFAULT_KB }), { status: 200 });
       return new Response(
         JSON.stringify({
           output: [{ type: "message", content: [{ text: "Still here." }] }],

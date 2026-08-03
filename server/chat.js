@@ -402,9 +402,15 @@ export function createChatRouter({ getClasses, getEvents }) {
 
   // Lets the widget stay hidden entirely when the bot is not configured, instead of
   // appearing and then erroring at the visitor.
-  router.get("/api/chat/status", (req, res) =>
-    res.json({ enabled: !!OPENAI_API_KEY && !budgetExhausted() }),
-  );
+  router.get("/api/chat/status", async (req, res) => {
+    if (!OPENAI_API_KEY || budgetExhausted()) return res.json({ enabled: false });
+    // No published facts means every answer would be "I'm not sure, try /contact", which is
+    // a worse first impression than no chat button at all. This also makes the deploy order
+    // self-correcting: the bubble appears when someone publishes knowledge, not when the
+    // code ships.
+    const kb = await fetchPublicKb().catch(() => []);
+    return res.json({ enabled: kb.length > 0 });
+  });
 
   router.post("/api/chat", async (req, res) => {
     if (!OPENAI_API_KEY) {
@@ -463,6 +469,12 @@ export function createChatRouter({ getClasses, getEvents }) {
     }
 
     const kb = await fetchPublicKb();
+    if (!kb.length) {
+      console.error("[chat] no published knowledge; refusing to answer from an empty KB");
+      return res.status(503).json({
+        error: "The chat assistant is not available right now. Please use the contact page.",
+      });
+    }
     const instructions = systemPrompt({
       kb,
       schedule: scheduleBlock(classes, events),
