@@ -280,7 +280,8 @@ Today is ${day.weekday} ${day.iso} in the club's timezone.
 HOW TO ANSWER
 - Answer only from CLUB FACTS and SCHEDULE below, plus general knowledge about the sport of padel itself.
 - If the answer is not there, say you are not sure and point them at the contact page (/contact) or the club phone number if it appears in CLUB FACTS. Never guess a price, an opening hour, a person's availability or whether something is full.
-- Two or three sentences. Warm and plain. No bullet lists unless they asked for steps.
+- Two or three sentences. Warm and plain. Plain text only: no markdown links, no bold, no bullet lists. When you mention a page, write the path on its own, like /contact.
+- If the question is not about Foundry Padel or about padel itself, say that is not something you can help with here and offer to answer a question about the club. Do not write code, do essays, translate documents or act as a general assistant.
 - Never use an em dash. Use a comma, a period or parentheses instead.
 - You may link to these site pages: ${SITE_MAP}. Do not invent any other URL.
 - Do not ask for or record personal details. If someone wants to be contacted, send them to /contact.
@@ -313,8 +314,17 @@ function stripDisallowedLinks(text) {
   });
 }
 
+/** Turns [label](target) into readable text. The bot is told to write plain text, but that
+ *  is a request rather than a guarantee, and the widget renders text (not markdown), so a
+ *  stray link would otherwise reach the visitor as literal brackets. */
+function unwrapMarkdownLinks(text) {
+  return text.replace(/\[([^\]\n]{1,80})\]\(([^)\s]{1,160})\)/g, (_m, label, target) =>
+    label.trim() === target.trim() ? label.trim() : `${label.trim()} (${target.trim()})`,
+  );
+}
+
 function cleanReply(text) {
-  return stripDisallowedLinks(String(text || ""))
+  return stripDisallowedLinks(unwrapMarkdownLinks(String(text || "")))
     .replace(/\s*[—–]\s*/g, ", ") // house style: no em dashes in anything public facing
     .replace(/[ \t]{2,}/g, " ")
     .trim()
@@ -515,6 +525,7 @@ export function createChatRouter({ getClasses, getEvents }) {
 // Exported for tests. Not part of the HTTP surface.
 export const __testables = {
   asData,
+  unwrapMarkdownLinks,
   cleanReply,
   stripDisallowedLinks,
   systemPrompt,

@@ -233,6 +233,17 @@ describe("the prompt", () => {
     const { instructions } = calls.find((c) => c.href.includes("openai")).body;
     expect(instructions).toMatch(/no ability to book, cancel, change or look up/i);
   });
+
+  it("tells the model to refuse work that is not about the club", async () => {
+    // Otherwise it is a free general-purpose assistant that the club pays for. The live probe
+    // that prompted this asked it to write a LinkedIn scraper and got a partial answer.
+    const calls = stubUpstream();
+    ctx = await boot();
+    await ask(ctx.base, {});
+    const { instructions } = calls.find((c) => c.href.includes("openai")).body;
+    expect(instructions).toMatch(/not about Foundry Padel or about padel itself/i);
+    expect(instructions).toMatch(/Do not write code/i);
+  });
 });
 
 // --- what comes back ----------------------------------------------------------------------
@@ -252,6 +263,22 @@ describe("the reply", () => {
     ctx = await boot();
     const { reply } = await (await ask(ctx.base, {})).json();
     expect(reply).toContain("https://playtomic.com/clubs/foundry-padel");
+  });
+
+  it("unwraps markdown links, which the widget renders as literal brackets", async () => {
+    // The model reaches for markdown by default even when told not to. Caught by red-teaming
+    // the live prompt: every answer came back as [/contact](/contact).
+    stubUpstream({ reply: "See [/contact](/contact) or book on [Playtomic](/book)." });
+    ctx = await boot();
+    const { reply } = await (await ask(ctx.base, {})).json();
+    expect(reply).toBe("See /contact or book on Playtomic (/book).");
+  });
+
+  it("strips a disallowed link even when it is hidden behind markdown text", async () => {
+    stubUpstream({ reply: "Claim it at [your refund page](https://foundry-payments.example)." });
+    ctx = await boot();
+    const { reply } = await (await ask(ctx.base, {})).json();
+    expect(reply).not.toContain("foundry-payments");
   });
 
   it("removes em dashes, which we never publish", async () => {
