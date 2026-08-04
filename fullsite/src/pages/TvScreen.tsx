@@ -3,6 +3,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { Head } from "vite-react-ssg";
 import { format, parseISO } from "date-fns";
 import { formatTime } from "@/lib/events";
+import { whatsAppCommunityUrl } from "@/constants/community";
 import type { PadelEvent } from "@/types/events";
 
 /** Operator wall-screen / screensaver page (hidden route, noindex).
@@ -17,7 +18,10 @@ import type { PadelEvent } from "@/types/events";
 
 // ---- Config ----------------------------------------------------------------
 const IG_HANDLE = "foundrypadelpdx";
-const WA_COMMUNITY_URL = "https://chat.whatsapp.com/KrXH7lUsPftHHgOOVVc2Ki";
+// Decoded at render, never a literal — a hardcoded copy here was shipping the
+// invite in plaintext inside the public JS bundle, which defeated the encoding
+// in constants/community.ts. The QR is identical either way.
+const WA_COMMUNITY_URL = whatsAppCommunityUrl();
 const REVIEW_URL =
   "https://www.google.com/maps/search/?api=1&query=Foundry+Padel+Portland+OR";
 // Set both to enable the wifi QR tile (WPA2). Leave blank to hide it.

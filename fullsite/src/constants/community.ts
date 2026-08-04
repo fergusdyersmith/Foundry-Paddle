@@ -9,5 +9,13 @@ const ENCODED_WHATSAPP_COMMUNITY =
 
 export function openWhatsAppCommunity() {
   if (typeof window === "undefined") return;
-  window.open(atob(ENCODED_WHATSAPP_COMMUNITY), "_blank", "noopener,noreferrer");
+  window.open(whatsAppCommunityUrl(), "_blank", "noopener,noreferrer");
+}
+
+/** The invite URL as a value, for the few places that need the string itself
+ *  rather than a click handler — currently only the /tv wall-screen QR code.
+ *  Decoding here keeps the literal out of the bundle; a hardcoded copy anywhere
+ *  else puts it straight back in, which is what this file exists to prevent. */
+export function whatsAppCommunityUrl(): string {
+  return atob(ENCODED_WHATSAPP_COMMUNITY);
 }
