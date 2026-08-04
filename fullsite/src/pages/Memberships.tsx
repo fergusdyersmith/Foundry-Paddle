@@ -19,10 +19,13 @@ const peakWindows = {
   peak: ["Monday to Thursday, 4pm–10pm", "Friday, 12pm–10pm", "Saturday & Sunday, all day"],
 };
 
-// Published pay-as-you-go rates, repeated here so the member value figures
-// above can be checked against them without leaving the page.
+// Published pay-as-you-go rates. Members are measured against these, and a
+// member's monthly credit is spent at exactly these prices, so the page has to
+// carry them rather than send people to /book to work it out.
 const rateCard = [
+  { item: "Court, 60 minutes", price: "$40", note: "Up to 4 players" },
   { item: "Court, 90 minutes", price: "$60", note: "Up to 4 players" },
+  { item: "Court, 120 minutes", price: "$80", note: "Up to 4 players" },
   { item: "Per player, 90 minutes", price: "$15", note: "Join an open match, no partner needed" },
   { item: "Racket rental", price: "$5", note: "Standard club racket" },
   { item: "Premium demo racket", price: "$10", note: "Current-season demo stock" },
@@ -33,21 +36,25 @@ const rateCard = [
 // working internal split is ~50 student / 30 regular / 20 padelhead, but it is
 // a planning assumption, not a commitment, and per-tier caps would box us in if
 // demand lands differently. Corporate/partner seats sit outside the 100.
+// Every tier gets unlimited off-peak play, because those courts sit empty and
+// metering them costs more in complexity than it saves. The ladder is peak
+// access instead: a monthly credit and a longer booking window. That maps 1:1
+// onto what Playtomic configures once per membership and then never needs
+// touching, which is the whole reason the structure looks like this.
 const tiers = [
   {
     name: "STUDENT / LONGEVITY",
     label: "Retired",
     price: "$99",
     period: "/mo",
-    value: "$245+",
-    desc: "Discounted access for students and retirees.",
+    desc: "Play as much as you like, weekday daytime.",
     features: [
-      "Up to 5 hours/week of free off-peak play (your spot on a court)",
-      "2 Free 'New Guest' passes/month (expire at month end)",
-      "25% discount on group clinics",
+      "Unlimited free off-peak play (your spot on a court)",
+      "Peak, evenings and weekends at standard rates",
+      "5-day booking window",
+      "1 free 'New Guest' pass/month (expires at month end)",
       "50% discount on padel rentals",
       "Free Foundry Padel T-shirt",
-      "7-day booking window",
     ],
     highlight: false,
   },
@@ -56,16 +63,14 @@ const tiers = [
     label: null,
     price: "$149",
     period: "/mo",
-    value: "$345+",
-    desc: "For regulars who want priority and perks.",
+    desc: "Unlimited daytime, plus credit for evenings and weekends.",
     features: [
-      "5 hours/week of free off-peak play (your spot on a court)",
-      "4.5 hours/week of half-price peak play (your spot on a court)",
-      "2 Free 'New Guest' passes/month (expire at month end)",
-      "25% discount on group clinics",
+      "Unlimited free off-peak play (your spot on a court)",
+      "$50/month credit for peak play, clinics and tournaments",
+      "7-day booking window",
+      "1 free 'New Guest' pass/month (expires at month end)",
       "50% discount on padel rentals",
       "Free Foundry Padel T-shirt",
-      "7-day booking window",
     ],
     highlight: false,
   },
@@ -74,16 +79,14 @@ const tiers = [
     label: null,
     price: "$199",
     period: "/mo",
-    value: "$505+",
-    desc: "All-in. Unlimited play, maximum perks.",
+    desc: "For players who live at peak times.",
     features: [
       "Unlimited free off-peak play (your spot on a court)",
-      "3 hours/week of free peak play (your spot on a court)",
-      "2 Free 'New Guest' passes/month (expire at month end)",
-      "25% discount on group clinics",
+      "$100/month credit for peak play, clinics and tournaments",
+      "10-day booking window",
+      "1 free 'New Guest' pass/month (expires at month end)",
       "50% discount on padel rentals",
       "Free Foundry Padel T-shirt",
-      "7-day booking window",
     ],
     highlight: true,
   },
@@ -94,7 +97,7 @@ const Memberships = () => {
     <main className="bg-background min-h-screen pt-24">
       <Seo
         title="Padel Memberships in Portland — From $99/mo | Foundry Padel"
-        description="Foundry Padel memberships from $99/mo, limited to 100 founding members: free off-peak play, discounts on clinics and rentals, and members-only events."
+        description="Foundry Padel memberships from $99/mo, limited to 100 founding members: unlimited off-peak play, monthly credit for peak courts and clinics, and priority booking."
         path="/memberships"
       />
       {/* Hero */}
@@ -157,10 +160,10 @@ const Memberships = () => {
           </h3>
           <p className="font-body text-sm leading-relaxed text-secondary-foreground">
             Your membership covers <span className="text-foreground font-semibold">your spot on
-            a court</span>, not the whole court. Free and discounted hours are one player's place
-            in an open match, and we match you by skill so you never need
-            a partner. To take a full court for yourself and three others, book it at the rates
-            below. Your monthly guest passes cover a guest's spot when you bring someone new.
+            a court</span>, not the whole court. Free off-peak play is one player's place in an
+            open match, and we match you by skill so you never need a partner. To take a full
+            court for yourself and three others, everyone pays their own share at the rates
+            below. Your monthly guest pass covers a guest's share when you bring someone new.
           </p>
         </motion.div>
       </section>
@@ -190,10 +193,7 @@ const Memberships = () => {
                 <span className="font-display text-4xl text-primary">{tier.price}</span>
                 <span className="font-body text-sm text-muted-foreground">{tier.period}</span>
               </div>
-              <p className="font-body text-sm text-muted-foreground mb-4">{tier.desc}</p>
-              <div className="font-body text-xs tracking-[0.1em] uppercase text-primary/80 mb-6">
-                Value: {tier.value}
-              </div>
+              <p className="font-body text-sm text-muted-foreground mb-6">{tier.desc}</p>
               <ul className="space-y-3 flex-1">
                 {tier.features.map((f) => (
                   <li key={f} className="flex items-start gap-2">
@@ -206,8 +206,9 @@ const Memberships = () => {
           ))}
         </div>
 
-        {/* Basis for the "Value" figures above, and the transferability rule.
-            Both are here so a tier can be checked against the rate card below. */}
+        {/* Notes that qualify every tier above. The year-1 line is here rather
+            than buried in the terms because it is the one benefit with an end
+            date on it, and nobody should discover that at renewal. */}
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
@@ -216,10 +217,13 @@ const Memberships = () => {
           className="mx-auto max-w-3xl mt-10 space-y-3 text-center"
         >
           <p className="font-body text-xs leading-relaxed text-muted-foreground">
-            Value is what the same play would cost at our published $15 per-player
-            drop-in rate for 90-minute sessions, assuming typical member usage.
-            Unlimited tiers are figured at 8 hours per week. Your actual value
-            depends on how often you play.
+            Unlimited off-peak play is a founding-member benefit through{" "}
+            <span className="text-foreground font-semibold">1 September 2027</span>. We will
+            confirm what follows it before then, and give at least 60 days notice of any change.
+          </p>
+          <p className="font-body text-xs leading-relaxed text-muted-foreground">
+            Monthly credit resets on your renewal date. Unused credit does not carry
+            over. It covers peak court time, clinics, tournaments and leagues.
           </p>
           <p className="font-body text-xs leading-relaxed text-muted-foreground">
             Memberships are personal and non-transferable. Companies and partners
@@ -314,8 +318,9 @@ const Memberships = () => {
             <Link to="/coaching" className="text-primary underline underline-offset-2">
               Coaching
             </Link>
-            . Court time is charged in addition to the coach's rate. The member clinic discount
-            applies to group clinics only, not to one-to-one coaching.
+            . Court time is charged in addition to the coach's rate. Members can put their
+            monthly credit towards clinics, tournaments and leagues, but not towards one-to-one
+            coaching.
           </p>
         </motion.div>
       </section>
@@ -380,8 +385,11 @@ const Memberships = () => {
           </p>
           <p className="font-body text-base text-secondary-foreground max-w-lg mx-auto">
             There is <span className="text-foreground font-semibold">no initiation fee</span> in
-            our first year. We ask for a 12-month commitment, and due at signing is the first and
-            twelfth month.
+            our first year. Memberships run on a 12-month commitment, billed monthly.
+          </p>
+          <p className="font-body text-xs text-muted-foreground max-w-lg mx-auto mt-4">
+            If you cancel before the twelve months are up, your benefits end at the close of that
+            billing period and the remaining monthly payments still apply.
           </p>
           <p className="font-body text-xs text-muted-foreground max-w-lg mx-auto mt-6">
             Corporate and partner memberships are arranged separately and sit outside the 100.
