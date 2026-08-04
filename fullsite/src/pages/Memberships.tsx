@@ -43,8 +43,8 @@ const tiers = [
     desc: "Discounted access for students and retirees.",
     features: [
       "Up to 5 hours/week of free off-peak play (your spot on a court)",
-      "2 Free 'New Guest' passes/month or 1 off-peak 90-min full court",
-      "25% discount on pro lessons",
+      "2 Free 'New Guest' passes/month (expire at month end)",
+      "25% discount on group clinics",
       "50% discount on padel rentals",
       "Free Foundry Padel T-shirt",
       "7-day booking window",
@@ -61,8 +61,8 @@ const tiers = [
     features: [
       "5 hours/week of free off-peak play (your spot on a court)",
       "4.5 hours/week of half-price peak play (your spot on a court)",
-      "2 Free 'New Guest' passes/month or 1 off-peak 90-min full court",
-      "25% discount on pro lessons",
+      "2 Free 'New Guest' passes/month (expire at month end)",
+      "25% discount on group clinics",
       "50% discount on padel rentals",
       "Free Foundry Padel T-shirt",
       "7-day booking window",
@@ -79,8 +79,8 @@ const tiers = [
     features: [
       "Unlimited free off-peak play (your spot on a court)",
       "3 hours/week of free peak play (your spot on a court)",
-      "2 Free 'New Guest' passes/month or 1 off-peak 90-min full court",
-      "25% discount on pro lessons",
+      "2 Free 'New Guest' passes/month (expire at month end)",
+      "25% discount on group clinics",
       "50% discount on padel rentals",
       "Free Foundry Padel T-shirt",
       "7-day booking window",
@@ -94,7 +94,7 @@ const Memberships = () => {
     <main className="bg-background min-h-screen pt-24">
       <Seo
         title="Padel Memberships in Portland — From $99/mo | Foundry Padel"
-        description="Foundry Padel memberships from $99/mo, limited to 100 founding members: free off-peak play, discounts on lessons and rentals, and members-only events."
+        description="Foundry Padel memberships from $99/mo, limited to 100 founding members: free off-peak play, discounts on clinics and rentals, and members-only events."
         path="/memberships"
       />
       {/* Hero */}
@@ -160,7 +160,7 @@ const Memberships = () => {
             a court</span>, not the whole court. Free and discounted hours are one player's place
             in an open match, and we match you by skill so you never need
             a partner. To take a full court for yourself and three others, book it at the rates
-            below or use your monthly guest-pass allowance.
+            below. Your monthly guest passes cover a guest's spot when you bring someone new.
           </p>
         </motion.div>
       </section>
@@ -314,7 +314,8 @@ const Memberships = () => {
             <Link to="/coaching" className="text-primary underline underline-offset-2">
               Coaching
             </Link>
-            . Court time is charged in addition to the coach's rate.
+            . Court time is charged in addition to the coach's rate. The member clinic discount
+            applies to group clinics only, not to one-to-one coaching.
           </p>
         </motion.div>
       </section>
