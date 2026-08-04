@@ -269,6 +269,10 @@ const SITE_MAP = [
   "/the-club the facility",
   "/faq frequently asked questions",
   "/survey the skill survey",
+  // Hidden from nav and search, but the bot is exactly who should send people
+  // here: it is the only page that hands out the WhatsApp community invite, and
+  // without it listed the model falls back to /contact and the page gets no one.
+  "/community the WhatsApp community",
   "/contact contact the club",
 ].join("; ");
 
