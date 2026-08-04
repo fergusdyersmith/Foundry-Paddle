@@ -158,7 +158,7 @@ const Memberships = () => {
           <p className="font-body text-sm leading-relaxed text-secondary-foreground">
             Your membership covers <span className="text-foreground font-semibold">your spot on
             a court</span>, not the whole court. Free and discounted hours are one player's place
-            in an open match or an organized session, and we match you by skill so you never need
+            in an open match, and we match you by skill so you never need
             a partner. To take a full court for yourself and three others, book it at the rates
             below or use your monthly guest-pass allowance.
           </p>
