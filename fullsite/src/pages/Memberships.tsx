@@ -222,7 +222,8 @@ const Memberships = () => {
             confirm what follows it before then, and give at least 60 days notice of any change.
           </p>
           <p className="font-body text-xs leading-relaxed text-muted-foreground">
-            Monthly credit resets on your renewal date. Unused credit does not carry
+            Your credit resets every month on your renewal date, the same day of the month
+            you joined, not the first of the calendar month. Unused credit does not carry
             over. It covers peak court time, clinics, tournaments and leagues.
           </p>
           <p className="font-body text-xs leading-relaxed text-muted-foreground">
