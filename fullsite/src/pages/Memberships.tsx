@@ -224,7 +224,9 @@ const Memberships = () => {
           <p className="font-body text-xs leading-relaxed text-muted-foreground">
             Your credit resets every month on your renewal date, the same day of the month
             you joined, not the first of the calendar month. Unused credit does not carry
-            over. It covers peak court time, clinics, tournaments and leagues.
+            over. It covers peak court time, clinics, tournaments and leagues: court play
+            works out at $10 per player per hour whatever the booking length, so $50 is
+            about 5 hours of peak play and $100 about 10.
           </p>
           <p className="font-body text-xs leading-relaxed text-muted-foreground">
             Memberships are personal and non-transferable. Companies and partners
