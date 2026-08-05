@@ -10,6 +10,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import express from "express";
+import { readFileSync } from "fs";
 
 // The stub below replaces the global fetch, which the test client also uses. Keep a handle
 // on the real one so requests to our own test server still reach it.
@@ -390,5 +391,32 @@ describe("input", () => {
     ctx = await boot();
     const r = await ask(ctx.base, { message: "   " });
     expect(r.status).toBe(400);
+  });
+});
+
+
+// --- the two hand-maintained allowlists ------------------------------------------------
+
+describe("site paths", () => {
+  it("every path the bot may mention is one the widget will linkify", () => {
+    // Two lists, in two files, that have to agree: SITE_MAP tells the model which paths it
+    // may name, LINKABLE tells the widget which ones to turn into links. They drifted within
+    // hours of each other — /community was added to the model's list so it could hand out the
+    // WhatsApp invite, and arrived in the panel as unclickable text.
+    const server = readFileSync(new URL("./chat.js", import.meta.url), "utf8");
+    const widget = readFileSync(
+      new URL("../fullsite/src/components/ChatWidget.tsx", import.meta.url), "utf8");
+
+    const siteMap = server.slice(server.indexOf("const SITE_MAP = ["));
+    const paths = [...siteMap.slice(0, siteMap.indexOf("].join")).matchAll(/"\/([a-z-]+)/g)]
+      .map((m) => m[1]);
+    expect(paths.length).toBeGreaterThan(5);
+
+    const linkable = widget.slice(widget.indexOf("const LINKABLE ="));
+    const allowed = linkable.slice(0, linkable.indexOf("/gi;"));
+    for (const p of paths) {
+      expect(allowed, `/${p} is offered to the model but the widget renders it as plain text`)
+        .toContain(p);
+    }
   });
 });
