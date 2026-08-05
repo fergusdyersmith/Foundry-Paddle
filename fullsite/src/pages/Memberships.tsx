@@ -193,7 +193,15 @@ const Memberships = () => {
                 <span className="font-display text-4xl text-primary">{tier.price}</span>
                 <span className="font-body text-sm text-muted-foreground">{tier.period}</span>
               </div>
-              <p className="font-body text-sm text-muted-foreground mb-6">{tier.desc}</p>
+              <p className="font-body text-sm text-muted-foreground mb-4">{tier.desc}</p>
+              {/* Break-even rather than a "value: $X" total. With unlimited
+                  off-peak a total is unbounded and depends entirely on usage,
+                  and the last set of value figures went stale and inverted. This
+                  is one checkable number, and it is the same at every tier
+                  because each tier's price step is returned as credit. */}
+              <div className="font-body text-xs tracking-[0.1em] uppercase text-primary/80 mb-6">
+                Pays for itself at 7 off-peak sessions a month
+              </div>
               <ul className="space-y-3 flex-1">
                 {tier.features.map((f) => (
                   <li key={f} className="flex items-start gap-2">
@@ -216,6 +224,11 @@ const Memberships = () => {
           transition={{ duration: 0.6 }}
           className="mx-auto max-w-3xl mt-10 space-y-3 text-center"
         >
+          <p className="font-body text-xs leading-relaxed text-muted-foreground">
+            Break-even counts off-peak play at our $15 per-player rate and treats your monthly
+            credit as money back, which is why it lands at the same number on every tier. Play
+            twice a week and you are ahead whichever you choose.
+          </p>
           <p className="font-body text-xs leading-relaxed text-muted-foreground">
             Unlimited off-peak play is a founding-member benefit through{" "}
             <span className="text-foreground font-semibold">1 September 2027</span>. We will
