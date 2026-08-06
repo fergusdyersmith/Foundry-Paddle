@@ -156,7 +156,9 @@ export const COACHES: CoachProfile[] = [
       // $115 at peak: both are real Playtomic pricing rules, not a negotiation.
       playtomicBookable: true,
       rate: "From $95/hour, court included",
-      availability: "Mon–Wed · 9 AM–3 PM; Thu · 9 AM–12 PM; Fri · 9 AM–12 PM",
+      // Mon–Wed is two Playtomic rules back to back, 9–3 off-peak then 3–5 peak,
+      // so it reads as one 9–5 window here.
+      availability: "Mon–Wed · 9 AM–5 PM; Thu and Fri · 9 AM–12 PM",
       detail:
         "$95/hr off-peak, $115/hr peak (weekdays 3–5 PM and Friday mornings). 2–3 people $95/hr off-peak, 4 people $100/hr. 90-min and 2-hr sessions available.",
     },
