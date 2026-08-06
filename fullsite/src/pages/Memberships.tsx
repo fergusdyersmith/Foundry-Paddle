@@ -51,15 +51,23 @@ const rateCard = [
 // membership and then never needs touching, which is the whole reason the
 // structure looks like this.
 //
-// Peak court play is a percentage; clinics, tournaments and events split by TIME:
-// off-peak ones are priced at a reduced Members Rate, peak ones are paid for out of
-// the wallet. Playtomic can discount an activity, but only by hand-pricing each one,
-// so every off-peak session on the schedule is a manual job for staff.
+// Clinics, tournaments and events split by TIME, not by product:
+//                    peak                          off-peak
+//   Student          standard price                25% off
+//   Regular          $25 credit                    25% off
+//   Padelhead        $50 credit                    50% off
+//
+// Playtomic can discount an activity, but only by hand-pricing each session, so every
+// off-peak clinic on the schedule is a recurring manual job for staff.
 //
 // Worth knowing before that work is committed to: on the last 90 days of the class
-// schedule, about 93% of clinic time is at PEAK. The Members Rate therefore applies
-// to roughly one session in fourteen (Tuesday and Thursday mornings), and the wallet
-// carries almost everything else.
+// schedule, about 93% of clinic time is at PEAK. The off-peak discount therefore fires
+// on roughly one session in fourteen (Tuesday and Thursday mornings) and the credit
+// carries almost everything else. Moving clinics into the empty weekday mornings would
+// change that, and is the thing that makes the manual work worth doing.
+//
+// Bullets are ordered peak first, then off-peak, then the benefits that apply at any
+// hour, so the two halves of that table read as two blocks on the card.
 //
 // VALUE, not break-even. Break-even asked "how long until this is worth it", which
 // reads as a warning; the same arithmetic run forwards is what a member actually gets
@@ -97,10 +105,11 @@ const tiers = [
     offPeakPerWeek: 2, peakPerWeek: 0, peakDiscount: 0, creditMonthly: 0,
     playLine: "Playing twice a week, off-peak",
     features: [
-      "For students, retirees, first responders and veterans",
+      "For students, retirees, veterans and first responders",
+      // Peak first, then off-peak, then the benefits that apply at any hour.
+      "Peak courts, clinics and events at standard rates",
       "Unlimited free off-peak play (your spot on a court)",
-      "Peak court bookings at standard rates",
-      "Members Rate on off-peak clinics, tournaments and events",
+      "25% off off-peak clinics, tournaments and events",
       "5-day booking window",
       "1 free 'New Guest' pass/month (expires at month end)",
       "50% discount on padel rentals",
@@ -116,10 +125,10 @@ const tiers = [
     offPeakPerWeek: 2, peakPerWeek: 2, peakDiscount: 0.25, creditMonthly: 25,
     playLine: "Playing 2 off-peak + 2 peak a week",
     features: [
-      "Unlimited free off-peak play (your spot on a court)",
       "25% off every peak court booking",
-      "Members Rate on off-peak clinics, tournaments and events",
       "$25/month credit for peak clinics, tournaments and events",
+      "Unlimited free off-peak play (your spot on a court)",
+      "25% off off-peak clinics, tournaments and events",
       "7-day booking window",
       "1 free 'New Guest' pass/month (expires at month end)",
       "50% discount on padel rentals",
@@ -135,10 +144,10 @@ const tiers = [
     offPeakPerWeek: 2, peakPerWeek: 3, peakDiscount: 0.5, creditMonthly: 50,
     playLine: "Playing 2 off-peak + 3 peak a week",
     features: [
-      "Unlimited free off-peak play (your spot on a court)",
       "50% off every peak court booking",
-      "Members Rate on off-peak clinics, tournaments and events",
       "$50/month credit for peak clinics, tournaments and events",
+      "Unlimited free off-peak play (your spot on a court)",
+      "50% off off-peak clinics, tournaments and events",
       "10-day booking window",
       "1 free 'New Guest' pass/month (expires at month end)",
       "50% discount on padel rentals",
@@ -230,8 +239,8 @@ const Memberships = () => {
             below. Your monthly guest pass covers a guest's share when you bring someone new.
             Unlimited off-peak covers <span className="text-foreground font-semibold">court
             bookings and open matches</span>. Clinics, tournaments and events are priced per
-            session: off-peak you pay the reduced <span className="text-foreground
-            font-semibold">Members Rate</span>, and at peak you use your monthly credit.
+            session. Off-peak you get <span className="text-foreground font-semibold">25% off (50%
+            on Padelhead)</span>. At peak you pay with your monthly credit.
           </p>
         </motion.div>
       </section>
@@ -320,8 +329,9 @@ const Memberships = () => {
             calendar month. Your club credit is different: it recharges on your own renewal
             date, set by the day you joined and not by the calendar, so if you join on the
             20th your credit arrives on the 20th. Credit is for clinics, tournaments and events at
-            PEAK times; off-peak ones are already reduced to the Members Rate, and peak
-            court time is covered by your tier's discount instead. Part
+            PEAK times. Off-peak ones are discounted directly instead, 25% on Student and
+            Regular and 50% on Padelhead, and peak court time is covered by your tier's
+            court discount. Part
             payment is not possible, so if something costs more than your balance, top your
             wallet up before you book.
           </p>
