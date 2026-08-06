@@ -239,8 +239,10 @@ const Memberships = () => {
             below. Your monthly guest pass covers a guest's share when you bring someone new.
             Unlimited off-peak covers <span className="text-foreground font-semibold">court
             bookings and open matches</span>. Clinics, tournaments and events are priced per
-            session. Off-peak you get <span className="text-foreground font-semibold">25% off (50%
-            on Padelhead)</span>. At peak you pay with your monthly credit.
+            session, and every membership pays{" "}
+            <span className="text-foreground font-semibold">less for them off-peak</span>. At
+            peak, Regular and Padelhead members pay with their monthly credit, and Student
+            members pay the standard price. Each card above shows the discount for that tier.
           </p>
         </motion.div>
       </section>
