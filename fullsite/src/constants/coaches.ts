@@ -90,10 +90,10 @@ export const COACHES: CoachProfile[] = [
     levelRange: "Beginner & intermediate",
     privateLessons: {
       playtomicBookable: true,
-      rate: "$70/hour, court included",
+      rate: "$90/hour, court included",
       availability: "Tue and Thu, 10–11 AM",
       detail:
-        "2 people: $80/hr · 3 people: $80/hr · 4 people: $80/hr, court included. 90-min and 2-hr sessions available.",
+        "2–4 people: $100/hr, court included. 90-min and 2-hr sessions available.",
     },
   },
   {
