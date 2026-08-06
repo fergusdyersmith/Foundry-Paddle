@@ -16,6 +16,7 @@ import TvScreen from "./pages/TvScreen";
 import Privacy from "./pages/Privacy";
 import SmsTerms from "./pages/SmsTerms";
 import NotFound from "./pages/NotFound";
+import StaleDeployBoundary from "./components/StaleDeployBoundary";
 
 // Route table consumed by vite-react-ssg. Every static path below is rendered to
 // a real HTML file at build time; the "*" catch-all stays client-only.
@@ -23,6 +24,12 @@ export const routes: RouteRecord[] = [
   {
     path: "/",
     element: <Layout />,
+    // A tab left open across a deploy crashes on the next CLIENT-SIDE navigation:
+    // vite-react-ssg fetches static-loader-data-manifest-<old hash>.json, gets a
+    // 404 whose body is "Not found", and parses it as JSON. Without this the user
+    // sees React Router's raw "Unexpected Application Error!" and has to know to
+    // refresh. See StaleDeployBoundary.
+    errorElement: <StaleDeployBoundary />,
     children: [
       { index: true, element: <Index /> },
       { path: "the-sport", element: <TheSport /> },
@@ -50,5 +57,5 @@ export const routes: RouteRecord[] = [
     ],
   },
   // Operator wall-screen (hidden, noindex, no site chrome).
-  { path: "/tv", element: <TvScreen /> },
+  { path: "/tv", element: <TvScreen />, errorElement: <StaleDeployBoundary /> },
 ];
