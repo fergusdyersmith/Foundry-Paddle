@@ -123,7 +123,7 @@ const Index = () => {
               <div>
                 <h3 className="font-body text-xs tracking-[0.2em] uppercase text-primary mb-2">Pricing</h3>
                 <p className="font-body text-base text-secondary-foreground">
-                  $15 per player — $60 per court for a 90-minute booking. No membership required to play.
+                  $15 per player, $60 per court for a 90-minute booking. No membership required to play.
                 </p>
               </div>
               <div>
@@ -171,7 +171,7 @@ const Index = () => {
           {[
             { title: "THE SPORT", desc: "New to padel? Learn the basics and why it's taking the world by storm.", link: "/the-sport" },
             { title: "THE CLUB", desc: "Four courts, a social bar, and a space designed for the culture.", link: "/the-club" },
-            { title: "MEMBERSHIPS", desc: "From drop-in to unlimited — find the tier that fits your game.", link: "/memberships" },
+            { title: "MEMBERSHIPS", desc: "From drop-in to unlimited, find the tier that fits your game.", link: "/memberships" },
           ].map((item) => (
             <motion.div key={item.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
               <Link to={item.link} className="block border border-border p-8 transition-all hover:border-primary group">

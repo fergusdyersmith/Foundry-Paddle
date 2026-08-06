@@ -9,14 +9,14 @@ const sharedBenefits = [
   "All-hours access to the upstairs lounge and observation deck",
   "Special Members Only events",
   "10% Discount on In-Store Merchandise",
-  "Free Stuff — when we get free stuff, you get free stuff!",
+  "Free Stuff: when we get free stuff, you get free stuff!",
 ];
 
 // Peak / off-peak. Every tier above is priced against these windows, so they
 // are stated on the page rather than left to the booking system.
 const peakWindows = {
-  offPeak: ["Monday to Thursday, 7am–4pm", "Friday, 7am–12pm"],
-  peak: ["Monday to Thursday, 4pm–10pm", "Friday, 12pm–10pm", "Saturday & Sunday, all day"],
+  offPeak: ["Monday to Friday, 7am–4pm", "Saturday & Sunday, 4pm–10pm"],
+  peak: ["Monday to Friday, 4pm–10pm", "Saturday & Sunday, 7am–4pm"],
 };
 
 // Published pay-as-you-go rates. Members are measured against these, and a
@@ -38,19 +38,31 @@ const rateCard = [
 // demand lands differently. Corporate/partner seats sit outside the 100.
 // Every tier gets unlimited off-peak play, because those courts sit empty and
 // metering them costs more in complexity than it saves. The ladder is peak
-// access instead: a monthly credit and a longer booking window. That maps 1:1
-// onto what Playtomic configures once per membership and then never needs
-// touching, which is the whole reason the structure looks like this.
+// access instead: a percentage off peak courts, a monthly credit, and a longer
+// booking window. That maps 1:1 onto what Playtomic configures once per
+// membership and then never needs touching, which is the whole reason the
+// structure looks like this.
+//
+// Courts take a percentage discount and activities cannot, which is why peak
+// play is a % and clinics/tournaments are a wallet. They are two mechanisms
+// because Playtomic offers two, not because the split means anything to a member.
+//
+// `breakEven` is (price minus the monthly credit) / $15 per-player off-peak,
+// rounded up. The credit counts because a member receives it whether or not they
+// play; the peak discount does NOT, because it is worth nothing until they book a
+// peak court, and the previous set of value figures went stale and inverted
+// precisely because they baked in assumptions about how someone plays.
 const tiers = [
   {
     name: "STUDENT / LONGEVITY",
     label: "Retired",
-    price: "$99",
+    price: "$100",
     period: "/mo",
-    desc: "Play as much as you like, weekday daytime.",
+    desc: "Play as much as you like, weekday daytime and weekend evenings.",
+    breakEven: 7,
     features: [
       "Unlimited free off-peak play (your spot on a court)",
-      "Peak, evenings and weekends at standard rates",
+      "Peak court bookings at standard rates",
       "5-day booking window",
       "1 free 'New Guest' pass/month (expires at month end)",
       "50% discount on padel rentals",
@@ -61,12 +73,14 @@ const tiers = [
   {
     name: "REGULAR",
     label: null,
-    price: "$149",
+    price: "$150",
     period: "/mo",
-    desc: "Unlimited daytime, plus credit for evenings and weekends.",
+    desc: "Unlimited off-peak, and a quarter off every peak booking.",
+    breakEven: 9,
     features: [
       "Unlimited free off-peak play (your spot on a court)",
-      "$50/month credit for peak play, clinics and tournaments",
+      "25% off every peak court booking",
+      "$25/month credit for clinics, tournaments and events",
       "7-day booking window",
       "1 free 'New Guest' pass/month (expires at month end)",
       "50% discount on padel rentals",
@@ -77,12 +91,14 @@ const tiers = [
   {
     name: "PADELHEAD",
     label: null,
-    price: "$199",
+    price: "$200",
     period: "/mo",
     desc: "For players who live at peak times.",
+    breakEven: 10,
     features: [
       "Unlimited free off-peak play (your spot on a court)",
-      "$100/month credit for peak play, clinics and tournaments",
+      "50% off every peak court booking",
+      "$50/month credit for clinics, tournaments and events",
       "10-day booking window",
       "1 free 'New Guest' pass/month (expires at month end)",
       "50% discount on padel rentals",
@@ -96,22 +112,26 @@ const Memberships = () => {
   return (
     <main className="bg-background min-h-screen pt-24">
       <Seo
-        title="Padel Memberships in Portland — From $99/mo | Foundry Padel"
-        description="Foundry Padel memberships from $99/mo, limited to 100 founding members: unlimited off-peak play, monthly credit for peak courts and clinics, and priority booking."
+        title="Padel Memberships in Portland, From $100/mo | Foundry Padel"
+        description="Foundry Padel memberships from $100/mo, limited to 100 founding members: unlimited off-peak play, up to 50% off peak courts, monthly credit for clinics and tournaments, and priority booking."
         path="/memberships"
       />
       {/* Hero */}
       <section className="py-20 px-6">
         <div className="mx-auto max-w-4xl text-center">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
-            <h1 className="font-display text-6xl sm:text-8xl text-foreground mb-4">MEMBERSHIPS</h1>
+            {/* MEMBERSHIPS is the longest single-word heading on the site and has no
+                space to wrap at, so a fixed text-6xl overflows narrow phones. Every
+                other hero either wraps (BOOK A COURT, SKILL SURVEY) or is short
+                enough (FAQ, CONTACT), which is why this one page differs. */}
+            <h1 className="font-display text-[clamp(2.25rem,11vw,3.75rem)] leading-none sm:text-8xl text-foreground mb-4">MEMBERSHIPS</h1>
             <div className="flex items-center justify-center gap-4 mb-6">
               <div className="h-px w-16 bg-primary" />
               <span className="font-body text-sm tracking-[0.2em] uppercase text-primary">Find Your Level</span>
               <div className="h-px w-16 bg-primary" />
             </div>
             <p className="font-body text-base text-secondary-foreground max-w-xl mx-auto">
-              From casual play to unlimited access — find the membership that fits your game.
+              From casual play to unlimited access, find the membership that fits your game.
             </p>
             <p className="font-body text-sm tracking-[0.15em] uppercase text-primary mt-6">
               Limited to 100 founding memberships
@@ -164,6 +184,9 @@ const Memberships = () => {
             open match, and we match you by skill so you never need a partner. To take a full
             court for yourself and three others, everyone pays their own share at the rates
             below. Your monthly guest pass covers a guest's share when you bring someone new.
+            Unlimited off-peak covers <span className="text-foreground font-semibold">court
+            bookings and open matches</span>. Clinics, tournaments and events are priced per
+            session and are what your monthly credit is for.
           </p>
         </motion.div>
       </section>
@@ -196,11 +219,9 @@ const Memberships = () => {
               <p className="font-body text-sm text-muted-foreground mb-4">{tier.desc}</p>
               {/* Break-even rather than a "value: $X" total. With unlimited
                   off-peak a total is unbounded and depends entirely on usage,
-                  and the last set of value figures went stale and inverted. This
-                  is one checkable number, and it is the same at every tier
-                  because each tier's price step is returned as credit. */}
+                  and the last set of value figures went stale and inverted. */}
               <div className="font-body text-xs tracking-[0.1em] uppercase text-primary/80 mb-6">
-                Pays for itself at 7 off-peak sessions a month
+                Pays for itself at {tier.breakEven} off-peak sessions a month
               </div>
               <ul className="space-y-3 flex-1">
                 {tier.features.map((f) => (
@@ -225,9 +246,9 @@ const Memberships = () => {
           className="mx-auto max-w-3xl mt-10 space-y-3 text-center"
         >
           <p className="font-body text-xs leading-relaxed text-muted-foreground">
-            Break-even counts off-peak play at our $15 per-player rate and treats your monthly
-            credit as money back, which is why it lands at the same number on every tier. Play
-            twice a week and you are ahead whichever you choose.
+            Break-even counts off-peak play at our $15 per-player rate and treats your
+            monthly credit as money back. Your peak discount is on top of that, so if you
+            play evenings and weekend mornings you are ahead of the number shown.
           </p>
           <p className="font-body text-xs leading-relaxed text-muted-foreground">
             Unlimited off-peak play is a founding-member benefit through{" "}
@@ -237,9 +258,9 @@ const Memberships = () => {
           <p className="font-body text-xs leading-relaxed text-muted-foreground">
             Your credit resets every month on your renewal date, the same day of the month
             you joined, not the first of the calendar month. Unused credit does not carry
-            over. It covers peak court time, clinics, tournaments and leagues: court play
-            works out at $10 per player per hour whatever the booking length, so $50 is
-            about 5 hours of peak play and $100 about 10.
+            over. It covers clinics, tournaments and events, and pays in full for any one
+            of them priced at or under your balance. Peak court time is covered by your
+            tier's discount rather than by your credit.
           </p>
           <p className="font-body text-xs leading-relaxed text-muted-foreground">
             Memberships are personal and non-transferable. Companies and partners
