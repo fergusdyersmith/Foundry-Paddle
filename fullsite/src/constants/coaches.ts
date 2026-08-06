@@ -11,6 +11,17 @@
 export interface PrivateLessons {
   /** True when bookable directly in the Playtomic app (Ryan today). */
   playtomicBookable: boolean;
+  /**
+   * Headline 1-on-1 price, ALWAYS court-inclusive, always the same shape:
+   * "$N/hour, court included". The court is $40/hr flat, peak or off-peak.
+   *
+   * It has to be one convention across every coach or the page misleads. It used
+   * to be mixed: Ryan quoted court-inclusive and everyone else quoted their fee
+   * alone, so Ryan's $90 sat next to Carlos's $60 and read 50% dearer when he is
+   * in fact the cheapest 1-on-1 coach here ($90 against Carlos at $100).
+   *
+   * Group pricing goes in `detail`, not here. "PRIVATE LESSONS" means 1-on-1.
+   */
   rate: string;
   availability?: string;
   /** Extra schedule/pricing detail for Playtomic-bookable lessons. */
@@ -50,7 +61,7 @@ export const COACHES: CoachProfile[] = [
     levelRange: "Beginner & intermediate",
     privateLessons: {
       playtomicBookable: false,
-      rate: "$60 for 60 minutes (1-on-1)",
+      rate: "$100/hour, court included",
       availability: "Mon (AM), Wed (before 5 PM), Thu and Fri (AM)",
     },
   },
@@ -69,8 +80,9 @@ export const COACHES: CoachProfile[] = [
     levelRange: "Beginner & intermediate",
     privateLessons: {
       playtomicBookable: false,
-      rate: "$60 / hour · group add-on: +$60/hr Play-with-Coach (group lessons only)",
+      rate: "$100/hour, court included",
       availability: "Tue and Thu mornings 9–11 AM, flexible on exact time",
+      detail: "Group add-on: +$60/hr Play-with-Coach (group lessons only).",
     },
   },
   {
@@ -88,7 +100,7 @@ export const COACHES: CoachProfile[] = [
     levelRange: "All levels",
     privateLessons: {
       playtomicBookable: true,
-      rate: "From $90/hr (1 person) up to $145/hr (4 people), court included",
+      rate: "$90/hour, court included",
       availability: "Tue, Wed, Thu · 5–8 PM (peak)",
       detail:
         "1 person: $90/hr · 2 people: $110/hr · 3 people: $130/hr · 4 people: $145/hr. 90-min and 2-hr sessions available.",
@@ -109,8 +121,10 @@ export const COACHES: CoachProfile[] = [
     levelRange: "All levels",
     privateLessons: {
       playtomicBookable: false,
-      rate: "1 person: $60/hr · 2: $80/hr · 3: $90/hr · 4: $100/hr (court fee not included). Packages available.",
+      rate: "$100/hour, court included",
       availability: "Weekdays 6:30–8:30 AM and 5–8 PM; weekends 9 AM–1 PM",
+      detail:
+        "2 people: $120/hr · 3 people: $130/hr · 4 people: $140/hr, court included. Packages available.",
     },
   },
   {
@@ -128,7 +142,7 @@ export const COACHES: CoachProfile[] = [
     levelRange: "All levels",
     privateLessons: {
       playtomicBookable: false,
-      rate: "$75/hour (negotiable)",
+      rate: "$115/hour, court included",
       availability: "Any day/time except Tue & Thu nights (after 5 PM)",
     },
   },
