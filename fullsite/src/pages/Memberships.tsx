@@ -47,20 +47,30 @@ const rateCard = [
 // play is a % and clinics/tournaments are a wallet. They are two mechanisms
 // because Playtomic offers two, not because the split means anything to a member.
 //
-// `breakEven` is (price minus the monthly credit) / $15 per-player off-peak,
-// rounded up. The credit counts because a member receives it whether or not they
-// play; the peak discount does NOT, because it is worth nothing until they book a
-// peak court, and the previous set of value figures went stale and inverted
-// precisely because they baked in assumptions about how someone plays.
+// `breakEven` is (price minus the monthly credit) divided by what a session saves
+// you, rounded up. The credit counts because a member receives it whether or not
+// they play. The previous set of value figures went stale and inverted precisely
+// because they baked in assumptions about how someone plays, so this stays to one
+// checkable number per tier.
+//
+// `breakEvenKind` is which session it counts, and it is NOT cosmetic. Off-peak
+// saves the whole $15 per-player rate; peak at 50% off saves only $7.50, and at
+// 25% only $3.75. So the same $150 of net cost is 10 off-peak sessions or 20 peak
+// ones. Padelhead is sold to people who play at peak, and quoting it in off-peak
+// sessions answered a question that buyer never asked.
+//   Student    $100 net, no discount, no credit  -> 100 / 15   = 7 off-peak
+//   Regular    $150 - $25 credit = $125          -> 125 / 15   = 9 off-peak
+//   Padelhead  $200 - $50 credit = $150          -> 150 / 7.50 = 20 peak
 const tiers = [
   {
     name: "STUDENT / LONGEVITY",
-    label: "Retired",
     price: "$100",
     period: "/mo",
     desc: "Play as much as you like, weekday daytime and weekend evenings.",
     breakEven: 7,
+    breakEvenKind: "off-peak",
     features: [
+      "For students, retirees, first responders and veterans",
       "Unlimited free off-peak play (your spot on a court)",
       "Peak court bookings at standard rates",
       "5-day booking window",
@@ -72,11 +82,11 @@ const tiers = [
   },
   {
     name: "REGULAR",
-    label: null,
     price: "$150",
     period: "/mo",
     desc: "Unlimited off-peak, and a quarter off every peak booking.",
     breakEven: 9,
+    breakEvenKind: "off-peak",
     features: [
       "Unlimited free off-peak play (your spot on a court)",
       "25% off every peak court booking",
@@ -90,11 +100,11 @@ const tiers = [
   },
   {
     name: "PADELHEAD",
-    label: null,
     price: "$200",
     period: "/mo",
     desc: "For players who live at peak times.",
-    breakEven: 10,
+    breakEven: 20,
+    breakEvenKind: "peak",
     features: [
       "Unlimited free off-peak play (your spot on a court)",
       "50% off every peak court booking",
@@ -205,23 +215,31 @@ const Memberships = () => {
                 tier.highlight ? "border-primary bg-secondary" : "border-border"
               }`}
             >
-              {tier.highlight && (
-                <span className="font-body text-xs tracking-[0.2em] uppercase text-primary mb-4">Best Value</span>
-              )}
-              <h3 className="font-display text-3xl text-foreground mb-1">{tier.name}</h3>
-              {tier.label && (
-                <span className="font-body text-xs tracking-[0.15em] uppercase text-muted-foreground mb-2">{tier.label}</span>
-              )}
+              {/* Every row above the feature list is reserved to a fixed height so the
+                  three cards line up on a laptop. Without this each row drifts: only
+                  PADELHEAD has a badge, only STUDENT / LONGEVITY wraps its title to two
+                  lines, and the descriptions are different lengths, so the prices,
+                  break-even lines and first bullets all sat at different heights.
+                  The badge slot is always rendered, empty on the other two. */}
+              <div className="h-5 mb-4">
+                {tier.highlight && (
+                  <span className="font-body text-xs tracking-[0.2em] uppercase text-primary">Best Value</span>
+                )}
+              </div>
+              <h3 className="font-display text-3xl text-foreground mb-1 min-h-[4.5rem]">{tier.name}</h3>
               <div className="mb-3">
                 <span className="font-display text-4xl text-primary">{tier.price}</span>
                 <span className="font-body text-sm text-muted-foreground">{tier.period}</span>
               </div>
-              <p className="font-body text-sm text-muted-foreground mb-4">{tier.desc}</p>
-              {/* Break-even rather than a "value: $X" total. With unlimited
-                  off-peak a total is unbounded and depends entirely on usage,
-                  and the last set of value figures went stale and inverted. */}
-              <div className="font-body text-xs tracking-[0.1em] uppercase text-primary/80 mb-6">
-                Pays for itself at {tier.breakEven} off-peak sessions a month
+              <p className="font-body text-sm text-muted-foreground mb-4 min-h-[2.5rem]">{tier.desc}</p>
+              {/* Break-even rather than a "value: $X" total. With unlimited off-peak a
+                  total is unbounded and depends entirely on usage, and the last set of
+                  value figures went stale and inverted. Stated in the currency each tier
+                  is SOLD on: off-peak sessions for the two that lead on off-peak, peak
+                  sessions for Padelhead, which is pitched at people who play at peak and
+                  for whom an off-peak number answers a question they never asked. */}
+              <div className="font-body text-xs tracking-[0.1em] uppercase text-primary/80 mb-6 min-h-[2rem]">
+                Pays for itself at {tier.breakEven} {tier.breakEvenKind} sessions a month
               </div>
               <ul className="space-y-3 flex-1">
                 {tier.features.map((f) => (
@@ -246,9 +264,11 @@ const Memberships = () => {
           className="mx-auto max-w-3xl mt-10 space-y-3 text-center"
         >
           <p className="font-body text-xs leading-relaxed text-muted-foreground">
-            Break-even counts off-peak play at our $15 per-player rate and treats your
-            monthly credit as money back. Your peak discount is on top of that, so if you
-            play evenings and weekend mornings you are ahead of the number shown.
+            Break-even treats your monthly credit as money back and counts play at our $15
+            per-player rate. Student and Regular are counted in off-peak sessions, which
+            cost you nothing. Padelhead is counted in peak sessions, where 50% off saves
+            you $7.50 each time. Mix the two and you get there sooner than either number
+            on its own.
           </p>
           <p className="font-body text-xs leading-relaxed text-muted-foreground">
             Unlimited off-peak play is a founding-member benefit through{" "}
