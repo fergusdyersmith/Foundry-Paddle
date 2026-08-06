@@ -309,8 +309,9 @@ const Memberships = () => {
             calendar month. Your club credit is different: it recharges on your own renewal
             date, set by the day you joined and not by the calendar, so if you join on the
             20th your credit arrives on the 20th. Credit covers clinics, tournaments and
-            events; peak court time is covered by your tier's discount instead. If
-            something costs more than your balance, you can top your wallet up at any time.
+            events; peak court time is covered by your tier's discount instead. Part
+            payment is not possible, so if something costs more than your balance, top your
+            wallet up before you book.
           </p>
           <p className="font-body text-xs leading-relaxed text-muted-foreground">
             Your guest pass code is emailed to you within 24 hours of joining, and again at
