@@ -26,7 +26,7 @@ const rateCard = [
   { item: "Court, 60 minutes", price: "$40", note: "Up to 4 players" },
   { item: "Court, 90 minutes", price: "$60", note: "Up to 4 players" },
   { item: "Court, 120 minutes", price: "$80", note: "Up to 4 players" },
-  { item: "Per player, 90 minutes", price: "$15", note: "Join an open match, no partner needed" },
+  { item: "Per player, 90 minutes", price: "$22.50", note: "Join an open match, no partner needed" },
   { item: "Racket rental", price: "$5", note: "Standard club racket" },
   { item: "Premium demo racket", price: "$10", note: "Current-season demo stock" },
   { item: "Guest of a member", price: "$15", note: "Member guest passes cover this" },
@@ -47,28 +47,41 @@ const rateCard = [
 // play is a % and clinics/tournaments are a wallet. They are two mechanisms
 // because Playtomic offers two, not because the split means anything to a member.
 //
-// `breakEven` is (price minus the monthly credit) divided by what a session saves
-// you, rounded up. The credit counts because a member receives it whether or not
-// they play. The previous set of value figures went stale and inverted precisely
-// because they baked in assumptions about how someone plays, so this stays to one
-// checkable number per tier.
+// VALUE, not break-even. Break-even asked "how long until this is worth it", which
+// reads as a warning; the same arithmetic run forwards is what a member actually gets
+// back in a month. Every figure below is COMPUTED from the constants, never typed in,
+// because the last set of hand-written value figures went stale and inverted.
 //
-// `breakEvenKind` is which session it counts, and it is NOT cosmetic. Off-peak
-// saves the whole $15 per-player rate; peak at 50% off saves only $7.50, and at
-// 25% only $3.75. So the same $150 of net cost is 10 off-peak sessions or 20 peak
-// ones. Padelhead is sold to people who play at peak, and quoting it in off-peak
-// sessions answered a question that buyer never asked.
-//   Student    $100 net, no discount, no credit  -> 100 / 15   = 7 off-peak
-//   Regular    $150 - $25 credit = $125          -> 125 / 15   = 9 off-peak
-//   Padelhead  $200 - $50 credit = $150          -> 150 / 7.50 = 20 peak
+// Counted, at the $22.50 per-player rate:
+//   off-peak play   the whole rate, since it is free
+//   peak play       only the DISCOUNT, since they still pay the rest
+//   monthly credit  in full, received whether or not they play
+//   guest pass      one session at the guest rate
+//   t-shirt         one-off, counted in the first month
+//
+// Padelhead assumes MORE peak play than Regular, which is the tier's whole premise:
+// at 2+2 it lands at $390, and it is sold to people who live at peak.
+const SESSION_RATE = 22.5;         // per player, 90 minutes
+const WEEKS_PER_MONTH = 52 / 12;   // 4.33, not 4 — the difference is a whole session
+const GUEST_PASS_VALUE = 22.5;
+const TSHIRT_VALUE = 25;
+
+function monthlyValue(t: {
+  offPeakPerWeek: number; peakPerWeek: number; peakDiscount: number; creditMonthly: number;
+}): number {
+  const offPeak = t.offPeakPerWeek * WEEKS_PER_MONTH * SESSION_RATE;
+  const peak = t.peakPerWeek * WEEKS_PER_MONTH * SESSION_RATE * t.peakDiscount;
+  return Math.round(offPeak + peak + t.creditMonthly + GUEST_PASS_VALUE + TSHIRT_VALUE);
+}
+
 const tiers = [
   {
     name: "STUDENT / LONGEVITY",
     price: "$100",
     period: "/mo",
     desc: "Play as much as you like, weekday daytime and weekend evenings.",
-    breakEven: 7,
-    breakEvenKind: "off-peak",
+    offPeakPerWeek: 2, peakPerWeek: 0, peakDiscount: 0, creditMonthly: 0,
+    playLine: "Playing twice a week, off-peak",
     features: [
       "For students, retirees, first responders and veterans",
       "Unlimited free off-peak play (your spot on a court)",
@@ -85,8 +98,8 @@ const tiers = [
     price: "$150",
     period: "/mo",
     desc: "Unlimited off-peak, and a quarter off every peak booking.",
-    breakEven: 9,
-    breakEvenKind: "off-peak",
+    offPeakPerWeek: 2, peakPerWeek: 2, peakDiscount: 0.25, creditMonthly: 25,
+    playLine: "Playing 2 off-peak + 2 peak a week",
     features: [
       "Unlimited free off-peak play (your spot on a court)",
       "25% off every peak court booking",
@@ -103,8 +116,8 @@ const tiers = [
     price: "$200",
     period: "/mo",
     desc: "For players who live at peak times.",
-    breakEven: 20,
-    breakEvenKind: "peak",
+    offPeakPerWeek: 2, peakPerWeek: 3, peakDiscount: 0.5, creditMonthly: 50,
+    playLine: "Playing 2 off-peak + 3 peak a week",
     features: [
       "Unlimited free off-peak play (your spot on a court)",
       "50% off every peak court booking",
@@ -238,8 +251,12 @@ const Memberships = () => {
                   is SOLD on: off-peak sessions for the two that lead on off-peak, peak
                   sessions for Padelhead, which is pitched at people who play at peak and
                   for whom an off-peak number answers a question they never asked. */}
-              <div className="font-body text-xs tracking-[0.1em] uppercase text-primary/80 mb-6 min-h-[2rem]">
-                Pays for itself at {tier.breakEven} {tier.breakEvenKind} sessions a month
+              <div className="mb-6 min-h-[3.25rem]">
+                <div className="font-body text-sm text-primary">
+                  <span className="font-display text-2xl">${monthlyValue(tier)}</span>
+                  <span className="text-xs tracking-[0.1em] uppercase"> value a month</span>
+                </div>
+                <div className="font-body text-xs text-muted-foreground mt-0.5">{tier.playLine}</div>
               </div>
               <ul className="space-y-3 flex-1">
                 {tier.features.map((f) => (
@@ -264,11 +281,11 @@ const Memberships = () => {
           className="mx-auto max-w-3xl mt-10 space-y-3 text-center"
         >
           <p className="font-body text-xs leading-relaxed text-muted-foreground">
-            Break-even treats your monthly credit as money back and counts play at our $15
-            per-player rate. Student and Regular are counted in off-peak sessions, which
-            cost you nothing. Padelhead is counted in peak sessions, where 50% off saves
-            you $7.50 each time. Mix the two and you get there sooner than either number
-            on its own.
+            Value is what you get back in a month at our $22.50 per-player rate, on the
+            play shown under each figure. Off-peak sessions count in full because they are
+            free; peak sessions count only the discount, since you still pay the rest. Your
+            monthly credit, guest pass and t-shirt are included. Play more than that and
+            the number goes up.
           </p>
           <p className="font-body text-xs leading-relaxed text-muted-foreground">
             Unlimited off-peak play is a founding-member benefit through{" "}
