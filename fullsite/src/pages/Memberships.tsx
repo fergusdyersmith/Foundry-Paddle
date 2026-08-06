@@ -305,11 +305,15 @@ const Memberships = () => {
             confirm what follows it before then, and give at least 60 days notice of any change.
           </p>
           <p className="font-body text-xs leading-relaxed text-muted-foreground">
-            Your credit resets every month on your renewal date, the same day of the month
-            you joined, not the first of the calendar month. Unused credit does not carry
-            over. It covers clinics, tournaments and events, and pays in full for any one
-            of them priced at or under your balance. Peak court time is covered by your
-            tier's discount rather than by your credit.
+            Monthly benefits do not carry over. Your guest pass expires at the end of the
+            calendar month, and your club credit resets on your renewal date, the same day
+            of the month you joined. Credit covers clinics, tournaments and events; peak
+            court time is covered by your tier's discount instead. If something costs more
+            than your balance, you can top your wallet up at any time.
+          </p>
+          <p className="font-body text-xs leading-relaxed text-muted-foreground">
+            Your guest pass code is emailed to you within 24 hours of joining, and again at
+            the start of each calendar month.
           </p>
           <p className="font-body text-xs leading-relaxed text-muted-foreground">
             Memberships are personal and non-transferable. Companies and partners
