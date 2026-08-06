@@ -293,11 +293,12 @@ const Memberships = () => {
           className="mx-auto max-w-3xl mt-10 space-y-3 text-center"
         >
           <p className="font-body text-xs leading-relaxed text-muted-foreground">
-            Value is what you get back in a month at our $22.50 per-player rate, on the
-            play shown under each figure. Off-peak sessions count in full because they are
-            free; peak sessions count only the discount, since you still pay the rest. Your
-            monthly credit, guest pass and t-shirt are included. Play more than that and
-            the number goes up.
+            Value is what you get back in a month at the $22.50 per-player rate taking
+            effect on <span className="text-foreground font-semibold">1 September 2026</span>,
+            on the play shown under each figure. Off-peak sessions count in full because
+            they are free; peak sessions count only the discount, since you still pay the
+            rest. Your monthly credit, guest pass and t-shirt are included. Play more than
+            that and the number goes up.
           </p>
           <p className="font-body text-xs leading-relaxed text-muted-foreground">
             Unlimited off-peak play is a founding-member benefit through{" "}
@@ -387,9 +388,16 @@ const Memberships = () => {
             </h2>
             <div className="h-px w-12 bg-primary" />
           </div>
-          <p className="font-body text-sm text-secondary-foreground text-center mb-8 max-w-xl mx-auto">
+          <p className="font-body text-sm text-secondary-foreground text-center mb-2 max-w-xl mx-auto">
             You never need a membership to play at Foundry. These are the rates
             everyone pays, and what every membership above is measured against.
+          </p>
+          {/* These are the NEW rates, live 1 Sep 2026. Until then /book, /new-to-padel and
+              the home page all still quote the current $15 per player and $60 court, which
+              is correct today. All of them have to change on the same day or the site
+              contradicts itself. */}
+          <p className="font-body text-xs tracking-[0.1em] uppercase text-primary text-center mb-8">
+            Rates from 1 September 2026
           </p>
           <div className="border border-border divide-y divide-border">
             {rateCard.map((row) => (
