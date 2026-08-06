@@ -22,14 +22,22 @@ const peakWindows = {
 // Published pay-as-you-go rates. Members are measured against these, and a
 // member's monthly credit is spent at exactly these prices, so the page has to
 // carry them rather than send people to /book to work it out.
+// A 90-minute court is $90 for up to four, which is exactly the $22.50 per-player rate
+// times four. That has to keep holding: a visitor divides one by the other, and when it
+// did not (a $60 court against a $22.50 spot) the page said a spot cost half as much as
+// a spot.
+//
+// The 60 and 120 minute prices are EXTRAPOLATED from $90/90min, i.e. a flat $60/hour.
+// Only the 90-minute price was given. Leaving the old $40 and $80 would have made two
+// hours ($80) cheaper than ninety minutes ($90), so they could not stay as they were.
 const rateCard = [
-  { item: "Court, 60 minutes", price: "$40", note: "Up to 4 players" },
-  { item: "Court, 90 minutes", price: "$60", note: "Up to 4 players" },
-  { item: "Court, 120 minutes", price: "$80", note: "Up to 4 players" },
+  { item: "Court, 60 minutes", price: "$60", note: "Up to 4 players" },
+  { item: "Court, 90 minutes", price: "$90", note: "Up to 4 players" },
+  { item: "Court, 120 minutes", price: "$120", note: "Up to 4 players" },
   { item: "Per player, 90 minutes", price: "$22.50", note: "Join an open match, no partner needed" },
   { item: "Racket rental", price: "$5", note: "Standard club racket" },
   { item: "Premium demo racket", price: "$10", note: "Current-season demo stock" },
-  { item: "Guest of a member", price: "$15", note: "Member guest passes cover this" },
+  { item: "Guest of a member", price: "$22.50", note: "Member guest passes cover this" },
 ];
 
 // The club opens 100 memberships in total. Only that total is published: the
