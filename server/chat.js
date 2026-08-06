@@ -203,6 +203,23 @@ function localToday() {
   return { iso: `${p.year}-${p.month}-${p.day}`, weekday: p.weekday };
 }
 
+// "Kelly Correia (he/him)" when we know, the bare name when we do not. Kumi sends
+// `coaches: [{name, pronouns}]`; pronouns is null unless someone recorded it, and an
+// absent value must stay absent rather than being filled in from the name.
+function coachWithPronouns(c) {
+  const known = new Map(
+    (Array.isArray(c.coaches) ? c.coaches : [])
+      .filter((x) => x && x.name && x.pronouns)
+      .map((x) => [String(x.name).trim(), String(x.pronouns)]),
+  );
+  return String(c.coach_name || "")
+    .split(",")
+    .map((n) => n.trim())
+    .filter(Boolean)
+    .map((n) => (known.has(n) ? `${n} (${known.get(n)})` : n))
+    .join(", ");
+}
+
 function scheduleBlock(classes, events) {
   // Two feeds, deliberately kept apart in the prompt so the bot does not merge them into a
   // single invented listing. Classes carry the coach name; events carry everything on the
@@ -219,7 +236,9 @@ function scheduleBlock(classes, events) {
       [
         asData(c.name, 90),
         asData((c.start_local || "").replace("T", " ").slice(0, 16), 20),
-        c.coach_name ? `coach ${asData(c.coach_name, 40)}` : "",
+        // Pronouns ride along with the coach name so the model never has to infer them.
+        // It called Kelly Correia "her" on 2026-08-06 purely from the name.
+        c.coach_name ? `coach ${asData(coachWithPronouns(c), 80)}` : "",
         asData(c.price, 20),
         spots,
         c.tentative ? "not yet confirmed" : "",
@@ -283,6 +302,7 @@ Today is ${day.weekday} ${day.iso} in the club's timezone.
 
 HOW TO ANSWER
 - Answer only from CLUB FACTS and SCHEDULE below, plus general knowledge about the sport of padel itself.
+- Never infer anyone's gender from their name. Use the pronouns shown in brackets after a coach's name if they are there; if they are not, write "they" or just repeat the person's name. Getting this wrong misgenders a real member of staff, which "they" never does.
 - If the answer is not there, say you are not sure and point them at the contact page (/contact) or the club phone number if it appears in CLUB FACTS. Never guess a price, an opening hour, a person's availability or whether something is full.
 - Two or three sentences. Warm and plain. Plain text only: no markdown links, no bold, no bullet lists. When you mention a page, write the path on its own, like /contact.
 - If the question is not about Foundry Padel or about padel itself, say that is not something you can help with here and offer to answer a question about the club. Do not write code, do essays, translate documents or act as a general assistant.
