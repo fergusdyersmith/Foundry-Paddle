@@ -13,12 +13,18 @@ export interface PrivateLessons {
   playtomicBookable: boolean;
   /**
    * Headline 1-on-1 price, ALWAYS court-inclusive, always the same shape:
-   * "$N/hour, court included". The court is $40/hr flat, peak or off-peak.
+   * "$N/hour, court included".
    *
-   * It has to be one convention across every coach or the page misleads. It used
-   * to be mixed: Ryan quoted court-inclusive and everyone else quoted their fee
-   * alone, so Ryan's $90 sat next to Carlos's $60 and read 50% dearer when he is
-   * in fact the cheapest 1-on-1 coach here ($90 against Carlos at $100).
+   * SOURCE OF TRUTH is Playtomic's per-coach pricing rules, which Kumi syncs to
+   * Coach.profile_json["pt_lesson"] and whose prices already include the court:
+   *   GET manager.playtomic.io/api/v1/coach_pricing_rules?tenant_id=&user_id=
+   *
+   * Do NOT derive these by adding the $40 court fee to a coach's free-text rate.
+   * That was tried and three of five came out wrong, because the free text was
+   * stale (Juan) or simply a different number from what the coach had configured
+   * in Playtomic (Carlos $60+court=$100 against a real $85, Kelly $60+court=$100
+   * against a real $70). The free text is what someone typed into an admin form
+   * once; pt_lesson is what a customer is actually charged at checkout.
    *
    * Group pricing goes in `detail`, not here. "PRIVATE LESSONS" means 1-on-1.
    */
@@ -60,6 +66,10 @@ export const COACHES: CoachProfile[] = [
     languages: "English",
     levelRange: "Beginner & intermediate",
     privateLessons: {
+      // The only coach with no Playtomic pricing rules, so this is the one rate
+      // still derived from free text ($60 + $40 court) rather than read from
+      // pt_lesson. Confirm with Eugene, or set his pricing up in Playtomic and it
+      // becomes self-maintaining like the others.
       playtomicBookable: false,
       rate: "$100/hour, court included",
       availability: "Mon (AM), Wed (before 5 PM), Thu and Fri (AM)",
@@ -79,10 +89,11 @@ export const COACHES: CoachProfile[] = [
     languages: "English",
     levelRange: "Beginner & intermediate",
     privateLessons: {
-      playtomicBookable: false,
-      rate: "$100/hour, court included",
-      availability: "Tue and Thu mornings 9–11 AM, flexible on exact time",
-      detail: "Group add-on: +$60/hr Play-with-Coach (group lessons only).",
+      playtomicBookable: true,
+      rate: "$70/hour, court included",
+      availability: "Tue and Thu, 10–11 AM",
+      detail:
+        "2 people: $80/hr · 3 people: $80/hr · 4 people: $80/hr, court included. 90-min and 2-hr sessions available.",
     },
   },
   {
@@ -120,11 +131,11 @@ export const COACHES: CoachProfile[] = [
     languages: "English, Spanish",
     levelRange: "All levels",
     privateLessons: {
-      playtomicBookable: false,
-      rate: "$100/hour, court included",
-      availability: "Weekdays 6:30–8:30 AM and 5–8 PM; weekends 9 AM–1 PM",
+      playtomicBookable: true,
+      rate: "$85/hour, court included",
+      availability: "Tue, Wed, Thu · 6:30–8:30 AM and 4:30–6:30 PM",
       detail:
-        "2 people: $120/hr · 3 people: $130/hr · 4 people: $140/hr, court included. Packages available.",
+        "2 people: $105/hr · 3 people: $125/hr · 4 people: $140/hr, court included. 90-min and 2-hr sessions available. Packages available.",
     },
   },
   {
@@ -141,9 +152,13 @@ export const COACHES: CoachProfile[] = [
     languages: "English, Spanish",
     levelRange: "All levels",
     privateLessons: {
-      playtomicBookable: false,
-      rate: "$115/hour, court included",
-      availability: "Any day/time except Tue & Thu nights (after 5 PM)",
+      // The only coach with two price bands, so the headline is "from". $95 off-peak,
+      // $115 at peak: both are real Playtomic pricing rules, not a negotiation.
+      playtomicBookable: true,
+      rate: "From $95/hour, court included",
+      availability: "Mon–Wed · 9 AM–3 PM; Thu · 9 AM–12 PM; Fri · 9 AM–12 PM",
+      detail:
+        "$95/hr off-peak, $115/hr peak (weekdays 3–5 PM and Friday mornings). 2–3 people $95/hr off-peak, 4 people $100/hr. 90-min and 2-hr sessions available.",
     },
   },
   {

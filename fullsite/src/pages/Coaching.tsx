@@ -310,14 +310,23 @@ const Coaching = () => {
                         </p>
                       )}
                       {selected.privateLessons.playtomicBookable ? (
-                        <a
-                          href={PLAYTOMIC_TENANT_URL}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="mt-4 inline-flex items-center gap-2 bg-primary px-4 py-2 font-display text-xs tracking-widest text-primary-foreground transition-all hover:brightness-110"
-                        >
-                          BOOK IN PLAYTOMIC <ExternalLink className="h-3 w-3" />
-                        </a>
+                        <>
+                          <a
+                            href={PLAYTOMIC_TENANT_URL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-4 inline-flex items-center gap-2 bg-primary px-4 py-2 font-display text-xs tracking-widest text-primary-foreground transition-all hover:brightness-110"
+                          >
+                            BOOK IN PLAYTOMIC <ExternalLink className="h-3 w-3" />
+                          </a>
+                          {/* Playtomic drops you on the club page, not the lesson.
+                              Without this people land there and mail us anyway. */}
+                          <p className="mt-2 font-body text-xs text-muted-foreground">
+                            In Playtomic, open <span className="text-foreground">Clinics and
+                            courses</span>, then the <span className="text-foreground">Private
+                            lessons</span> tab.
+                          </p>
+                        </>
                       ) : (
                         <a
                           href={`mailto:portland@foundrypadel.com?subject=Private lesson with ${encodeURIComponent(selected.name)}`}
