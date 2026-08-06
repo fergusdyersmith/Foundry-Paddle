@@ -38,10 +38,16 @@ const rateCard = [
 // demand lands differently. Corporate/partner seats sit outside the 100.
 // Every tier gets unlimited off-peak play, because those courts sit empty and
 // metering them costs more in complexity than it saves. The ladder is peak
-// access instead: a percentage off peak courts, a monthly credit, and a longer
-// booking window. That maps 1:1 onto what Playtomic configures once per
-// membership and then never needs touching, which is the whole reason the
-// structure looks like this.
+// access instead: a percentage off peak courts and a monthly credit. That maps
+// 1:1 onto what Playtomic configures once per membership and then never needs
+// touching, which is the whole reason the structure looks like this.
+//
+// A 5/7/10-day booking-window ladder used to be the third rung and is REMOVED.
+// It only works if non-members get a shorter window than members, and the club
+// has decided not to change the 14-day public window while the tiers are still
+// being finalised. Until it does, a Padelhead would book LESS far ahead than a
+// stranger, so advertising the ladder was advertising a penalty. Put it back
+// only once the public window is actually below 5 days.
 //
 // Courts take a percentage discount and activities cannot, which is why peak
 // play is a % and clinics/tournaments are a wallet. They are two mechanisms
@@ -63,7 +69,6 @@ const tiers = [
     features: [
       "Unlimited free off-peak play (your spot on a court)",
       "Peak court bookings at standard rates",
-      "5-day booking window",
       "1 free 'New Guest' pass/month (expires at month end)",
       "50% discount on padel rentals",
       "Free Foundry Padel T-shirt",
@@ -81,7 +86,6 @@ const tiers = [
       "Unlimited free off-peak play (your spot on a court)",
       "25% off every peak court booking",
       "$25/month credit for clinics, tournaments and events",
-      "7-day booking window",
       "1 free 'New Guest' pass/month (expires at month end)",
       "50% discount on padel rentals",
       "Free Foundry Padel T-shirt",
@@ -99,7 +103,6 @@ const tiers = [
       "Unlimited free off-peak play (your spot on a court)",
       "50% off every peak court booking",
       "$50/month credit for clinics, tournaments and events",
-      "10-day booking window",
       "1 free 'New Guest' pass/month (expires at month end)",
       "50% discount on padel rentals",
       "Free Foundry Padel T-shirt",
@@ -113,7 +116,7 @@ const Memberships = () => {
     <main className="bg-background min-h-screen pt-24">
       <Seo
         title="Padel Memberships in Portland, From $100/mo | Foundry Padel"
-        description="Foundry Padel memberships from $100/mo, limited to 100 founding members: unlimited off-peak play, up to 50% off peak courts, monthly credit for clinics and tournaments, and priority booking."
+        description="Foundry Padel memberships from $100/mo, limited to 100 founding members: unlimited off-peak play, up to 50% off peak courts, and a monthly credit for clinics and tournaments."
         path="/memberships"
       />
       {/* Hero */}
