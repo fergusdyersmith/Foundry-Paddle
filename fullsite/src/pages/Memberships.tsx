@@ -51,9 +51,15 @@ const rateCard = [
 // membership and then never needs touching, which is the whole reason the
 // structure looks like this.
 //
-// Courts take a percentage discount and activities cannot, which is why peak
-// play is a % and clinics/tournaments are a wallet. They are two mechanisms
-// because Playtomic offers two, not because the split means anything to a member.
+// Peak court play is a percentage; clinics, tournaments and events split by TIME:
+// off-peak ones are priced at a reduced Members Rate, peak ones are paid for out of
+// the wallet. Playtomic can discount an activity, but only by hand-pricing each one,
+// so every off-peak session on the schedule is a manual job for staff.
+//
+// Worth knowing before that work is committed to: on the last 90 days of the class
+// schedule, about 93% of clinic time is at PEAK. The Members Rate therefore applies
+// to roughly one session in fourteen (Tuesday and Thursday mornings), and the wallet
+// carries almost everything else.
 //
 // VALUE, not break-even. Break-even asked "how long until this is worth it", which
 // reads as a warning; the same arithmetic run forwards is what a member actually gets
@@ -94,6 +100,7 @@ const tiers = [
       "For students, retirees, first responders and veterans",
       "Unlimited free off-peak play (your spot on a court)",
       "Peak court bookings at standard rates",
+      "Members Rate on off-peak clinics, tournaments and events",
       "5-day booking window",
       "1 free 'New Guest' pass/month (expires at month end)",
       "50% discount on padel rentals",
@@ -111,7 +118,8 @@ const tiers = [
     features: [
       "Unlimited free off-peak play (your spot on a court)",
       "25% off every peak court booking",
-      "$25/month credit for clinics, tournaments and events",
+      "Members Rate on off-peak clinics, tournaments and events",
+      "$25/month credit for peak clinics, tournaments and events",
       "7-day booking window",
       "1 free 'New Guest' pass/month (expires at month end)",
       "50% discount on padel rentals",
@@ -129,7 +137,8 @@ const tiers = [
     features: [
       "Unlimited free off-peak play (your spot on a court)",
       "50% off every peak court booking",
-      "$50/month credit for clinics, tournaments and events",
+      "Members Rate on off-peak clinics, tournaments and events",
+      "$50/month credit for peak clinics, tournaments and events",
       "10-day booking window",
       "1 free 'New Guest' pass/month (expires at month end)",
       "50% discount on padel rentals",
@@ -221,7 +230,8 @@ const Memberships = () => {
             below. Your monthly guest pass covers a guest's share when you bring someone new.
             Unlimited off-peak covers <span className="text-foreground font-semibold">court
             bookings and open matches</span>. Clinics, tournaments and events are priced per
-            session and are what your monthly credit is for.
+            session: off-peak you pay the reduced <span className="text-foreground
+            font-semibold">Members Rate</span>, and at peak you use your monthly credit.
           </p>
         </motion.div>
       </section>
@@ -309,8 +319,9 @@ const Memberships = () => {
             Monthly benefits do not carry over. Your guest pass expires at the end of the
             calendar month. Your club credit is different: it recharges on your own renewal
             date, set by the day you joined and not by the calendar, so if you join on the
-            20th your credit arrives on the 20th. Credit covers clinics, tournaments and
-            events; peak court time is covered by your tier's discount instead. Part
+            20th your credit arrives on the 20th. Credit is for clinics, tournaments and events at
+            PEAK times; off-peak ones are already reduced to the Members Rate, and peak
+            court time is covered by your tier's discount instead. Part
             payment is not possible, so if something costs more than your balance, top your
             wallet up before you book.
           </p>
