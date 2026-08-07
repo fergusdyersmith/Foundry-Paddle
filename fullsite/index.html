@@ -8,6 +8,18 @@
          exactly one of each. Intentionally no static title element here. -->
     <meta name="author" content="Foundry Padel" />
 
+    <!-- GA4. send_page_view is OFF on purpose: this is an SPA over prerendered pages,
+         so views are sent from src/components/Analytics.tsx on every route change,
+         including the first. Turning it back on double-counts every landing. -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-DSL30F9ZZP"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-DSL30F9ZZP', { send_page_view: false });
+    </script>
+
+
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" type="image/svg+xml" href="/rebrand/favicon-green-white.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
