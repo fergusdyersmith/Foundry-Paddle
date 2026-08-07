@@ -322,9 +322,20 @@ const Memberships = () => {
             that and the number goes up.
           </p>
           <p className="font-body text-xs leading-relaxed text-muted-foreground">
-            Unlimited off-peak play is a founding-member benefit through{" "}
-            <span className="text-foreground font-semibold">1 September 2027</span>. We will
-            confirm what follows it before then, and give at least 60 days notice of any change.
+            Memberships run for a{" "}
+            <span className="text-foreground font-semibold">12-month term</span> from the day
+            you join. Cancelling stops the renewal, and the remaining months of your term are
+            still payable.
+          </p>
+          {/* These two are DIFFERENT dates and were being read as one. The 12-month term is
+              per member and rolls from their own signup; 1 Sep 2027 is a club-wide guarantee
+              on one benefit. Written together they read as "your membership ends in
+              September 2027", which is not what either means. */}
+          <p className="font-body text-xs leading-relaxed text-muted-foreground">
+            Separately, unlimited off-peak play is a founding-member benefit guaranteed
+            through <span className="text-foreground font-semibold">1 September 2027</span>.
+            Your membership continues past that date. We will confirm what follows the
+            benefit before then, and give at least 60 days notice of any change.
           </p>
           <p className="font-body text-xs leading-relaxed text-muted-foreground">
             Monthly benefits do not carry over. Your guest pass expires at the end of the
