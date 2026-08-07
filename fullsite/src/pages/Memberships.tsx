@@ -324,8 +324,8 @@ const Memberships = () => {
           <p className="font-body text-xs leading-relaxed text-muted-foreground">
             Memberships run for a{" "}
             <span className="text-foreground font-semibold">12-month term</span> from the day
-            you join. Cancelling stops the renewal, and the remaining months of your term are
-            still payable.
+            you join, and continue monthly after that. Cancelling stops the renewal, and the
+            remaining months of your term are still payable.
           </p>
           {/* These two are DIFFERENT dates and were being read as one. The 12-month term is
               per member and rolls from their own signup; 1 Sep 2027 is a club-wide guarantee
