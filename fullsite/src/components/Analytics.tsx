@@ -36,12 +36,21 @@ export default function Analytics() {
     const page = pathname + search;
     if (last.current === page) return;
     last.current = page;
-    if (typeof window.gtag !== "function") return;
-    window.gtag("event", "page_view", {
-      page_path: page,
-      page_location: window.location.href,
-      page_title: document.title,
-    });
+
+    // Deferred a tick on purpose. Seo.tsx writes <title> from its own effect, and
+    // effect order between siblings is not guaranteed: sending immediately reported
+    // /memberships with the PREVIOUS page's title, which was visible in the live
+    // hit (dp=/memberships alongside the home page's dt=). One macrotask lets
+    // react-helmet flush the DOM first, so GA gets the title a visitor actually saw.
+    const id = window.setTimeout(() => {
+      if (typeof window.gtag !== "function") return;
+      window.gtag("event", "page_view", {
+        page_path: page,
+        page_location: window.location.href,
+        page_title: document.title,
+      });
+    }, 0);
+    return () => window.clearTimeout(id);
   }, [pathname, search]);
 
   return null;
