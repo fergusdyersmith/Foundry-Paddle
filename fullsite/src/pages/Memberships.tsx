@@ -242,7 +242,7 @@ const Memberships = () => {
             session, and every membership pays{" "}
             <span className="text-foreground font-semibold">less for them off-peak</span>. At
             peak, Regular and Padelhead members pay with their monthly credit, and Student
-            members pay the standard price. Each card above shows the discount for that tier.
+            members pay the standard price. Each card below shows the discount for that tier.
           </p>
         </motion.div>
       </section>
