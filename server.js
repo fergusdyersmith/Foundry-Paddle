@@ -4,6 +4,7 @@ import { fileURLToPath, pathToFileURL } from "url";
 import { existsSync } from "fs";
 import { z } from "zod";
 import { createChatRouter } from "./server/chat.js";
+import { createVoiceRouter } from "./server/voice.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // SITE_DIST exists so the routing tests can point at a fixture tree instead of
@@ -326,6 +327,8 @@ async function getPlaytomicToken() {
 }
 
 const BOOKINGS_CACHE_TTL = 5 * 60 * 1000;
+// Longest session Playtomic reports here is 120 min; 3h gives that headroom.
+const BOOKINGS_LOOKBACK_MS = 3 * 60 * 60 * 1000;
 let bookingsCache = { data: [], fetchedAt: 0 };
 
 async function fetchPlaytomicBookings() {
@@ -336,7 +339,12 @@ async function fetchPlaytomicBookings() {
   const token = await getPlaytomicToken();
 
   const now = new Date();
-  const start = now.toISOString().slice(0, 19);
+  // Look back before "now", or bookings already under way are never returned and
+  // a court in use reads as free. "Can I come down right now" is one of the most
+  // common calls a club takes, so this matters. The longest session is 2 hours.
+  const start = new Date(now.getTime() - BOOKINGS_LOOKBACK_MS)
+    .toISOString()
+    .slice(0, 19);
   const end = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
     .toISOString()
     .slice(0, 19);
@@ -378,16 +386,22 @@ async function fetchPlaytomicBookings() {
     if (chunk.length < PAGE_SIZE) break;
   }
 
-  const eventBookings = all.filter(
-    (b) => EVENT_BOOKING_TYPES.has(effectiveBookingType(b)) && !b.is_canceled,
+  // Cache every live booking, not just the publicly-listed ones. Court
+  // availability is derived by subtracting ALL occupancy (regular bookings and
+  // private lessons very much included) from opening hours, so the public-event
+  // filter has to happen downstream in getEvents rather than here.
+  const live = all.filter((b) => !b.is_canceled);
+
+  bookingsCache = { data: live, fetchedAt: Date.now() };
+
+  console.log(
+    "[playtomic] Cached %d live bookings (of %d fetched); %d are public events",
+    live.length,
+    all.length,
+    live.filter((b) => EVENT_BOOKING_TYPES.has(effectiveBookingType(b))).length,
   );
 
-  bookingsCache = { data: eventBookings, fetchedAt: Date.now() };
-
-  console.log("[playtomic] Cached %d event bookings (of %d total fetched)",
-    eventBookings.length, all.length);
-
-  return eventBookings;
+  return live;
 }
 
 const CLUB_TIMEZONE = process.env.CLUB_TIMEZONE || "America/Los_Angeles";
@@ -522,9 +536,18 @@ function cleanPrice(price) {
 }
 
 async function getEvents({ from = null, to = null } = {}) {
-  const bookings = await fetchPlaytomicBookings();
+  const bookings = (await fetchPlaytomicBookings()).filter((b) =>
+    EVENT_BOOKING_TYPES.has(effectiveBookingType(b)),
+  );
+  // The bookings fetch deliberately looks back a few hours so availability can
+  // see sessions already under way. The public schedule must not inherit that:
+  // an open match that finished an hour ago is not something to advertise.
+  const nowParts = toLocalParts(new Date(), CLUB_TIMEZONE);
   const events = groupEventBookings(bookings)
     .map(mapBookingGroup)
+    .filter(
+      (e) => e.date > nowParts.date || (e.date === nowParts.date && e.end_time > nowParts.time),
+    )
     .filter((e) => (from ? e.date >= from : true) && (to ? e.date <= to : true))
     .sort((a, b) =>
       a.date === b.date
@@ -612,6 +635,196 @@ async function getEvents({ from = null, to = null } = {}) {
 
   for (const e of events) e.price = e.price === "Free" ? "Free" : cleanPrice(e.price);
   return events;
+}
+
+// ---------------------------------------------------------------------------
+// Court availability (derived)
+// ---------------------------------------------------------------------------
+// The third-party Playtomic API has no availability endpoint — its whole
+// surface is auth, bookings, players and payments. So free court time is
+// derived: courts x opening hours, minus every live booking.
+//
+// Verified sound by scripts/probe-availability.js: durations are clean
+// (60/90/120), starts land on :00 or :30, bookings tile without buffers, and no
+// maintenance or closure rows exist. The residual risk is that a court could be
+// blocked by something the bookings API never reports, which is why callers are
+// told what is open, then pointed at the booking link to confirm.
+
+const CLUB_OPEN = process.env.CLUB_OPEN || "07:00";
+const CLUB_CLOSE = process.env.CLUB_CLOSE || "22:00";
+const SLOT_STEP_MIN = 30;
+
+function hhmmToMin(hhmm) {
+  const [h, m] = String(hhmm).split(":").map(Number);
+  return h * 60 + m;
+}
+
+function minToHhmm(min) {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+// Courts keyed by resource_id, NEVER by resource_name: Playtomic returns court
+// 4 as "Padel 4 " with a trailing space, so keying by name invents a fifth
+// court and under-reports availability.
+function courtsFromBookings(bookings) {
+  const courts = new Map();
+  for (const b of bookings) {
+    if (!b.resource_id || courts.has(b.resource_id)) continue;
+    courts.set(b.resource_id, (b.resource_name || "").trim() || b.resource_id);
+  }
+  return courts;
+}
+
+function mergeIntervals(intervals) {
+  const sorted = [...intervals].sort((a, b) => a[0] - b[0]);
+  const merged = [];
+  for (const [start, end] of sorted) {
+    const last = merged[merged.length - 1];
+    if (last && start <= last[1]) last[1] = Math.max(last[1], end);
+    else merged.push([start, end]);
+  }
+  return merged;
+}
+
+function freeIntervals(busy, open, close) {
+  const free = [];
+  let cursor = open;
+  for (const [start, end] of mergeIntervals(busy)) {
+    if (start > cursor) free.push([cursor, Math.min(start, close)]);
+    cursor = Math.max(cursor, end);
+    if (cursor >= close) break;
+  }
+  if (cursor < close) free.push([cursor, close]);
+  return free.filter(([s, e]) => e > s);
+}
+
+/**
+ * Derive free court time for one local date. Pure: no I/O, so it is directly
+ * testable and safe to call on the hot path of a phone call.
+ *
+ * Everything is computed in local minutes-from-midnight for the target date,
+ * which sidesteps local->UTC conversion and therefore DST entirely.
+ *
+ * @param {object[]} bookings  live (non-canceled) Playtomic bookings
+ * @param {object}   opts
+ * @param {string}   opts.date         YYYY-MM-DD, club-local
+ * @param {number}   opts.durationMin  session length the caller wants
+ * @param {string}   [opts.nowDate]    club-local today, to hide past slots
+ * @param {string}   [opts.nowTime]    club-local HH:MM now
+ */
+function computeAvailability(bookings, { date, durationMin = 90, nowDate = null, nowTime = null } = {}) {
+  const courts = courtsFromBookings(bookings);
+  const busyByCourt = new Map();
+  let earliest = hhmmToMin(CLUB_OPEN);
+  let latest = hhmmToMin(CLUB_CLOSE);
+
+  for (const b of bookings) {
+    if (!b.resource_id || !b.booking_start_date || !b.booking_end_date) continue;
+    const start = toLocalParts(new Date(`${b.booking_start_date}Z`), CLUB_TIMEZONE);
+    if (start.date !== date) continue;
+    const end = toLocalParts(new Date(`${b.booking_end_date}Z`), CLUB_TIMEZONE);
+
+    const startMin = hhmmToMin(start.time);
+    // A booking ending on the next local date runs to midnight for our purposes.
+    const endMin = end.date === date ? hhmmToMin(end.time) : 24 * 60;
+    if (endMin <= startMin) continue;
+
+    // The club opens earlier than the website advertises (a 06:30 private lesson
+    // is normal), so widen the grid to whatever is actually booked rather than
+    // clamping to the marketing hours and hiding real court time.
+    earliest = Math.min(earliest, startMin);
+    latest = Math.max(latest, endMin);
+
+    if (!busyByCourt.has(b.resource_id)) busyByCourt.set(b.resource_id, []);
+    busyByCourt.get(b.resource_id).push([startMin, endMin]);
+  }
+
+  const freeByCourt = new Map();
+  for (const [id] of courts) {
+    freeByCourt.set(id, freeIntervals(busyByCourt.get(id) || [], earliest, latest));
+  }
+
+  // Candidate start times on a 30-minute grid, which is what the club actually
+  // books on. A slot counts only if one court is free for the WHOLE duration.
+  const cutoff =
+    nowDate === date && nowTime ? hhmmToMin(nowTime) : Number.NEGATIVE_INFINITY;
+  const firstSlot = Math.ceil(earliest / SLOT_STEP_MIN) * SLOT_STEP_MIN;
+  const slots = [];
+  for (let start = firstSlot; start + durationMin <= latest; start += SLOT_STEP_MIN) {
+    if (start < cutoff) continue;
+    const end = start + durationMin;
+    const free = [];
+    for (const [id, intervals] of freeByCourt) {
+      if (intervals.some(([s, e]) => s <= start && e >= end)) free.push(courts.get(id));
+    }
+    if (free.length) {
+      slots.push({
+        start: minToHhmm(start),
+        end: minToHhmm(end),
+        courts_free: free.length,
+        courts: free.sort(),
+      });
+    }
+  }
+
+  return {
+    date,
+    duration_min: durationMin,
+    timezone: CLUB_TIMEZONE,
+    opens: minToHhmm(earliest),
+    closes: minToHhmm(latest),
+    courts_total: courts.size,
+    slots,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Warm cache, for the voice receptionist
+// ---------------------------------------------------------------------------
+// A cold getEvents() is one token call plus up to 25 sequential paged Playtomic
+// fetches. On a web page that is a spinner; on a phone call it is dead air. So
+// the voice endpoints only ever read cache, and this keeps the cache hot.
+
+const VOICE_MAX_STALE_MS = 30 * 60 * 1000;
+
+/** Cached bookings, or null if there is nothing fresh enough to answer from.
+ *  Never triggers a fetch — callers degrade instead of blocking. */
+function cachedBookings() {
+  const ageMs = Date.now() - bookingsCache.fetchedAt;
+  if (!bookingsCache.data.length || ageMs > VOICE_MAX_STALE_MS) return null;
+  return { bookings: bookingsCache.data, ageMs, stale: ageMs > BOOKINGS_CACHE_TTL };
+}
+
+let warmEvents = { data: null, fetchedAt: 0 };
+
+/** Cached public events, or null if nothing fresh enough. Never fetches. */
+function cachedEvents() {
+  const ageMs = Date.now() - warmEvents.fetchedAt;
+  if (!warmEvents.data || ageMs > VOICE_MAX_STALE_MS) return null;
+  return { events: warmEvents.data, ageMs, stale: ageMs > BOOKINGS_CACHE_TTL };
+}
+
+function startCacheWarmer() {
+  if (!PLAYTOMIC_CLIENT_ID || !PLAYTOMIC_CLIENT_SECRET) {
+    console.log("[warm] Playtomic not configured; cache warmer not started");
+    return null;
+  }
+  const tick = async () => {
+    try {
+      // getEvents populates the bookings cache and both Kumi caches in one pass,
+      // so availability and schedule are both warm afterwards.
+      warmEvents = { data: await getEvents(), fetchedAt: Date.now() };
+    } catch (error) {
+      // Keep the previous data: a stale answer beats silence mid-call.
+      console.error("[warm] refresh failed:", error.message);
+    }
+  };
+  tick();
+  const timer = setInterval(tick, Math.max(60_000, BOOKINGS_CACHE_TTL - 30_000));
+  timer.unref();
+  return timer;
 }
 
 function eventsNotConfigured(res) {
@@ -734,6 +947,18 @@ app.use(
   }),
 );
 
+// Tool endpoints for the Bland inbound receptionist. Handed cache-only
+// accessors on purpose: these run mid-phone-call and must never block on
+// Playtomic. See server/voice.js for the trust boundary.
+app.use(
+  createVoiceRouter({
+    cachedBookings,
+    cachedEvents,
+    computeAvailability,
+    timezone: CLUB_TIMEZONE,
+  }),
+);
+
 // Kumi join on-ramp: foundrypadel.com/join -> reverse-proxy the club's join
 // page (backend-rendered HTML) so the URL stays on the Foundry domain instead
 // of redirecting visitors to padelmaps.org. The page is self-contained
@@ -824,6 +1049,9 @@ if (isEntrypoint) {
     console.log(`Serving at http://localhost:${port}`);
     console.log(`  /         -> full marketing site`);
   });
+  // Only when actually serving — tests import this module and must not start
+  // a timer or reach out to Playtomic.
+  startCacheWarmer();
 }
 
 export { app };
@@ -837,4 +1065,8 @@ export const __testables = {
   bookingDeepLink,
   cleanPrice,
   inclusiveDaySpan,
+  computeAvailability,
+  freeIntervals,
+  mergeIntervals,
+  courtsFromBookings,
 };
