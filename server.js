@@ -272,6 +272,21 @@ const BOOKING_TYPE_LABELS = {
   OPEN_MATCH: "Open Match",
 };
 
+// Playtomic reports manager-created social events (e.g. the weekly "Midday
+// Social") with booking_type UNKNOWN, even though Kumi's tournaments feed lists
+// them as tournaments under the same id. Left alone they are filtered out and
+// never reach the public schedule.
+//
+// UNKNOWN is a catch-all, so only rows carrying a tournament_id are promoted —
+// anything else Playtomic labels UNKNOWN stays off the public site rather than
+// risking a private booking being published.
+function effectiveBookingType(booking) {
+  if (booking.booking_type === "UNKNOWN" && booking.tournament_id) {
+    return "TOURNAMENT";
+  }
+  return booking.booking_type;
+}
+
 let tokenCache = { accessToken: null, expiresAt: 0 };
 
 async function getPlaytomicToken() {
@@ -364,7 +379,7 @@ async function fetchPlaytomicBookings() {
   }
 
   const eventBookings = all.filter(
-    (b) => EVENT_BOOKING_TYPES.has(b.booking_type) && !b.is_canceled,
+    (b) => EVENT_BOOKING_TYPES.has(effectiveBookingType(b)) && !b.is_canceled,
   );
 
   bookingsCache = { data: eventBookings, fetchedAt: Date.now() };
@@ -421,7 +436,7 @@ function groupEventBookings(bookings) {
 const PLAYTOMIC_APP = "https://app.playtomic.com";
 
 function bookingDeepLink(booking) {
-  switch (booking.booking_type) {
+  switch (effectiveBookingType(booking)) {
     case "TOURNAMENT":
       return `${PLAYTOMIC_APP}/tournaments/${booking.tournament_id || booking.activity_id}`;
     case "PUBLIC_CLASS":
@@ -446,11 +461,13 @@ function mapBookingGroup(group) {
 
   const durationMin = Math.round((endUtc - startUtc) / 60000);
 
+  const bookingType = effectiveBookingType(booking);
+
   const title =
     booking.activity_name ||
     booking.course_name ||
-    BOOKING_TYPE_LABELS[booking.booking_type] ||
-    booking.booking_type;
+    BOOKING_TYPE_LABELS[bookingType] ||
+    bookingType;
 
   const courts = [
     ...new Set(group.map((g) => (g.resource_name || "").trim()).filter(Boolean)),
@@ -473,7 +490,7 @@ function mapBookingGroup(group) {
     end_time: endLocal.time,
     duration_min: durationMin,
     price: booking.price || null,
-    booking_type: booking.booking_type,
+    booking_type: bookingType,
     court: courts.length <= 1 ? courts[0] || null : `${courts.length} courts`,
     signed_up: participantIds.size,
     book_url: bookingDeepLink(booking),
@@ -810,3 +827,14 @@ if (isEntrypoint) {
 }
 
 export { app };
+
+// Pure helpers, exported for tests only (mirrors server/chat.js). These drive
+// what the public schedule shows, but were previously unreachable from a test.
+export const __testables = {
+  effectiveBookingType,
+  groupEventBookings,
+  mapBookingGroup,
+  bookingDeepLink,
+  cleanPrice,
+  inclusiveDaySpan,
+};
