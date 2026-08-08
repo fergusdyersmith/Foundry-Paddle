@@ -753,8 +753,14 @@ app.use(express.static(dist, { index: false }));
 
 // Main site fallback. Routes are prerendered to per-route HTML files by
 // vite-react-ssg (e.g. /book -> dist/book.html), so a direct hit or crawler
-// gets that page's own <title>/description/body. Unknown routes fall back to
-// index.html, which client-renders (e.g. the 404 page).
+// gets that page's own <title>/description/body.
+//
+// An unknown path must answer 404, not 200. It used to fall through to
+// index.html at status 200 — the homepage's markup served from a dead URL —
+// which Google reports as a soft 404 and which kept retired Squarespace URLs
+// (/home, /about, ...) alive in the index. Now it gets the prerendered
+// dist/404.html with a real 404. That file renders the same NotFound component
+// the "*" route does, so hydration at the unknown path matches the markup.
 app.get("*", (req, res) => {
   if (path.extname(req.path)) {
     return res.status(404).type("text/plain").send("Not found");
@@ -767,15 +773,22 @@ app.get("*", (req, res) => {
       .send("Main site not deployed. Ensure build command is: npm run build:railway");
   }
   const clean = req.path.replace(/\/+$/, "") || "/";
-  let file = indexHtml;
-  if (clean !== "/") {
-    const candidate = path.join(dist, `${clean}.html`);
-    // Only serve prerendered files that resolve inside dist (guards traversal).
-    if (candidate.startsWith(dist + path.sep) && existsSync(candidate)) {
-      file = candidate;
-    }
+  if (clean === "/") return res.sendFile(indexHtml);
+
+  const candidate = path.join(dist, `${clean}.html`);
+  // Only serve prerendered files that resolve inside dist (guards traversal).
+  if (candidate.startsWith(dist + path.sep) && existsSync(candidate)) {
+    return res.sendFile(candidate);
   }
-  res.sendFile(file);
+
+  const notFoundHtml = path.join(dist, "404.html");
+  if (existsSync(notFoundHtml)) {
+    return res.status(404).sendFile(notFoundHtml);
+  }
+  // 404.html is emitted by the "404" route in fullsite/src/App.tsx; if a build
+  // ever drops it, still answer 404 rather than falling back to the homepage.
+  console.error("Missing dist/404.html — serving a plain-text 404 instead.");
+  res.status(404).type("text/plain").send("Not found");
 });
 
 const port = process.env.PORT || 3000;

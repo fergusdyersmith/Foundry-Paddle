@@ -53,6 +53,9 @@ export const routes: RouteRecord[] = [
       { path: "privacy", element: <Privacy /> },
       { path: "sms-terms", element: <SmsTerms /> },
       { path: "terms", element: <SmsTerms /> },
+      // Prerendered to dist/404.html so server.js has a real page to send with a
+      // 404 status on unknown paths (see the fallback in server.js). noindex.
+      { path: "404", element: <NotFound /> },
       { path: "*", element: <NotFound /> },
     ],
   },
