@@ -17,6 +17,7 @@
 
 import express from "express";
 import crypto from "node:crypto";
+import { sanitize, normalizePhone } from "./notify.js";
 
 const VOICE_TOOL_SECRET = process.env.VOICE_TOOL_SECRET;
 
@@ -227,6 +228,7 @@ export function createVoiceRouter({
   cachedBookings,
   cachedEvents,
   computeAvailability,
+  notifier = null,
   timezone = "America/Los_Angeles",
 }) {
   const router = express.Router();
@@ -322,6 +324,64 @@ export function createVoiceRouter({
       count: events.length,
       events,
       speech: scheduleSpeech(events, today.date),
+    });
+  });
+
+  // Take a message. The only endpoint here that writes anything.
+  router.post("/api/voice/message", async (req, res) => {
+    if (!notifier?.configured()) {
+      // No notifier means nobody would ever see this. Say so rather than
+      // collecting a message into a void.
+      return res.json({
+        ok: false,
+        reason: "not_configured",
+        speech:
+          "I can't take a message right now. Let me put you through to someone instead.",
+      });
+    }
+
+    const reason = sanitize(req.body?.reason, 500);
+    if (!reason) {
+      return res.json({
+        ok: false,
+        reason: "missing_reason",
+        speech: "Sorry, what should I tell them it's about?",
+      });
+    }
+
+    const phone = normalizePhone(req.body?.phone);
+    if (req.body?.phone && !phone) {
+      return res.json({
+        ok: false,
+        reason: "bad_phone",
+        speech: "I didn't catch that number. Could you say it again, digit by digit?",
+      });
+    }
+
+    const { delivered } = await notifier.notifyMessage({
+      name: sanitize(req.body?.name, 80),
+      phone,
+      reason,
+      // The agent decides this from the call: injury, someone locked out, a
+      // caller already standing at the door, or plain distress.
+      urgent: req.body?.urgent === true || req.body?.urgent === "true",
+      callId: sanitize(req.body?.call_id, 80),
+      receivedAt: new Date().toISOString(),
+    });
+
+    if (!delivered) {
+      // Never promise a callback we could not record. Offer the transfer.
+      return res.json({
+        ok: false,
+        reason: "not_delivered",
+        speech:
+          "I'm having trouble getting that through to the team. Let me put you through to someone instead.",
+      });
+    }
+
+    return res.json({
+      ok: true,
+      speech: "Got it. I've passed that on and someone will get back to you.",
     });
   });
 

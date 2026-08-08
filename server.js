@@ -5,6 +5,7 @@ import { existsSync } from "fs";
 import { z } from "zod";
 import { createChatRouter } from "./server/chat.js";
 import { createVoiceRouter } from "./server/voice.js";
+import { createNotifier } from "./server/notify.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // SITE_DIST exists so the routing tests can point at a fixture tree instead of
@@ -955,6 +956,7 @@ app.use(
     cachedBookings,
     cachedEvents,
     computeAvailability,
+    notifier: createNotifier(),
     timezone: CLUB_TIMEZONE,
   }),
 );

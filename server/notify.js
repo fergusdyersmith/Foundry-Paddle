@@ -1,0 +1,172 @@
+// Where a phone message goes after the receptionist takes it.
+//
+// Two jobs, deliberately separated:
+//   1. The RECORD. Every message is logged in structured form before we try to
+//      deliver it anywhere, so a notifier being down or muted can never lose a
+//      caller's callback request.
+//   2. The NOTIFICATION. Slack today, via an incoming webhook. Kept behind this
+//      adapter so adding WhatsApp or email later is a new function, not a
+//      redesign of the voice endpoints.
+//
+// Delivery is awaited rather than fire-and-forget. If we cannot get the message
+// to the team, the agent must NOT tell the caller someone will ring them back —
+// it offers a transfer instead. Promising a callback we did not record is the
+// one failure mode that actually damages the club.
+
+const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
+const SLACK_TIMEOUT_MS = 4000;
+
+/** Slack mrkdwn treats &, < and > as markup. Escaping them is also what stops a
+ *  caller from saying their name is "<!channel>" and paging everyone. */
+export function escapeSlack(text) {
+  return String(text ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+/** Strip control, zero-width and bidi characters from anything a caller said.
+ *  Same discipline as asData() in server/chat.js. */
+export function sanitize(text, max = 500) {
+  return String(text ?? "")
+    // Control, zero-width and bidi-override characters, written as escapes so
+    // the source stays readable and cannot be mangled by an editor.
+    .replace(
+      /[\u0000-\u001F\u007F-\u009F\u200B-\u200F\u202A-\u202E\u2060-\u2064\uFEFF]/g,
+      " ",
+    )
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, max);
+}
+
+// Callers say "five four one, two seven zero...". Speech-to-text hands us ten
+// bare digits far more often than an E.164 string, and a tel: link without a
+// country code does not dial.
+const DEFAULT_COUNTRY_CODE = process.env.CLUB_COUNTRY_CODE || "1";
+
+/** Normalize to E.164, or null if it cannot be made dialable. Null is the right
+ *  answer for a half-heard number: better to ask the caller again than to post
+ *  a number nobody can ring back. */
+export function normalizePhone(input) {
+  const cleaned = String(input ?? "").replace(/[^\d+]/g, "");
+  if (!cleaned) return null;
+
+  if (cleaned.startsWith("+")) {
+    return /^\+\d{8,15}$/.test(cleaned) ? cleaned : null;
+  }
+  const digits = cleaned.replace(/\D/g, "");
+  // Ten digits is a bare North American number: 541 270 4585.
+  if (digits.length === 10) return `+${DEFAULT_COUNTRY_CODE}${digits}`;
+  // Eleven starting with 1 is the same number with the country code spoken.
+  if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+  // Anything else is a misheard number, not a number from another country: an
+  // international caller would have to say "plus" for us to get here.
+  return null;
+}
+
+/** Pretty, tappable Slack message. Pure, so the formatting is testable without
+ *  posting anything. */
+export function buildSlackMessage(record) {
+  const name = escapeSlack(record.name || "Someone");
+  const phone = record.phone ? escapeSlack(record.phone) : null;
+  const reason = escapeSlack(record.reason || "(no reason given)");
+  const heading = record.urgent ? ":rotating_light: Urgent message" : ":telephone_receiver: New message";
+
+  const fields = [{ type: "mrkdwn", text: `*From*\n${name}` }];
+  if (phone) {
+    // tel: makes it one tap to call back from the Slack mobile app.
+    fields.push({ type: "mrkdwn", text: `*Number*\n<tel:${phone}|${phone}>` });
+  }
+
+  const blocks = [
+    { type: "header", text: { type: "plain_text", text: heading, emoji: true } },
+    { type: "section", fields },
+    { type: "section", text: { type: "mrkdwn", text: `*Reason*\n${reason}` } },
+  ];
+
+  const context = [];
+  if (record.receivedAt) context.push(`Taken ${escapeSlack(record.receivedAt)}`);
+  if (record.callId) context.push(`Call \`${escapeSlack(record.callId)}\``);
+  context.push("React with :white_check_mark: to claim it");
+  blocks.push({
+    type: "context",
+    elements: [{ type: "mrkdwn", text: context.join("  •  ") }],
+  });
+
+  return {
+    // Fallback text is what shows in the notification banner, so it has to
+    // carry the useful part on its own.
+    text: `${record.urgent ? "URGENT: " : ""}${name}${phone ? ` (${phone})` : ""}: ${reason}`,
+    blocks,
+    // @channel only for genuinely urgent calls; anything more and the club
+    // learns to mute the channel, which defeats the point.
+    ...(record.urgent ? { link_names: true } : {}),
+  };
+}
+
+/**
+ * @param {object}   [deps]
+ * @param {string}   [deps.webhookUrl]  Slack incoming webhook
+ * @param {Function} [deps.fetchImpl]
+ * @param {number}   [deps.timeoutMs]
+ */
+export function createNotifier({
+  webhookUrl = SLACK_WEBHOOK_URL,
+  fetchImpl = (...args) => fetch(...args),
+  timeoutMs = SLACK_TIMEOUT_MS,
+} = {}) {
+  async function postToSlack(record) {
+    if (!webhookUrl) return false;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetchImpl(webhookUrl, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(buildSlackMessage(record)),
+        signal: controller.signal,
+      });
+      if (!res.ok) {
+        console.error("[notify] Slack rejected the message", { status: res.status });
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error("[notify] Slack delivery failed:", error.message);
+      return false;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  return {
+    configured: () => Boolean(webhookUrl),
+
+    /** Record first, then deliver. Resolves with whether a human will actually
+     *  see this, which is what decides what the agent says next. */
+    async notifyMessage(record) {
+      // The durable half. Logged before any network call, and deliberately
+      // structured so it can be grepped out of Railway logs after the fact.
+      console.log(
+        "[message] %s",
+        JSON.stringify({
+          at: record.receivedAt,
+          urgent: Boolean(record.urgent),
+          name: record.name,
+          phone: record.phone,
+          reason: record.reason,
+          call_id: record.callId,
+        }),
+      );
+
+      const delivered = await postToSlack(record);
+      if (!delivered) {
+        console.error("[message] NOT DELIVERED to any notifier", {
+          call_id: record.callId,
+        });
+      }
+      return { delivered, channel: delivered ? "slack" : null };
+    },
+  };
+}

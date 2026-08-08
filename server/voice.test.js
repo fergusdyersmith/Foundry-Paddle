@@ -24,7 +24,13 @@ function booking(resource_id, resource_name, startUtc, endUtc, extra = {}) {
   };
 }
 
-async function boot({ bookings = [], events = [], secret = SECRET, ageMs = 0 } = {}) {
+async function boot({
+  bookings = [],
+  events = [],
+  secret = SECRET,
+  ageMs = 0,
+  notifier = undefined,
+} = {}) {
   vi.resetModules();
   if (secret === null) delete process.env.VOICE_TOOL_SECRET;
   else process.env.VOICE_TOOL_SECRET = secret;
@@ -41,6 +47,10 @@ async function boot({ bookings = [], events = [], secret = SECRET, ageMs = 0 } =
       cachedEvents: () =>
         events === null ? null : { events, ageMs, stale: ageMs > 5 * 60 * 1000 },
       computeAvailability: server.__testables.computeAvailability,
+      notifier:
+        notifier === undefined
+          ? { configured: () => true, notifyMessage: async () => ({ delivered: true, channel: "slack" }) }
+          : notifier,
       timezone: TZ,
     }),
   );
@@ -214,6 +224,98 @@ describe("availability", () => {
     ).json();
     expect(body.ok).toBe(false);
     expect(body.reason).toBe("unclear_date");
+  });
+});
+
+describe("taking a message", () => {
+  it("passes the caller's details through to the notifier", async () => {
+    const notifyMessage = vi.fn(async () => ({ delivered: true, channel: "slack" }));
+    ctx = await boot({ notifier: { configured: () => true, notifyMessage } });
+
+    const body = await (
+      await post(ctx.base, "/api/voice/message", {
+        name: "Dana Whitfield",
+        phone: "+1 541 270 4585",
+        reason: "Wants to book a court for four on Saturday",
+        urgent: false,
+        call_id: "call_abc",
+      })
+    ).json();
+
+    expect(body.ok).toBe(true);
+    expect(notifyMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "Dana Whitfield",
+        phone: "+15412704585",
+        urgent: false,
+        callId: "call_abc",
+      }),
+    );
+  });
+
+  it("does NOT promise a callback when delivery failed", async () => {
+    // The one failure that actually damages the club: telling someone they will
+    // be rung back when nothing was recorded anywhere a human sees.
+    ctx = await boot({
+      notifier: {
+        configured: () => true,
+        notifyMessage: async () => ({ delivered: false, channel: null }),
+      },
+    });
+    const body = await (
+      await post(ctx.base, "/api/voice/message", { reason: "Please call me back" })
+    ).json();
+
+    expect(body.ok).toBe(false);
+    expect(body.speech).not.toMatch(/will get back|passed that on/i);
+    expect(body.speech).toMatch(/put you through/i);
+  });
+
+  it("refuses to collect into a void when no notifier is configured", async () => {
+    ctx = await boot({
+      notifier: { configured: () => false, notifyMessage: async () => ({ delivered: false }) },
+    });
+    const body = await (
+      await post(ctx.base, "/api/voice/message", { reason: "Please call me back" })
+    ).json();
+    expect(body.ok).toBe(false);
+    expect(body.reason).toBe("not_configured");
+  });
+
+  it("asks again rather than recording a message with no reason", async () => {
+    ctx = await boot();
+    const body = await (await post(ctx.base, "/api/voice/message", { name: "Dana" })).json();
+    expect(body.ok).toBe(false);
+    expect(body.reason).toBe("missing_reason");
+  });
+
+  it("asks the caller to repeat a number it could not parse", async () => {
+    ctx = await boot();
+    const body = await (
+      await post(ctx.base, "/api/voice/message", {
+        reason: "call me back",
+        phone: "five four one, um",
+      })
+    ).json();
+    expect(body.ok).toBe(false);
+    expect(body.reason).toBe("bad_phone");
+    expect(body.speech).toMatch(/digit by digit/i);
+  });
+
+  it("still takes the message when the caller leaves no number", async () => {
+    // Bland knows the number they called from; a caller declining to repeat it
+    // is not a reason to drop the message.
+    ctx = await boot();
+    const body = await (
+      await post(ctx.base, "/api/voice/message", { reason: "Asking about memberships" })
+    ).json();
+    expect(body.ok).toBe(true);
+  });
+
+  it("requires auth like every other tool endpoint", async () => {
+    ctx = await boot();
+    const res = await post(ctx.base, "/api/voice/message", { reason: "x" }, null);
+    expect(res.status).toBe(401);
   });
 });
 
