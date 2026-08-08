@@ -1,12 +1,16 @@
 import express from "express";
 import path from "path";
-import { fileURLToPath } from "url";
+import { fileURLToPath, pathToFileURL } from "url";
 import { existsSync } from "fs";
 import { z } from "zod";
 import { createChatRouter } from "./server/chat.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dist = path.join(__dirname, "dist");
+// SITE_DIST exists so the routing tests can point at a fixture tree instead of
+// a real build; production never sets it.
+const dist = process.env.SITE_DIST
+  ? path.resolve(process.env.SITE_DIST)
+  : path.join(__dirname, "dist");
 const indexHtml = path.join(dist, "index.html");
 
 const app = express();
@@ -791,8 +795,18 @@ app.get("*", (req, res) => {
   res.status(404).type("text/plain").send("Not found");
 });
 
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log(`Serving at http://localhost:${port}`);
-  console.log(`  /         -> full marketing site`);
-});
+// Bind only when run as the entrypoint (`npm start`). Importing this module
+// instead — as server/routing.test.js does — yields the app without a listener,
+// so the tests can bind it to an ephemeral port themselves.
+const isEntrypoint =
+  process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+
+if (isEntrypoint) {
+  const port = process.env.PORT || 3000;
+  app.listen(port, () => {
+    console.log(`Serving at http://localhost:${port}`);
+    console.log(`  /         -> full marketing site`);
+  });
+}
+
+export { app };
