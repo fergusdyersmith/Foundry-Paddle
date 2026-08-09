@@ -529,12 +529,16 @@ export function createVoiceRouter({
     const rawPhone =
       normalizePhone(unresolved(req.body?.phone) ? null : req.body?.phone) ||
       phoneFromText([req.body?.query, req.body?.phone, req.body?.reason].filter((x) => x && !unresolved(x)).join(" "));
-    const phone = normalizePhone(rawPhone);
+    // Fall back to the number they are calling from. Bland gives us the caller
+    // id, so the agent never has to ask someone to read their own number back,
+    // and a caller who offers none still leaves a callable message.
+    const callerNumber = unresolved(req.body?.caller_number) ? null : req.body?.caller_number;
+    const phone = normalizePhone(rawPhone) || normalizePhone(callerNumber);
     // Only push back when they actually tried to give a number. A field holding
     // a whole sentence is Bland's doing, not a caller misreading their digits.
     const phoneField = unresolved(req.body?.phone) ? null : req.body?.phone;
     const attempted = phoneField && /\d/.test(String(phoneField));
-    if (attempted && !phone) {
+    if (attempted && !normalizePhone(rawPhone)) {
       return res.json({
         ok: false,
         sent: false,
@@ -696,12 +700,16 @@ export function createVoiceRouter({
     const rawPhone =
       normalizePhone(unresolved(req.body?.phone) ? null : req.body?.phone) ||
       phoneFromText([req.body?.query, req.body?.phone, req.body?.reason].filter((x) => x && !unresolved(x)).join(" "));
-    const phone = normalizePhone(rawPhone);
+    // Fall back to the number they are calling from. Bland gives us the caller
+    // id, so the agent never has to ask someone to read their own number back,
+    // and a caller who offers none still leaves a callable message.
+    const callerNumber = unresolved(req.body?.caller_number) ? null : req.body?.caller_number;
+    const phone = normalizePhone(rawPhone) || normalizePhone(callerNumber);
     // Only push back when they actually tried to give a number. A field holding
     // a whole sentence is Bland's doing, not a caller misreading their digits.
     const phoneField = unresolved(req.body?.phone) ? null : req.body?.phone;
     const attempted = phoneField && /\d/.test(String(phoneField));
-    if (attempted && !phone) {
+    if (attempted && !normalizePhone(rawPhone)) {
       return res.json({
         ok: false,
         reason: "bad_phone",

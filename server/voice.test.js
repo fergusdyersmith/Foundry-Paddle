@@ -658,3 +658,55 @@ describe("finding the event a caller was talking about", () => {
     expect(V.matchEvent("send me the booking link", events, "2026-08-09")).toBeNull();
   });
 });
+
+describe("we already know the caller's number", () => {
+  it("uses the number they are calling from when they give none", async () => {
+    // Bland hands us the caller id. Asking a caller to read their own number
+    // back is the tell that they are talking to a machine.
+    const sendLink = vi.fn(async () => ({ sent: true, reason: null }));
+    ctx = await boot({ linkSender: { configured: () => true, sendLink } });
+    await post(ctx.base, "/api/voice/sms-link", {
+      query: "text me the booking link",
+      caller_number: "+19717707851",
+    });
+    expect(sendLink).toHaveBeenCalledWith(
+      expect.objectContaining({ phone: "+19717707851" }),
+    );
+  });
+
+  it("prefers a different number when the caller asks for one", async () => {
+    const sendLink = vi.fn(async () => ({ sent: true, reason: null }));
+    ctx = await boot({ linkSender: { configured: () => true, sendLink } });
+    await post(ctx.base, "/api/voice/sms-link", {
+      phone: "541 270 4585",
+      caller_number: "+19717707851",
+    });
+    expect(sendLink).toHaveBeenCalledWith(
+      expect.objectContaining({ phone: "+15412704585" }),
+    );
+  });
+
+  it("puts the caller id on a message when they leave no number", async () => {
+    const notifyMessage = vi.fn(async () => ({ delivered: true, channel: "slack" }));
+    ctx = await boot({ notifier: { configured: () => true, notifyMessage } });
+    await post(ctx.base, "/api/voice/message", {
+      reason: "Wants to talk about corporate membership",
+      caller_number: "+19717707851",
+    });
+    expect(notifyMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ phone: "+19717707851" }),
+    );
+  });
+
+  it("still asks again when they read out a number that cannot dial", async () => {
+    ctx = await boot();
+    const body = await (
+      await post(ctx.base, "/api/voice/message", {
+        reason: "call me back",
+        phone: "5551",
+        caller_number: "+19717707851",
+      })
+    ).json();
+    expect(body.reason).toBe("bad_phone");
+  });
+});
