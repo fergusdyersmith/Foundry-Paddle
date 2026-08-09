@@ -29,10 +29,27 @@
       "is it dog friendly",
       "can my dog come in"
     ],
-    "Lockers on site?": ["are there lockers", "where do I put my stuff", "somewhere to leave my bag"],
-    "Overgrip for sale": ["do you sell grips", "I need a new grip", "can I buy an overgrip"],
-    "Padel Balls for sale": ["do you sell balls", "can I buy balls", "how much are balls"],
-    "Walk-ins": ["can I just turn up", "do I need to book ahead", "can I drop in", "no reservation"],
+    "Lockers on site?": [
+      "are there lockers",
+      "where do I put my stuff",
+      "somewhere to leave my bag"
+    ],
+    "Overgrip for sale": [
+      "do you sell grips",
+      "I need a new grip",
+      "can I buy an overgrip"
+    ],
+    "Padel Balls for sale": [
+      "do you sell balls",
+      "can I buy balls",
+      "how much are balls"
+    ],
+    "Walk-ins": [
+      "can I just turn up",
+      "do I need to book ahead",
+      "can I drop in",
+      "no reservation"
+    ],
     "Court rental price": [
       "how much is a court",
       "what does it cost to play",
@@ -70,7 +87,11 @@
       "how much is a private lesson",
       "I want to learn"
     ],
-    "Clinic and class prices": ["how much are classes", "cost of a clinic", "price of a group lesson"],
+    "Clinic and class prices": [
+      "how much are classes",
+      "cost of a clinic",
+      "price of a group lesson"
+    ],
     "Kids / minimum age": [
       "can kids play",
       "how old do you have to be",
@@ -78,9 +99,22 @@
       "can I bring my son",
       "can I bring my daughter"
     ],
-    "Wine and Beer": ["do you have a bar", "can I get a beer", "do you serve alcohol", "is there wine"],
-    "Outside food": ["can I bring food", "can we bring snacks", "is outside food allowed"],
-    "Vending Machine": ["is there a vending machine", "can I buy a drink", "somewhere to get water"],
+    "Wine and Beer": [
+      "do you have a bar",
+      "can I get a beer",
+      "do you serve alcohol",
+      "is there wine"
+    ],
+    "Outside food": [
+      "can I bring food",
+      "can we bring snacks",
+      "is outside food allowed"
+    ],
+    "Vending Machine": [
+      "is there a vending machine",
+      "can I buy a drink",
+      "somewhere to get water"
+    ],
     "Group events, corporate and parties": [
       "can we do a work event",
       "team building",
@@ -88,7 +122,11 @@
       "corporate outing",
       "private event"
     ],
-    "Leagues and tournaments": ["do you have leagues", "are there tournaments", "competitive play"],
+    "Leagues and tournaments": [
+      "do you have leagues",
+      "are there tournaments",
+      "competitive play"
+    ],
     "Do I need a membership to play at Foundry Padel": [
       "do I have to be a member",
       "can I play without joining",
@@ -101,10 +139,11 @@
       "how do I join"
     ],
     "Cancellation policy": [
-      "can I cancel",
-      "what if I need to cancel",
-      "do I get a refund",
-      "I need to change my booking"
+      "can I cancel my booking",
+      "cancel a court booking",
+      "I need to cancel my court",
+      "what if I can't make my booking",
+      "do I get a refund on a booking"
     ],
     "Finding players / open matches / open play / WhatsApp community": [
       "I don't have anyone to play with",
@@ -123,7 +162,10 @@
       "can I use tennis balls",
       "are the balls different"
     ],
-    "How do you say Padel?": ["how do you pronounce it", "is it paddle or padel"],
+    "How do you say Padel?": [
+      "how do you pronounce it",
+      "is it paddle or padel"
+    ],
     "Address, and finding the entrance": [
       "where are you",
       "what's the address",
@@ -132,7 +174,12 @@
       "I'm outside and can't find the entrance",
       "are you near Cathedral Park"
     ],
-    "Parking": ["where do I park", "is there parking", "do you have a car park", "is parking free"],
+    "Parking": [
+      "where do I park",
+      "is there parking",
+      "do you have a car park",
+      "is parking free"
+    ],
     "Air conditioning, heating and how warm the courts are": [
       "is it air conditioned",
       "is it heated",
@@ -146,10 +193,27 @@
       "is there a restroom",
       "can I change there"
     ],
-    "Guest wifi": ["do you have wifi", "is there wifi", "what's the internet"],
-    "Gift cards and vouchers": ["do you sell gift cards", "gift certificate", "present for someone"],
-    "Waiver before your first visit": ["do I need to sign anything", "is there a waiver", "liability form"],
-    "Wheelchair access": ["is it accessible", "wheelchair accessible", "step free access", "disabled access"],
+    "Guest wifi": [
+      "do you have wifi",
+      "is there wifi",
+      "what's the internet"
+    ],
+    "Gift cards and vouchers": [
+      "do you sell gift cards",
+      "gift certificate",
+      "present for someone"
+    ],
+    "Waiver before your first visit": [
+      "do I need to sign anything",
+      "is there a waiver",
+      "liability form"
+    ],
+    "Wheelchair access": [
+      "is it accessible",
+      "wheelchair accessible",
+      "step free access",
+      "disabled access"
+    ],
     "Watching, spectators and just hanging out": [
       "can I watch",
       "can I just come and watch",
@@ -162,9 +226,21 @@
       "do you have a pro shop",
       "what brands do you sell"
     ],
-    "Corporate memberships": ["company membership", "corporate rates", "membership for my business"],
-    "Food at the club": ["do you serve food", "is there a kitchen", "can I get something to eat"],
-    "Jobs and working at the club": ["are you hiring", "do you have any jobs", "I'd like to work there"],
+    "Corporate memberships": [
+      "company membership",
+      "corporate rates",
+      "membership for my business"
+    ],
+    "Food at the club": [
+      "do you serve food",
+      "is there a kitchen",
+      "can I get something to eat"
+    ],
+    "Jobs and working at the club": [
+      "are you hiring",
+      "do you have any jobs",
+      "I'd like to work there"
+    ],
     "Coming to look around or take a tour": [
       "can I come and see it",
       "can I have a look around",
@@ -188,6 +264,19 @@
       "rent all the courts",
       "hire the club"
     ],
-    "Lost and found": ["I left something", "lost property", "I forgot my water bottle", "did anyone hand in"]
+    "Lost and found": [
+      "I left something",
+      "lost property",
+      "I forgot my water bottle",
+      "did anyone hand in"
+    ],
+    "Membership commitment and cancellation": [
+      "can I cancel my membership",
+      "how do I cancel my membership",
+      "am I locked in",
+      "how long is the contract",
+      "can I stop paying",
+      "is there a minimum term"
+    ]
   }
 }
