@@ -1,93 +1,20 @@
 {
   "_comment": [
-    "STAGING AREA, NOT A HOME. Facts the phone receptionist needs that are not yet",
-    "published in Kumi's club_knowledge. Merged into the Bland knowledge base by",
-    "scripts/sync-bland-kb.mjs, which warns on every run while this file is non-empty.",
+    "STAGING AREA, NOT A HOME. Empty, and it should stay that way.",
     "",
-    "Kumi has no HTTP write path for knowledge rows, so these were staged here to",
-    "unblock testing rather than wait on manual entry. They belong in Kumi's",
-    "knowledge admin: until they move, the PHONE agent knows things the WEBSITE",
-    "chatbot does not, which is exactly the drift this project set out to avoid.",
-    "Paste each topic/answer into the admin, tick public, then delete it from here.",
+    "The Bland sync uploads the Kumi feed PLUS anything in here. Kumi is the source",
+    "of truth for both bots; this exists only for a fact the phone agent needs",
+    "before someone can publish it in Kumi's admin.",
     "",
-    "Answers supplied by the club owner, 9 August 2026."
+    "The 19 facts that lived here on 9 August 2026 were published in Kumi and",
+    "removed from here the same day. While they were in both, every one of them",
+    "was uploaded to Bland TWICE. They happened to agree, but the first edit in the",
+    "admin would have left a stale copy here and put two contradicting chunks in",
+    "front of a caller, with lexical retrieval picking whichever matched their",
+    "words. Their permanent home is scripts/seed_voice_knowledge.py in padelclublist.",
+    "",
+    "If you add something here, publish it in Kumi and empty this again. The sync",
+    "warns on every run while it is non-empty, for that reason."
   ],
-  "entries": [
-    {
-      "topic": "Address, and finding the entrance",
-      "answer": "Foundry Padel is at 8613 North Crawford Street, Portland, Oregon 97203, in the St. Johns neighbourhood near Cathedral Park. If the two big rollup doors are closed, the entrance is the door just to the left of them, in the brick building. That is where the cafe, the retail space and the social space are."
-    },
-    {
-      "topic": "Parking",
-      "answer": "There are 6 parking spots on site, and there is plenty of street parking around the club."
-    },
-    {
-      "topic": "Air conditioning, heating and how warm the courts are",
-      "answer": "The brick building, with the cafe, retail and social space, is air conditioned. The warehouse where the courts are is not climate controlled. In winter there are heaters for the courts."
-    },
-    {
-      "topic": "Bathrooms, showers and changing rooms",
-      "answer": "A renovation is underway. The two bathrooms on the first floor are closed at the moment, and that is where the men's and women's showers and changing rooms will be. For now there is a bathroom and a shower upstairs. It is gender neutral, a single room rather than separate ones."
-    },
-    {
-      "topic": "Guest wifi",
-      "answer": "Yes, there is wifi for guests. Scan the QR code at the club when you arrive and it will give you the password."
-    },
-    {
-      "topic": "Gift cards and vouchers",
-      "answer": "There are no formal gift cards yet, but the club can generate a voucher code for any amount you like. You can print it or write it into a card, and the player redeems it on Playtomic."
-    },
-    {
-      "topic": "Waiver before your first visit",
-      "answer": "Yes, there is an online waiver, and it needs to be signed in the Playtomic app before you arrive."
-    },
-    {
-      "topic": "Wheelchair access",
-      "answer": "The first floor is wheelchair accessible. There is no access to the upstairs."
-    },
-    {
-      "topic": "Watching, spectators and just hanging out",
-      "answer": "Spectators are very welcome, and you do not need to be playing to come in. The social spaces are being upgraded as part of the renovation, and the club encourages people to come and hang out and watch."
-    },
-    {
-      "topic": "Kids, juniors, and the minimum age",
-      "answer": "Kids are welcome to play with a parent, or under a parent's supervision. Under 16s cannot join beginner or high level tournaments. There are no youth courses or camps yet, but depending on the child's age some of the coaches are willing to teach juniors, so it is worth asking."
-    },
-    {
-      "topic": "Buying a racket, and what the pro shop stocks",
-      "answer": "The pro shop sells rackets, balls and overgrips. The stock is mostly Wilson, with Babolat and Adidas as well, and rackets run from about $150 to $400. Rentals are $5 a racket, and high end demo rackets are $10."
-    },
-    {
-      "topic": "Corporate memberships",
-      "answer": "Corporate memberships are live. There is basic information on the memberships page of the website, and the best route is the corporate inquiry form there. Monica replies with pricing and the details."
-    },
-    {
-      "topic": "Food at the club",
-      "answer": "There is beer and wine at the bar, and vending machines, but no kitchen and no food menu. St. Johns has excellent food within a couple of blocks."
-    },
-    {
-      "topic": "Jobs and working at the club",
-      "answer": "Email portland@foundrypadel.com with a resume."
-    },
-    {
-      "topic": "How to book and how to pay",
-      "answer": "Booking and payment both happen in the Playtomic app, not on the Foundry website. Courts, open matches, clinics and tournaments are all booked there, and you pay in the app. Download Playtomic free from the App Store or Google Play. It has a blue logo. If you want a look before installing anything, it is also at playtomic.com."
-    },
-    {
-      "topic": "How far ahead a non-member can book",
-      "answer": "Non-members can book up to 3 days ahead. Members get a longer window: 5 days on Student or Longevity, 7 days on Regular and 10 days on Padelhead."
-    },
-    {
-      "topic": "Booking all four courts, or hiring the club for a private event",
-      "answer": "Yes, you can book all four courts. The price is four times the normal court rate for the length you want, so see the court rental prices for the base figure. It works out cheaper at off-peak times, which are Monday to Friday 7am to 4pm and Saturday and Sunday 4pm to 10pm. For a larger corporate event or a party, the inquiry form on the memberships page is the better route."
-    },
-    {
-      "topic": "Lost and found",
-      "answer": "Water bottles get left behind constantly. Come back into the club and ask a staff member, since where the lost and found lives moves around."
-    },
-    {
-      "topic": "Coming to look around or take a tour",
-      "answer": "Walk in any time and there is usually someone around who can show you the place. Very early in the morning, or after 8pm, is better arranged in advance."
-    }
-  ]
+  "entries": []
 }
