@@ -17,7 +17,18 @@ const CLUB_SLUG = process.env.CLUB_SLUG || "foundry-padel";
 
 // Must match the template names Kumi will accept. Kept here too so a mistyped template
 // costs a rejected request rather than a round trip mid-call.
-export const TEMPLATES = new Set(["booking", "membership", "directions"]);
+export const TEMPLATES = new Set(["booking", "membership", "directions", "app"]);
+
+/** Which Playtomic page an event lives on, read back out of the deep link the
+ *  events feed already builds. Saves inventing a second mapping that could
+ *  disagree with the one the website uses. */
+export function deepLinkFromEvent(event) {
+  const url = String(event?.book_url || "");
+  const m = url.match(/\/(tournaments|lesson_class|matches)\/([0-9a-fA-F-]{36})/);
+  if (!m) return null;
+  const kind = { tournaments: "tournament", lesson_class: "class", matches: "match" }[m[1]];
+  return kind ? { kind, id: m[2] } : null;
+}
 
 // Short on purpose: this runs while a caller is on the line. Kumi has to reach Twilio
 // inside this budget, so it is not as tight as the cache-only endpoints.
@@ -42,9 +53,9 @@ export function createLinkSender({
     configured: () => Boolean(secret),
 
     /** Resolves {sent, reason}. Never throws and never reports a send it is unsure of. */
-    async sendLink({ phone, template, callId }) {
+    async sendLink({ phone, template, callId, deepLink = null, itemId = null, label = null }) {
       if (!secret) return { sent: false, reason: "not_configured" };
-      if (!TEMPLATES.has(template)) return { sent: false, reason: "unknown_template" };
+      if (!deepLink && !TEMPLATES.has(template)) return { sent: false, reason: "unknown_template" };
       if (!phone) return { sent: false, reason: "no_number" };
 
       const controller = new AbortController();
@@ -56,7 +67,15 @@ export function createLinkSender({
             "content-type": "application/json",
             "x-voice-token": secret,
           },
-          body: JSON.stringify({ slug, to: phone, template, call_id: callId || null }),
+          body: JSON.stringify({
+            slug,
+            to: phone,
+            template: deepLink ? "" : template,
+            deep_link: deepLink,
+            item_id: itemId,
+            label,
+            call_id: callId || null,
+          }),
           signal: controller.signal,
         });
 
@@ -82,6 +101,7 @@ export function createLinkSender({
 
 // Read aloud, so no URL punctuation. TTS says "foundrypadel.com/book" poorly.
 const SPOKEN_LINKS = {
+  app: "the Playtomic app, on the App Store or Google Play",
   booking: "foundry padel dot com slash book",
   membership: "foundry padel dot com slash memberships",
   directions: "we're at 8613 North Crawford Street, in Saint Johns",

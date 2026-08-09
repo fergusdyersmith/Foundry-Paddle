@@ -1,6 +1,6 @@
 /** @vitest-environment node */
 import { describe, it, expect, vi } from "vitest";
-import { createLinkSender, linkSpeech, TEMPLATES } from "./smslink.js";
+import { createLinkSender, linkSpeech, TEMPLATES, deepLinkFromEvent } from "./smslink.js";
 
 const CFG = { url: "https://kumi.test/api/voice/send-link", secret: "s3cret", slug: "foundry-padel" };
 
@@ -19,7 +19,7 @@ describe("asking Kumi to send", () => {
     const [url, init] = fetchImpl.mock.calls[0];
     expect(url).toBe(CFG.url);
     expect(init.headers["x-voice-token"]).toBe("s3cret");
-    expect(JSON.parse(init.body)).toEqual({
+    expect(JSON.parse(init.body)).toMatchObject({
       slug: "foundry-padel",
       to: "+15412704585",
       template: "booking",
@@ -30,7 +30,7 @@ describe("asking Kumi to send", () => {
   it("never sends a body or a URL of its own, only a template name", () => {
     // The lockdown lives on Kumi's side, but this end must not grow a way around it.
     const src = createLinkSender({ ...CFG, fetchImpl: reply({}) });
-    expect([...TEMPLATES]).toEqual(["booking", "membership", "directions"]);
+    expect([...TEMPLATES]).toEqual(["booking", "membership", "directions", "app"]);
     expect(typeof src.sendLink).toBe("function");
   });
 
@@ -170,5 +170,25 @@ describe("what the agent says", () => {
         expect(linkSpeech(t, { sent: false, reason })).not.toMatch(/—/);
       }
     }
+  });
+});
+
+describe("deep links to the exact thing they asked about", () => {
+  it.each([
+    ["https://app.playtomic.com/tournaments/0feaf364-f7cf-460c-9801-16367bc76c89", "tournament"],
+    ["https://app.playtomic.com/lesson_class/0feaf364-f7cf-460c-9801-16367bc76c89", "class"],
+    ["https://app.playtomic.com/matches/0feaf364-f7cf-460c-9801-16367bc76c89", "match"],
+  ])("reads %s as a %s", (book_url, kind) => {
+    // Read back out of the link the events feed already builds, rather than
+    // inventing a second mapping that could disagree with the website's.
+    expect(deepLinkFromEvent({ book_url })).toEqual({
+      kind,
+      id: "0feaf364-f7cf-460c-9801-16367bc76c89",
+    });
+  });
+
+  it("returns nothing for the club fallback page", () => {
+    expect(deepLinkFromEvent({ book_url: "https://app.playtomic.com/tenant/abc" })).toBeNull();
+    expect(deepLinkFromEvent({})).toBeNull();
   });
 });

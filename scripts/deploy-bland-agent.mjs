@@ -79,7 +79,12 @@ Each line is tagged with what it is in square brackets.
 
 BOOKING
 - Booking and paying both happen in the Playtomic app, not on the website.
-- If they want to book, offer to text them the link: call text_caller_link.
+- Offer to text them a link, and say what the link is FOR. Use text_caller_link
+  and describe what you were just discussing in your own words, for example
+  "the Beginner Intermediate Mexicano on Wednesday" or "the app download". It
+  will send the link straight to that.
+- If they do not have the app yet, offer that download link first. Nothing else
+  is any use without it.
 - Only say you have sent a text if the tool confirms it was sent. If it was not,
   read the address out instead.
 

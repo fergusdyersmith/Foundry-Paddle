@@ -18,7 +18,7 @@
 import express from "express";
 import crypto from "node:crypto";
 import { sanitize, normalizePhone } from "./notify.js";
-import { linkSpeech, TEMPLATES } from "./smslink.js";
+import { linkSpeech, TEMPLATES, deepLinkFromEvent } from "./smslink.js";
 
 const VOICE_TOOL_SECRET = process.env.VOICE_TOOL_SECRET;
 
@@ -160,6 +160,43 @@ export function parseWhen(text) {
   }
 
   return { date, time };
+}
+
+const STOPWORDS = new Set([
+  "the", "a", "an", "on", "at", "for", "to", "me", "my", "i", "send", "text",
+  "link", "please", "and", "of", "in", "it", "that", "this", "is", "was",
+  "about", "asked", "asking", "one", "just", "we", "were", "talking",
+]);
+
+/**
+ * Match what the caller was talking about against the week's events.
+ *
+ * The alternative was putting Playtomic UUIDs in the prompt so the agent could
+ * quote one back. That is a lot of unreadable text for a voice model to carry
+ * and get right. Matching here keeps ids out of the conversation entirely: the
+ * agent says "the Wednesday Mexicano" and we find it.
+ */
+export function matchEvent(text, events, today) {
+  const words = String(text || "")
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((w) => w.length > 2 && !STOPWORDS.has(w));
+  if (!words.length) return null;
+
+  let best = null;
+  for (const event of events) {
+    const haystack = `${event.title} ${spokenDate(event.date, today)} ${event.booking_type}`.toLowerCase();
+    let score = 0;
+    for (const w of words) if (haystack.includes(w)) score += 1;
+    if (!score) continue;
+    // Prefer the soonest match, so "the Mexicano" means the next one.
+    if (!best || score > best.score || (score === best.score && event.date < best.event.date)) {
+      best = { event, score };
+    }
+  }
+  // One incidental word in common is not a match. "tournament" alone should not
+  // pick an arbitrary tournament.
+  return best && best.score >= 2 ? best.event : null;
 }
 
 /** Which link the caller asked for, read out of the same sentence. */
@@ -506,9 +543,21 @@ export function createVoiceRouter({
       });
     }
 
+    // If they were just talking about a specific tournament or clinic, send THAT
+    // rather than the club's front page.
+    const today = nowLocal(timezone);
+    const events = cachedEvents();
+    const matched = events ? matchEvent(text, events.events, today.date) : null;
+    const deep = matched ? deepLinkFromEvent(matched) : null;
+
     const result = await linkSender.sendLink({
       phone,
       template,
+      deepLink: deep?.kind || null,
+      itemId: deep?.id || null,
+      label: matched
+        ? `${matched.title}, ${spokenDate(matched.date, today.date)} at ${spoken(matched.start_time)}`
+        : null,
       callId: unresolved(req.body?.call_id) ? "" : sanitize(req.body?.call_id, 80),
     });
 
@@ -516,7 +565,10 @@ export function createVoiceRouter({
       ok: true,
       sent: result.sent,
       reason: result.reason,
-      speech: linkSpeech(template, result),
+      matched: matched ? matched.title : null,
+      speech: result.sent && matched
+        ? `Sent. That's the link straight to ${matched.title}.`
+        : linkSpeech(template, result),
     });
   });
 
@@ -689,6 +741,7 @@ export function createVoiceRouter({
 
 export const __testables = {
   unresolved,
+  matchEvent,
   parseWhen,
   templateFromText,
   phoneFromText,

@@ -278,11 +278,13 @@ describe("texting the caller a link", () => {
     ).json();
 
     expect(body.sent).toBe(true);
-    expect(sendLink).toHaveBeenCalledWith({
-      phone: "+15412704585",
-      template: "booking",
-      callId: "call_9",
-    });
+    expect(sendLink).toHaveBeenCalledWith(
+      expect.objectContaining({
+        phone: "+15412704585",
+        template: "booking",
+        callId: "call_9",
+      }),
+    );
   });
 
   it("does not claim a text went out when it did not", async () => {
@@ -619,5 +621,40 @@ describe("turning data into something speakable", () => {
   ])("reads the date %s aloud as %s", (date, expected) => {
     // Nobody says "twenty twenty six dash oh eight dash sixteen".
     expect(V.spokenDate(date, "2026-08-13")).toBe(expected);
+  });
+});
+
+describe("finding the event a caller was talking about", () => {
+  let V;
+  beforeEach(async () => {
+    vi.resetModules();
+    V = (await import("./voice.js")).__testables;
+  });
+
+  const events = [
+    { title: "Beginner/Intermediate Mexicano", date: "2026-08-12", start_time: "18:00", booking_type: "TOURNAMENT" },
+    { title: "Advanced Tournament", date: "2026-08-11", start_time: "18:00", booking_type: "TOURNAMENT" },
+    { title: "Intermediate+ Strategy and Tactics", date: "2026-08-12", start_time: "20:00", booking_type: "PUBLIC_CLASS" },
+  ];
+
+  it("matches the thing by name", () => {
+    // Keeps Playtomic UUIDs out of the prompt entirely: the agent says what it
+    // was discussing and we resolve the id here.
+    expect(V.matchEvent("send me the link for the Mexicano on Wednesday", events, "2026-08-09").title)
+      .toBe("Beginner/Intermediate Mexicano");
+  });
+
+  it("matches on the strategy clinic", () => {
+    expect(V.matchEvent("text me the strategy and tactics clinic", events, "2026-08-09").title)
+      .toBe("Intermediate+ Strategy and Tactics");
+  });
+
+  it("does not pick an arbitrary event off one common word", () => {
+    // "tournament" alone must not resolve to whichever tournament sorts first.
+    expect(V.matchEvent("tournament", events, "2026-08-09")).toBeNull();
+  });
+
+  it("returns nothing when they just want the booking link", () => {
+    expect(V.matchEvent("send me the booking link", events, "2026-08-09")).toBeNull();
   });
 });
