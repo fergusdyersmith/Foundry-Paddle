@@ -101,3 +101,24 @@ describe("manager-created socials reach the public schedule", () => {
     expect(T.mapBookingGroup([row]).title).toBe("Tournament");
   });
 });
+
+describe("courts are called Court 1 to 4, not Padel 1 to 4", () => {
+  it("renames what Playtomic calls them", () => {
+    // Playtomic names the resources "Padel 1".."Padel 4". The club, the
+    // website and the phone agent all say Court.
+    expect(T.courtLabel("Padel 1")).toBe("Court 1");
+    expect(T.courtLabel("Padel 4 ")).toBe("Court 4");
+  });
+
+  it("leaves an already-correct name alone", () => {
+    expect(T.courtLabel("Court 3")).toBe("Court 3");
+  });
+
+  it("renames on the public events feed too, so nothing disagrees", () => {
+    const event = T.mapBookingGroup([
+      socialRow({ resource_name: "Padel 2" }),
+      socialRow({ resource_name: "Padel 4 " }),
+    ]);
+    expect(event.courts).toEqual(["Court 2", "Court 4"]);
+  });
+});

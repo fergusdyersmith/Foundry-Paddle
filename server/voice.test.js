@@ -191,7 +191,8 @@ describe("availability", () => {
     const at1100 = body.slots.find((s) => s.start === "11:00");
     // Court A is busy at 11:00, court B is free, so exactly one court.
     expect(at1100.courts_free).toBe(1);
-    expect(at1100.courts).toEqual(["Padel 2"]);
+    // The club calls them Court 1..4; Playtomic names them "Padel 1"..
+    expect(at1100.courts).toEqual(["Court 2"]);
   });
 
   it("keys courts by id, so a trailing space does not invent a fifth court", async () => {

@@ -385,8 +385,25 @@ export function createVoiceRouter({
     // prefix, so req.path here is "/webhook", not "/api/voice/webhook".
     if (req.path === "/_recent") return next();
     // The webhook authenticates on a URL token instead: Bland cannot be told to
-    // send a bearer header on post-call callbacks.
-    if (req.path === "/webhook") return next();
+    // send a bearer header on post-call callbacks. It is still RECORDED, or we
+    // cannot tell whether Bland called it at all, which is exactly the
+    // blindness that cost a dozen calls on the tools.
+    if (req.path === "/webhook") {
+      recent.unshift({
+        at: new Date().toISOString(),
+        path: req.path,
+        auth: req.query?.token ? "token" : "MISSING",
+        body: {
+          call_id: req.body?.call_id,
+          from: req.body?.from,
+          call_length: req.body?.call_length,
+          turns: (req.body?.transcripts || []).length,
+          has_summary: Boolean(req.body?.summary),
+        },
+      });
+      recent.length = Math.min(recent.length, 20);
+      return next();
+    }
     const entry = {
       at: new Date().toISOString(),
       path: req.path,

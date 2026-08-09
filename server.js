@@ -486,7 +486,7 @@ function mapBookingGroup(group) {
     bookingType;
 
   const courts = [
-    ...new Set(group.map((g) => (g.resource_name || "").trim()).filter(Boolean)),
+    ...new Set(group.map((g) => courtLabel(g.resource_name)).filter(Boolean)),
   ].sort();
 
   // Count distinct participants across the grouped court rows, deduped by id so a
@@ -672,11 +672,19 @@ function minToHhmm(min) {
 // Courts keyed by resource_id, NEVER by resource_name: Playtomic returns court
 // 4 as "Padel 4 " with a trailing space, so keying by name invents a fifth
 // court and under-reports availability.
+// Playtomic names the resources "Padel 1".."Padel 4"; the club calls them
+// Court 1..4, and that is what a caller hears and what the website shows.
+// Renamed in one place so the phone agent, the briefing and the public events
+// feed cannot disagree.
+export function courtLabel(name) {
+  return String(name || "").replace(/^\s*padel\s*/i, "Court ").trim();
+}
+
 function courtsFromBookings(bookings) {
   const courts = new Map();
   for (const b of bookings) {
     if (!b.resource_id || courts.has(b.resource_id)) continue;
-    courts.set(b.resource_id, (b.resource_name || "").trim() || b.resource_id);
+    courts.set(b.resource_id, courtLabel(b.resource_name) || b.resource_id);
   }
   return courts;
 }
@@ -1111,6 +1119,7 @@ export const __testables = {
   bookingDeepLink,
   cleanPrice,
   inclusiveDaySpan,
+  courtLabel,
   computeAvailability,
   freeIntervals,
   mergeIntervals,
