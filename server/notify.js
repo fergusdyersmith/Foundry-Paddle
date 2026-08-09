@@ -14,6 +14,8 @@
 // one failure mode that actually damages the club.
 
 const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
+const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN;
+const SLACK_CHANNEL = process.env.SLACK_CHANNEL || "#front-desk";
 const SLACK_TIMEOUT_MS = 4000;
 
 /** Slack mrkdwn treats &, < and > as markup. Escaping them is also what stops a
@@ -99,49 +101,106 @@ export function buildSlackMessage(record) {
     // carry the useful part on its own.
     text: `${record.urgent ? "URGENT: " : ""}${name}${phone ? ` (${phone})` : ""}: ${reason}`,
     blocks,
-    // @channel only for genuinely urgent calls; anything more and the club
-    // learns to mute the channel, which defeats the point.
-    ...(record.urgent ? { link_names: true } : {}),
   };
 }
 
 /**
+ * Two transports, because which one is available depends on how the Slack app
+ * was installed:
+ *   - bot token + channel -> chat.postMessage. What we use. Also leaves room
+ *     for threads and reactions later without reinstalling the app.
+ *   - incoming webhook    -> a plain POST to a URL, no token handling.
+ *
  * @param {object}   [deps]
- * @param {string}   [deps.webhookUrl]  Slack incoming webhook
+ * @param {string}   [deps.botToken]    xoxb-… bot token with chat:write
+ * @param {string}   [deps.channel]     channel name or id for chat.postMessage
+ * @param {string}   [deps.webhookUrl]  incoming webhook, used only without a token
  * @param {Function} [deps.fetchImpl]
  * @param {number}   [deps.timeoutMs]
  */
 export function createNotifier({
+  botToken = SLACK_BOT_TOKEN,
+  channel = SLACK_CHANNEL,
   webhookUrl = SLACK_WEBHOOK_URL,
   fetchImpl = (...args) => fetch(...args),
   timeoutMs = SLACK_TIMEOUT_MS,
 } = {}) {
-  async function postToSlack(record) {
-    if (!webhookUrl) return false;
+  const useBotToken = Boolean(botToken && channel);
+
+  async function withTimeout(fn) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const res = await fetchImpl(webhookUrl, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(buildSlackMessage(record)),
-        signal: controller.signal,
-      });
-      if (!res.ok) {
-        console.error("[notify] Slack rejected the message", { status: res.status });
-        return false;
-      }
-      return true;
-    } catch (error) {
-      console.error("[notify] Slack delivery failed:", error.message);
-      return false;
+      return await fn(controller.signal);
     } finally {
       clearTimeout(timer);
     }
   }
 
+  async function postViaApi(record) {
+    const message = buildSlackMessage(record);
+    const res = await withTimeout((signal) =>
+      fetchImpl("https://slack.com/api/chat.postMessage", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${botToken}`,
+          "content-type": "application/json; charset=utf-8",
+        },
+        body: JSON.stringify({
+          channel,
+          ...message,
+          // @channel only for genuinely urgent calls. It is the one thing that
+          // still reaches someone whose notifications are set to mentions only,
+          // which is Slack's default and the likeliest way a message gets
+          // missed. Any more liberal use and the club learns to mute us.
+          ...(record.urgent
+            ? { text: `<!channel> ${message.text}` }
+            : {}),
+        }),
+        signal,
+      }),
+    );
+    // The Slack Web API answers 200 with {ok:false} on failure, so the HTTP
+    // status alone would report every error as a success.
+    const body = await res.json().catch(() => ({}));
+    if (!body.ok) {
+      console.error("[notify] Slack rejected the message", {
+        status: res.status,
+        error: body.error,
+      });
+      return false;
+    }
+    return true;
+  }
+
+  async function postViaWebhook(record) {
+    const res = await withTimeout((signal) =>
+      fetchImpl(webhookUrl, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(buildSlackMessage(record)),
+        signal,
+      }),
+    );
+    if (!res.ok) {
+      console.error("[notify] Slack rejected the message", { status: res.status });
+      return false;
+    }
+    return true;
+  }
+
+  async function postToSlack(record) {
+    if (!useBotToken && !webhookUrl) return false;
+    try {
+      return useBotToken ? await postViaApi(record) : await postViaWebhook(record);
+    } catch (error) {
+      console.error("[notify] Slack delivery failed:", error.message);
+      return false;
+    }
+  }
+
   return {
-    configured: () => Boolean(webhookUrl),
+    configured: () => useBotToken || Boolean(webhookUrl),
 
     /** Record first, then deliver. Resolves with whether a human will actually
      *  see this, which is what decides what the agent says next. */

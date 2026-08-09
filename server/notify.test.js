@@ -18,8 +18,10 @@ const RECORD = {
 };
 
 function okFetch() {
-  return vi.fn(async () => ({ ok: true, status: 200 }));
+  return vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ ok: true }) }));
 }
+
+const BOT = { botToken: "xoxb-test", channel: "#front-desk" };
 
 describe("a caller cannot use their own words as Slack markup", () => {
   it("escapes the characters Slack treats as markup", () => {
@@ -105,7 +107,7 @@ describe("the Slack message", () => {
 describe("delivery decides what the agent says next", () => {
   it("reports delivered when Slack accepts it", async () => {
     const fetchImpl = okFetch();
-    const notifier = createNotifier({ webhookUrl: "https://hooks.slack.test/x", fetchImpl });
+    const notifier = createNotifier({ ...BOT, fetchImpl });
     await expect(notifier.notifyMessage(RECORD)).resolves.toEqual({
       delivered: true,
       channel: "slack",
@@ -113,9 +115,55 @@ describe("delivery decides what the agent says next", () => {
     expect(fetchImpl).toHaveBeenCalledOnce();
   });
 
+  it("posts to chat.postMessage with the bot token and channel", async () => {
+    const fetchImpl = okFetch();
+    await createNotifier({ ...BOT, fetchImpl }).notifyMessage(RECORD);
+    const [url, init] = fetchImpl.mock.calls[0];
+    expect(url).toBe("https://slack.com/api/chat.postMessage");
+    expect(init.headers.authorization).toBe("Bearer xoxb-test");
+    expect(JSON.parse(init.body).channel).toBe("#front-desk");
+  });
+
+  it("treats {ok:false} on an HTTP 200 as a failure", async () => {
+    // The Slack Web API answers 200 with an error body. Trusting the status
+    // code alone would report every failure as a success and let the agent
+    // promise a callback that never happens.
+    const fetchImpl = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ ok: false, error: "not_in_channel" }),
+    }));
+    const notifier = createNotifier({ ...BOT, fetchImpl });
+    expect((await notifier.notifyMessage(RECORD)).delivered).toBe(false);
+  });
+
+  it("pings the channel for an urgent message only", async () => {
+    // @channel is what still reaches someone whose notifications are set to
+    // mentions only, which is Slack's default.
+    const fetchImpl = okFetch();
+    const notifier = createNotifier({ ...BOT, fetchImpl });
+    await notifier.notifyMessage({ ...RECORD, urgent: true });
+    expect(JSON.parse(fetchImpl.mock.calls[0][1].body).text).toMatch(/^<!channel> /);
+
+    fetchImpl.mockClear();
+    await notifier.notifyMessage(RECORD);
+    expect(JSON.parse(fetchImpl.mock.calls[0][1].body).text).not.toMatch(/<!channel>/);
+  });
+
+  it("falls back to a webhook when there is no bot token", async () => {
+    const fetchImpl = okFetch();
+    const notifier = createNotifier({
+      botToken: undefined,
+      webhookUrl: "https://hooks.slack.test/x",
+      fetchImpl,
+    });
+    expect((await notifier.notifyMessage(RECORD)).delivered).toBe(true);
+    expect(fetchImpl.mock.calls[0][0]).toBe("https://hooks.slack.test/x");
+  });
+
   it("reports NOT delivered when Slack rejects it", async () => {
-    const fetchImpl = vi.fn(async () => ({ ok: false, status: 404 }));
-    const notifier = createNotifier({ webhookUrl: "https://hooks.slack.test/x", fetchImpl });
+    const fetchImpl = vi.fn(async () => ({ ok: false, status: 404, json: async () => ({}) }));
+    const notifier = createNotifier({ ...BOT, fetchImpl });
     const result = await notifier.notifyMessage(RECORD);
     expect(result.delivered).toBe(false);
   });
@@ -127,11 +175,7 @@ describe("delivery decides what the agent says next", () => {
           init.signal.addEventListener("abort", () => reject(new Error("aborted")));
         }),
     );
-    const notifier = createNotifier({
-      webhookUrl: "https://hooks.slack.test/x",
-      fetchImpl,
-      timeoutMs: 20,
-    });
+    const notifier = createNotifier({ ...BOT, fetchImpl, timeoutMs: 20 });
     const result = await notifier.notifyMessage(RECORD);
     expect(result.delivered).toBe(false);
   });
@@ -142,8 +186,8 @@ describe("delivery decides what the agent says next", () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
     vi.spyOn(console, "error").mockImplementation(() => {});
     const notifier = createNotifier({
-      webhookUrl: "https://hooks.slack.test/x",
-      fetchImpl: vi.fn(async () => ({ ok: false, status: 500 })),
+      ...BOT,
+      fetchImpl: vi.fn(async () => ({ ok: false, status: 500, json: async () => ({}) })),
     });
     await notifier.notifyMessage(RECORD);
 
@@ -158,6 +202,6 @@ describe("delivery decides what the agent says next", () => {
   });
 
   it("is unconfigured, not silently open, when no webhook is set", () => {
-    expect(createNotifier({ webhookUrl: undefined }).configured()).toBe(false);
+    expect(createNotifier({ botToken: undefined, webhookUrl: undefined }).configured()).toBe(false);
   });
 });
