@@ -134,26 +134,40 @@ function tools() {
       url: `${SITE}/api/voice/availability`,
       method: "POST",
       headers: auth,
-      // {{input.field}} placeholders with a typed schema. This is the ONLY form
-      // that got the tool offered to the model at all: adding {{input}} beside
-      // them stopped it firing for two calls running, and the agent never even
-      // played its filler line.
+      // {{input.field}} placeholders, ONE style only. Mixing {{input}} beside
+      // them broke the definition and the tool stopped being offered at all.
       //
-      // Bland substitutes these with the WHOLE natural-language sentence rather
-      // than a parsed field, so `date` arrives as "check court availability for
-      // tomorrow at 10 AM". The endpoint parses whatever turns up.
+      // input_schema must be REAL JSON Schema. Bland support traced the whole
+      // "narrates the speech line but never executes" failure to the
+      // {"example": {...}} form: with no named parameters there is nothing to
+      // compile into a callable function, so the model saw the tool only as
+      // prose in the prompt and invented an outcome. dynamic_data was
+      // unaffected because it is a fixed GET with no input schema to resolve.
+      //
+      // The endpoint still parses a whole sentence out of any field, because it
+      // cost several calls to learn that and costs nothing to keep.
       body: {
         date: "{{input.date}}",
         time: "{{input.time}}",
         duration_min: "{{input.duration_min}}",
       },
-      // {example}, NOT typed JSON Schema. This is the only shape Bland has ever
-      // actually EXECUTED. With a typed schema it plays the tool's speech line
-      // and then silently abandons the call: four calls in a row, zero requests
-      // reaching the server. It cannot populate input.date from a string input,
-      // so the body template never renders.
       input_schema: {
-        example: { date: "tomorrow", time: "6pm", duration_min: 90 },
+        type: "object",
+        properties: {
+          date: {
+            type: "string",
+            description: "Day the caller asked about: 'today', 'tomorrow', a weekday name, or YYYY-MM-DD.",
+          },
+          time: {
+            type: "string",
+            description: "Time they asked about, like '6pm' or '18:00'. Omit if they did not say.",
+          },
+          duration_min: {
+            type: "integer",
+            description: "Session length in minutes: 60, 90 or 120. Defaults to 90.",
+          },
+        },
+        required: ["date"],
       },
       response: { speech: "$.speech", any_available: "$.any_available" },
       speech: "Let me have a look at the courts.",
@@ -167,7 +181,20 @@ function tools() {
       method: "POST",
       headers: auth,
       body: { date: "{{input.date}}", days: "{{input.days}}" },
-      input_schema: { example: { date: "today", days: 7 } },
+      input_schema: {
+        type: "object",
+        properties: {
+          date: {
+            type: "string",
+            description: "Day to start from: 'today', 'tomorrow', a weekday name, or YYYY-MM-DD.",
+          },
+          days: {
+            type: "integer",
+            description: "How many days ahead to look. Defaults to 7.",
+          },
+        },
+        required: ["date"],
+      },
       response: { speech: "$.speech", count: "$.count" },
       speech: "Let me check what's coming up.",
       timeout: 8000,
@@ -187,7 +214,21 @@ function tools() {
         template: "{{input.template}}",
         call_id: "{{call_id}}",
       },
-      input_schema: { example: { phone: "+15035550123", template: "booking" } },
+      input_schema: {
+        type: "object",
+        properties: {
+          phone: {
+            type: "string",
+            description: "E.164 number to text. Omit to use the number they are calling from.",
+          },
+          template: {
+            type: "string",
+            enum: ["booking", "membership", "directions", "app"],
+            description: "Which link to send. Use 'app' for the Playtomic download.",
+          },
+        },
+        required: ["template"],
+      },
       response: { speech: "$.speech", sent: "$.sent" },
       speech: "Sending that over now.",
       timeout: 9000,
@@ -209,13 +250,24 @@ function tools() {
         call_id: "{{call_id}}",
       },
       input_schema: {
-        example: {
-          name: "Dana Whitfield",
-          phone: "+15035550123",
-          reason: "Wants a court for four on Saturday",
-          urgent: false,
-          transferring: false,
+        type: "object",
+        properties: {
+          name: { type: "string", description: "The caller's name, if they gave one." },
+          phone: {
+            type: "string",
+            description: "Callback number. Omit to use the number they are calling from.",
+          },
+          reason: { type: "string", description: "What the message is about." },
+          urgent: {
+            type: "boolean",
+            description: "True only if someone is hurt, locked out, at the door, or clearly distressed.",
+          },
+          transferring: {
+            type: "boolean",
+            description: "True when you are about to put them through to a person.",
+          },
         },
+        required: ["reason"],
       },
       response: { speech: "$.speech", ok: "$.ok" },
       speech: "Let me take that down.",
