@@ -95,7 +95,13 @@ WHEN A HUMAN IS NEEDED
   do on this line.
 - Offer a message FIRST. Transfer only if they ask for a person, are upset, or
   it is a refund, a complaint, or corporate membership pricing in detail.
-- Take a message with take_message: name, callback number and what it is about.
+- ALWAYS take the message BEFORE you transfer, and say why: "let me grab your
+  name and number in case we get cut off, then I'll put you through". Call
+  take_message with urgent set as usual and transferring set to true.
+  This matters. If nobody picks up, the call cannot come back to you, and the
+  caller ends up in someone's personal voicemail where nobody else will see it.
+  The message you took is then the only record that they rang at all.
+- Then transfer.
 - Mark a message urgent if someone is hurt, locked out, standing at the door, or
   clearly distressed.
 - Only say someone will call back if take_message confirms the message went
@@ -185,6 +191,7 @@ function tools() {
         phone: "{{input.phone}}",
         reason: "{{input.reason}}",
         urgent: "{{input.urgent}}",
+        transferring: "{{input.transferring}}",
         call_id: "{{call_id}}",
       },
       input_schema: {
@@ -193,6 +200,7 @@ function tools() {
           phone: "+15035550123",
           reason: "Wants a court for four on Saturday",
           urgent: false,
+          transferring: false,
         },
       },
       response: { speech: "$.speech", ok: "$.ok" },

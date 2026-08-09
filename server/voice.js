@@ -716,6 +716,10 @@ export function createVoiceRouter({
       // The agent decides this from the call: injury, someone locked out, a
       // caller already standing at the door, or plain distress.
       urgent: req.body?.urgent === true || req.body?.urgent === "true",
+      // Taken on the way to a human rather than instead of one. A failed
+      // transfer cannot come back to the agent, so the caller would otherwise
+      // land in a personal voicemail and this would never reach Slack.
+      transferring: req.body?.transferring === true || req.body?.transferring === "true",
       callId: unresolved(req.body?.call_id) ? "" : sanitize(req.body?.call_id, 80),
       receivedAt: new Date().toISOString(),
     });
@@ -732,7 +736,9 @@ export function createVoiceRouter({
 
     return res.json({
       ok: true,
-      speech: "Got it. I've passed that on and someone will get back to you.",
+      speech: (req.body?.transferring === true || req.body?.transferring === "true")
+        ? "Got it, let me put you through now."
+        : "Got it. I've passed that on and someone will get back to you.",
     });
   });
 

@@ -73,7 +73,11 @@ export function buildSlackMessage(record) {
   const name = escapeSlack(record.name || "Someone");
   const phone = record.phone ? escapeSlack(record.phone) : null;
   const reason = escapeSlack(record.reason || "(no reason given)");
-  const heading = record.urgent ? ":rotating_light: Urgent message" : ":telephone_receiver: New message";
+  const heading = record.urgent
+    ? ":rotating_light: Urgent message"
+    : record.transferring
+      ? ":twisted_rightwards_arrows: Caller being put through now"
+      : ":telephone_receiver: New message";
 
   const fields = [{ type: "mrkdwn", text: `*From*\n${name}` }];
   if (phone) {
@@ -88,6 +92,13 @@ export function buildSlackMessage(record) {
   ];
 
   const context = [];
+  if (record.transferring) {
+    // Taken BEFORE the transfer was attempted, because a failed transfer drops
+    // the caller into someone's personal voicemail and the message never gets
+    // here. If a human picked up, this row is just context; if nobody did, it
+    // is the only record that the call happened.
+    context.push("Taken before transfer, so it may already be handled");
+  }
   if (record.receivedAt) context.push(`Taken ${escapeSlack(record.receivedAt)}`);
   if (record.callId) context.push(`Call \`${escapeSlack(record.callId)}\``);
   context.push("React with :white_check_mark: to claim it");
@@ -99,7 +110,7 @@ export function buildSlackMessage(record) {
   return {
     // Fallback text is what shows in the notification banner, so it has to
     // carry the useful part on its own.
-    text: `${record.urgent ? "URGENT: " : ""}${name}${phone ? ` (${phone})` : ""}: ${reason}`,
+    text: `${record.urgent ? "URGENT: " : record.transferring ? "Transferring: " : ""}${name}${phone ? ` (${phone})` : ""}: ${reason}`,
     blocks,
   };
 }
@@ -215,6 +226,7 @@ export function createNotifier({
           name: record.name,
           phone: record.phone,
           reason: record.reason,
+          transferring: Boolean(record.transferring),
           call_id: record.callId,
         }),
       );

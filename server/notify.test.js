@@ -205,3 +205,30 @@ describe("delivery decides what the agent says next", () => {
     expect(createNotifier({ botToken: undefined, webhookUrl: undefined }).configured()).toBe(false);
   });
 });
+
+describe("a message taken on the way to a human", () => {
+  it("is labelled as a transfer, not a callback request", async () => {
+    // A failed transfer cannot return to the agent, so the caller lands in
+    // someone's personal voicemail. The message taken beforehand is then the
+    // only record the call happened, and staff need to know which it is.
+    const msg = buildSlackMessage({ ...RECORD, transferring: true });
+    expect(JSON.stringify(msg)).toMatch(/being put through/i);
+    expect(msg.text).toMatch(/^Transferring: /);
+  });
+
+  it("says it may already be handled, so nobody calls back twice", () => {
+    const msg = buildSlackMessage({ ...RECORD, transferring: true });
+    expect(JSON.stringify(msg)).toMatch(/may already be handled/i);
+  });
+
+  it("still reads as a normal message when no transfer is happening", () => {
+    const msg = buildSlackMessage(RECORD);
+    expect(msg.text).not.toMatch(/Transferring/);
+    expect(JSON.stringify(msg)).not.toMatch(/already be handled/i);
+  });
+
+  it("urgent still outranks transferring in the banner", () => {
+    const msg = buildSlackMessage({ ...RECORD, urgent: true, transferring: true });
+    expect(msg.text).toMatch(/^URGENT: /);
+  });
+});
