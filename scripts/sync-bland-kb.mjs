@@ -22,6 +22,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_PATH = path.join(__dirname, "..", "bland", "config.json");
 const SUPPLEMENT_PATH = path.join(__dirname, "..", "bland", "knowledge-supplement.json");
+const ALIASES_PATH = path.join(__dirname, "..", "bland", "knowledge-aliases.json");
 
 const KB_URL =
   process.env.KUMI_PUBLIC_KB_URL ||
@@ -79,6 +80,22 @@ export function isDroppedTopic(topic) {
 
 /** One plain-text document. Bland embeds and retrieves against this, so headings
  *  matter more than prose: a caller's question has to land near its answer. */
+/** Bland's retrieval is closer to lexical than semantic. Verified against the
+ *  live base: "43 feet" retrieves the ceiling entry perfectly, while "How high
+ *  are the ceilings?" retrieves nothing and the agent tells the caller it does
+ *  not know. Short entries are the worst hit, because there are few words in
+ *  them to match on.
+ *
+ *  So each entry carries the words a caller would actually say. This is the
+ *  single highest-leverage thing in the whole knowledge pipeline: a fact the
+ *  agent cannot retrieve is a fact it does not have. */
+export function renderEntry({ topic, answer, aliases }) {
+  const lines = [`## ${stripPhoneNumbers(topic)}`];
+  if (aliases?.length) lines.push(`Also asked as: ${aliases.join(", ")}.`);
+  lines.push(stripPhoneNumbers(answer));
+  return lines;
+}
+
 export function renderDoc(entries, { today } = {}) {
   const lines = [
     "FOUNDRY PADEL - CLUB FACTS",
@@ -91,10 +108,9 @@ export function renderDoc(entries, { today } = {}) {
     "",
   ];
 
-  for (const { topic, answer } of entries) {
-    if (isDroppedTopic(topic)) continue;
-    lines.push(`## ${stripPhoneNumbers(topic)}`);
-    lines.push(stripPhoneNumbers(answer));
+  for (const entry of entries) {
+    if (isDroppedTopic(entry.topic)) continue;
+    lines.push(...renderEntry(entry));
     lines.push("");
   }
   return lines.join("\n");
@@ -144,7 +160,19 @@ async function main() {
     supplement = [];
   }
 
-  const all = [...entries, ...supplement];
+  // The words callers actually use, attached per topic. Without these, retrieval
+  // misses anything phrased differently from the topic line.
+  let aliases = {};
+  try {
+    aliases = JSON.parse(readFileSync(ALIASES_PATH, "utf8")).aliases || {};
+  } catch {
+    aliases = {};
+  }
+
+  const all = [...entries, ...supplement].map((e) => ({ ...e, aliases: aliases[e.topic] }));
+  const withAliases = all.filter((e) => e.aliases?.length).length;
+  console.log(`[kb] ${withAliases} of ${all.length} entries carry caller phrasings`);
+
   const today = new Date().toISOString().slice(0, 10);
   const doc = renderDoc(all, { today });
 

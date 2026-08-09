@@ -275,7 +275,12 @@ async function main() {
     body: {
       prompt: PROMPT,
       first_sentence: GREETING,
-      custom_tools: Object.values(toolIds),
+      // FULL definitions inline, not ids. Verified against a real call: tool ids
+      // in `custom_tools` are accepted with a 200 and then silently stored as
+      // null, and the persona's `default_tools` never reaches an inbound call.
+      // The agent had no tools at all and told the caller it could not check
+      // availability "from here". Only `tools` with whole objects works.
+      tools: tools(),
       transfer_phone_number: TRANSFER_TO,
       record: true,
       max_duration: 15,
