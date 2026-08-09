@@ -18,6 +18,7 @@
 import express from "express";
 import crypto from "node:crypto";
 import { sanitize, normalizePhone } from "./notify.js";
+import { linkSpeech, TEMPLATES } from "./smslink.js";
 
 const VOICE_TOOL_SECRET = process.env.VOICE_TOOL_SECRET;
 
@@ -229,6 +230,7 @@ export function createVoiceRouter({
   cachedEvents,
   computeAvailability,
   notifier = null,
+  linkSender = null,
   timezone = "America/Los_Angeles",
 }) {
   const router = express.Router();
@@ -324,6 +326,52 @@ export function createVoiceRouter({
       count: events.length,
       events,
       speech: scheduleSpeech(events, today.date),
+    });
+  });
+
+  // Text the caller a link. Kumi does the sending; see server/smslink.js.
+  router.post("/api/voice/sms-link", async (req, res) => {
+    const template = String(req.body?.template || "booking").trim().toLowerCase();
+    if (!TEMPLATES.has(template)) {
+      return res.json({
+        ok: false,
+        reason: "unknown_template",
+        speech: "I'm not sure what to send you. I can send the booking link if that helps.",
+      });
+    }
+
+    if (!linkSender?.configured()) {
+      return res.json({
+        ok: false,
+        sent: false,
+        reason: "not_configured",
+        speech: linkSpeech(template, { sent: false, reason: "not_configured" }),
+      });
+    }
+
+    // Bland knows the number the caller is on, but a caller can also give a different
+    // one. Either way it has to be dialable before we hand it to Twilio.
+    const phone = normalizePhone(req.body?.phone);
+    if (req.body?.phone && !phone) {
+      return res.json({
+        ok: false,
+        sent: false,
+        reason: "bad_phone",
+        speech: "I didn't catch that number. Could you say it again, digit by digit?",
+      });
+    }
+
+    const result = await linkSender.sendLink({
+      phone,
+      template,
+      callId: sanitize(req.body?.call_id, 80),
+    });
+
+    return res.json({
+      ok: true,
+      sent: result.sent,
+      reason: result.reason,
+      speech: linkSpeech(template, result),
     });
   });
 

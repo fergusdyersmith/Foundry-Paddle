@@ -30,6 +30,7 @@ async function boot({
   secret = SECRET,
   ageMs = 0,
   notifier = undefined,
+  linkSender = undefined,
 } = {}) {
   vi.resetModules();
   if (secret === null) delete process.env.VOICE_TOOL_SECRET;
@@ -51,6 +52,10 @@ async function boot({
         notifier === undefined
           ? { configured: () => true, notifyMessage: async () => ({ delivered: true, channel: "slack" }) }
           : notifier,
+      linkSender:
+        linkSender === undefined
+          ? { configured: () => true, sendLink: async () => ({ sent: true, reason: null }) }
+          : linkSender,
       timezone: TZ,
     }),
   );
@@ -224,6 +229,68 @@ describe("availability", () => {
     ).json();
     expect(body.ok).toBe(false);
     expect(body.reason).toBe("unclear_date");
+  });
+});
+
+describe("texting the caller a link", () => {
+  it("normalizes the number before handing it to Kumi", async () => {
+    const sendLink = vi.fn(async () => ({ sent: true, reason: null }));
+    ctx = await boot({ linkSender: { configured: () => true, sendLink } });
+
+    const body = await (
+      await post(ctx.base, "/api/voice/sms-link", {
+        phone: "541 270 4585",
+        template: "booking",
+        call_id: "call_9",
+      })
+    ).json();
+
+    expect(body.sent).toBe(true);
+    expect(sendLink).toHaveBeenCalledWith({
+      phone: "+15412704585",
+      template: "booking",
+      callId: "call_9",
+    });
+  });
+
+  it("does not claim a text went out when it did not", async () => {
+    ctx = await boot({
+      linkSender: {
+        configured: () => true,
+        sendLink: async () => ({ sent: false, reason: "unreachable" }),
+      },
+    });
+    const body = await (
+      await post(ctx.base, "/api/voice/sms-link", { phone: "+15412704585" })
+    ).json();
+
+    expect(body.sent).toBe(false);
+    expect(body.speech).not.toMatch(/\bSent\b/i);
+    // The caller still has to leave the call able to book.
+    expect(body.speech).toMatch(/foundry padel dot com/);
+  });
+
+  it("refuses a template we never offered", async () => {
+    ctx = await boot();
+    const body = await (
+      await post(ctx.base, "/api/voice/sms-link", { template: "spam" })
+    ).json();
+    expect(body.ok).toBe(false);
+    expect(body.reason).toBe("unknown_template");
+  });
+
+  it("asks the caller to repeat a number it could not parse", async () => {
+    ctx = await boot();
+    const body = await (
+      await post(ctx.base, "/api/voice/sms-link", { phone: "five four one" })
+    ).json();
+    expect(body.reason).toBe("bad_phone");
+  });
+
+  it("requires auth like every other tool endpoint", async () => {
+    ctx = await boot();
+    const res = await post(ctx.base, "/api/voice/sms-link", { phone: "+15412704585" }, null);
+    expect(res.status).toBe(401);
   });
 });
 
