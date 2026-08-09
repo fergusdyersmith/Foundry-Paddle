@@ -115,14 +115,13 @@ function tools() {
         time: "{{input.time}}",
         duration_min: "{{input.duration_min}}",
       },
+      // {example}, NOT typed JSON Schema. This is the only shape Bland has ever
+      // actually EXECUTED. With a typed schema it plays the tool's speech line
+      // and then silently abandons the call: four calls in a row, zero requests
+      // reaching the server. It cannot populate input.date from a string input,
+      // so the body template never renders.
       input_schema: {
-        type: "object",
-        properties: {
-          date: { type: "string", description: "The day the caller asked about." },
-          time: { type: "string", description: "The time they asked about, if any." },
-          duration_min: { type: "integer", description: "60, 90 or 120. Default 90." },
-        },
-        required: ["date"],
+        example: { date: "tomorrow", time: "6pm", duration_min: 90 },
       },
       response: { speech: "$.speech", any_available: "$.any_available" },
       speech: "Let me have a look at the courts.",
@@ -136,14 +135,7 @@ function tools() {
       method: "POST",
       headers: auth,
       body: { date: "{{input.date}}", days: "{{input.days}}" },
-      input_schema: {
-        type: "object",
-        properties: {
-          date: { type: "string", description: "Where to start. Default today." },
-          days: { type: "integer", description: "How many days ahead. Default 7." },
-        },
-        required: ["date"],
-      },
+      input_schema: { example: { date: "today", days: 7 } },
       response: { speech: "$.speech", count: "$.count" },
       speech: "Let me check what's coming up.",
       timeout: 8000,
@@ -160,14 +152,7 @@ function tools() {
         template: "{{input.template}}",
         call_id: "{{call_id}}",
       },
-      input_schema: {
-        type: "object",
-        properties: {
-          phone: { type: "string", description: "The number to text." },
-          template: { type: "string", description: "booking, membership or directions." },
-        },
-        required: ["phone", "template"],
-      },
+      input_schema: { example: { phone: "+15035550123", template: "booking" } },
       response: { speech: "$.speech", sent: "$.sent" },
       speech: "Sending that over now.",
       timeout: 9000,
@@ -187,14 +172,12 @@ function tools() {
         call_id: "{{call_id}}",
       },
       input_schema: {
-        type: "object",
-        properties: {
-          name: { type: "string", description: "The caller's name." },
-          phone: { type: "string", description: "Callback number." },
-          reason: { type: "string", description: "What it is about." },
-          urgent: { type: "boolean", description: "Hurt, locked out, or distressed only." },
+        example: {
+          name: "Dana Whitfield",
+          phone: "+15035550123",
+          reason: "Wants a court for four on Saturday",
+          urgent: false,
         },
-        required: ["reason"],
       },
       response: { speech: "$.speech", ok: "$.ok" },
       speech: "Let me take that down.",
