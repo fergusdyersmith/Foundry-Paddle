@@ -46,7 +46,6 @@ HOW TO SPEAK
 - Warm, plain and local. You work here.
 - Say prices and times as a person would: "sixty dollars", "seven PM".
 - Never spell out a web address letter by letter. Say "foundry padel dot com".
-- Padel rhymes with "the DELL", not with "paddle". Say pah-DEL.
 - Never use an em dash.
 
 WHAT YOU KNOW
@@ -265,11 +264,15 @@ async function main() {
     call_config: {
       voice: process.env.BLAND_VOICE || "June",
       language: "en-US",
-      // The club is not called paddleboarding. Callers notice.
+      // "paddle", deliberately. The correct Spanish is pah-DEL, and the club's
+      // knowledge base explains that to anyone who asks, but this voice renders
+      // the phonetic hint worse than the plain anglicised version. Judged by
+      // ear on a real call, which is the only way to judge a voice.
+      //
+      // Real booleans: Bland's own docs show these as the STRINGS "false",
+      // which the persona endpoint rejects outright with a 400.
       pronunciation_guide: [
-        // Real booleans. Bland's own docs show these as the STRINGS "false", which
-        // the persona endpoint rejects outright.
-        { word: "padel", pronunciation: "pah-DEL", case_sensitive: false, spaced: false },
+        { word: "padel", pronunciation: "paddle", case_sensitive: false, spaced: false },
       ],
       record: true,
       max_duration: 15,
@@ -327,11 +330,15 @@ async function main() {
           ],
         },
       ],
-      // The club is not called paddleboarding. Callers notice.
+      // "paddle", deliberately. The correct Spanish is pah-DEL, and the club's
+      // knowledge base explains that to anyone who asks, but this voice renders
+      // the phonetic hint worse than the plain anglicised version. Judged by
+      // ear on a real call, which is the only way to judge a voice.
+      //
+      // Real booleans: Bland's own docs show these as the STRINGS "false",
+      // which the persona endpoint rejects outright with a 400.
       pronunciation_guide: [
-        // Real booleans. Bland's own docs show these as the STRINGS "false", which
-        // the persona endpoint rejects outright.
-        { word: "padel", pronunciation: "pah-DEL", case_sensitive: false, spaced: false },
+        { word: "padel", pronunciation: "paddle", case_sensitive: false, spaced: false },
       ],
       record: true,
       max_duration: 15,
