@@ -102,36 +102,25 @@ function tools() {
       url: `${SITE}/api/voice/availability`,
       method: "POST",
       headers: auth,
-      // `query` carries the WHOLE sentence. Bland sends `input` as one natural
-      // -language string no matter what input_schema declares, verified across
-      // three real calls, so the structured fields below almost always arrive
-      // empty and the endpoint parses `query` instead. Both are sent so that a
-      // future Bland that does populate them is used in preference.
+      // {{input.field}} placeholders with a typed schema. This is the ONLY form
+      // that got the tool offered to the model at all: adding {{input}} beside
+      // them stopped it firing for two calls running, and the agent never even
+      // played its filler line.
+      //
+      // Bland substitutes these with the WHOLE natural-language sentence rather
+      // than a parsed field, so `date` arrives as "check court availability for
+      // tomorrow at 10 AM". The endpoint parses whatever turns up.
       body: {
-        query: "{{input}}",
         date: "{{input.date}}",
         time: "{{input.time}}",
         duration_min: "{{input.duration_min}}",
       },
-      // Real JSON Schema, not {example}. With only an example, Bland passes
-      // `input` as a bare STRING ("check court availability tonight"), so every
-      // {{input.date}} in the body resolves to literal template text and the
-      // endpoint rightly refuses it. Cost a whole test call to find.
       input_schema: {
         type: "object",
         properties: {
-          date: {
-            type: "string",
-            description: "'today', 'tomorrow', a weekday name, or YYYY-MM-DD. Default today.",
-          },
-          time: {
-            type: "string",
-            description: "The time the caller asked about, like '6pm' or '18:00'. Optional.",
-          },
-          duration_min: {
-            type: "integer",
-            description: "Session length: 60, 90 or 120. Default 90.",
-          },
+          date: { type: "string", description: "The day the caller asked about." },
+          time: { type: "string", description: "The time they asked about, if any." },
+          duration_min: { type: "integer", description: "60, 90 or 120. Default 90." },
         },
         required: ["date"],
       },
@@ -146,14 +135,14 @@ function tools() {
       url: `${SITE}/api/voice/schedule`,
       method: "POST",
       headers: auth,
-      body: { query: "{{input}}", date: "{{input.date}}", days: "{{input.days}}" },
+      body: { date: "{{input.date}}", days: "{{input.days}}" },
       input_schema: {
         type: "object",
         properties: {
           date: { type: "string", description: "Where to start. Default today." },
-          days: { type: "integer", description: "How many days ahead to look. Default 7." },
+          days: { type: "integer", description: "How many days ahead. Default 7." },
         },
-        required: [],
+        required: ["date"],
       },
       response: { speech: "$.speech", count: "$.count" },
       speech: "Let me check what's coming up.",
@@ -167,7 +156,6 @@ function tools() {
       method: "POST",
       headers: auth,
       body: {
-        query: "{{input}}",
         phone: "{{input.phone}}",
         template: "{{input.template}}",
         call_id: "{{call_id}}",
@@ -175,12 +163,8 @@ function tools() {
       input_schema: {
         type: "object",
         properties: {
-          phone: { type: "string", description: "The number to text. Digits are fine." },
-          template: {
-            type: "string",
-            enum: ["booking", "membership", "directions"],
-            description: "Which link to send.",
-          },
+          phone: { type: "string", description: "The number to text." },
+          template: { type: "string", description: "booking, membership or directions." },
         },
         required: ["phone", "template"],
       },
@@ -196,7 +180,6 @@ function tools() {
       method: "POST",
       headers: auth,
       body: {
-        query: "{{input}}",
         name: "{{input.name}}",
         phone: "{{input.phone}}",
         reason: "{{input.reason}}",
@@ -208,12 +191,8 @@ function tools() {
         properties: {
           name: { type: "string", description: "The caller's name." },
           phone: { type: "string", description: "Callback number." },
-          reason: { type: "string", description: "What the message is about." },
-          urgent: {
-            type: "boolean",
-            description:
-              "True only if someone is hurt, locked out, at the door, or clearly distressed.",
-          },
+          reason: { type: "string", description: "What it is about." },
+          urgent: { type: "boolean", description: "Hurt, locked out, or distressed only." },
         },
         required: ["reason"],
       },
@@ -306,12 +285,6 @@ async function main() {
   console.log(`[agent] persona ${config.persona_id ? "updated" : "created"}: ${personaId}`);
 
   // Point the number at it. Transfer and recording live on the number.
-  await bland(`/v1/personas/${personaId}/inbound/attach`, {
-    method: "POST",
-    body: { inbound_numbers: [PHONE_NUMBER] },
-  });
-  console.log(`[agent] attached ${PHONE_NUMBER} to the persona`);
-
   await bland(`/v1/inbound/${PHONE_NUMBER}/update`, {
     method: "POST",
     byot: true,
@@ -333,6 +306,14 @@ async function main() {
     },
   });
   console.log(`[agent] configured ${PHONE_NUMBER}`);
+
+  // AFTER the number update, not before: updating the number clears persona_id,
+  // which silently detached the knowledge base and left the agent with no facts.
+  await bland(`/v1/personas/${personaId}/inbound/attach`, {
+    method: "POST",
+    body: { inbound_numbers: [PHONE_NUMBER] },
+  });
+  console.log(`[agent] attached ${PHONE_NUMBER} to the persona`);
 
   writeConfig({
     ...config,

@@ -335,9 +335,15 @@ export function createVoiceRouter({
     const today = nowLocal(timezone);
     // Bland sends one natural-language string, so the structured fields are
     // usually absent. Prefer them when present, parse the sentence otherwise.
-    const when = parseWhen(req.body?.query);
+    // Any of these fields may contain the WHOLE sentence rather than a value,
+    // because Bland substitutes {{input.date}} with all of `input`. So try the
+    // field as a clean token first, then read the sentence.
     const rawDate = unresolved(req.body?.date) ? null : req.body?.date;
-    const date = resolveDate(rawDate ?? when.date, today.date);
+    const sentence = [req.body?.query, rawDate, req.body?.time]
+      .filter((x) => x && !unresolved(x))
+      .join(" ");
+    const when = parseWhen(sentence);
+    const date = resolveDate(rawDate, today.date) || resolveDate(when.date, today.date);
     if (!date) {
       return res.json({
         ok: false,
@@ -349,7 +355,7 @@ export function createVoiceRouter({
     const requested = Number(req.body?.duration_min);
     const durationMin = [60, 90, 120].includes(requested) ? requested : 90;
     const rawTime = unresolved(req.body?.time) ? null : req.body?.time;
-    const near = resolveTime(rawTime ?? when.time);
+    const near = resolveTime(rawTime) ?? resolveTime(when.time);
 
     const result = computeAvailability(cache.bookings, {
       date,
@@ -387,9 +393,10 @@ export function createVoiceRouter({
     }
 
     const today = nowLocal(timezone);
-    const when = parseWhen(req.body?.query);
     const rawDate = unresolved(req.body?.date) ? null : req.body?.date;
-    const from = resolveDate(rawDate ?? when.date, today.date) || today.date;
+    const when = parseWhen([req.body?.query, rawDate].filter((x) => x && !unresolved(x)).join(" "));
+    const from =
+      resolveDate(rawDate, today.date) || resolveDate(when.date, today.date) || today.date;
     const requestedDays = Number(req.body?.days);
     const days = Number.isFinite(requestedDays)
       ? Math.min(Math.max(1, requestedDays), LIMITS.maxDays)
@@ -416,7 +423,10 @@ export function createVoiceRouter({
   // Text the caller a link. Kumi does the sending; see server/smslink.js.
   router.post("/api/voice/sms-link", async (req, res) => {
     const given = unresolved(req.body?.template) ? "" : String(req.body?.template || "");
-    const template = (given.trim().toLowerCase() || templateFromText(req.body?.query)) || "booking";
+    const text = [req.body?.query, given].filter((x) => x && !unresolved(x)).join(" ");
+    const template = TEMPLATES.has(given.trim().toLowerCase())
+      ? given.trim().toLowerCase()
+      : templateFromText(text) || "booking";
     if (!TEMPLATES.has(template)) {
       return res.json({
         ok: false,
@@ -437,9 +447,14 @@ export function createVoiceRouter({
     // Bland knows the number the caller is on, but a caller can also give a different
     // one. Either way it has to be dialable before we hand it to Twilio.
     const rawPhone =
-      (unresolved(req.body?.phone) ? null : req.body?.phone) || phoneFromText(req.body?.query);
+      normalizePhone(unresolved(req.body?.phone) ? null : req.body?.phone) ||
+      phoneFromText([req.body?.query, req.body?.phone, req.body?.reason].filter((x) => x && !unresolved(x)).join(" "));
     const phone = normalizePhone(rawPhone);
-    if (rawPhone && !phone) {
+    // Only push back when they actually tried to give a number. A field holding
+    // a whole sentence is Bland's doing, not a caller misreading their digits.
+    const phoneField = unresolved(req.body?.phone) ? null : req.body?.phone;
+    const attempted = phoneField && /\d/.test(String(phoneField));
+    if (attempted && !phone) {
       return res.json({
         ok: false,
         sent: false,
@@ -487,9 +502,14 @@ export function createVoiceRouter({
     }
 
     const rawPhone =
-      (unresolved(req.body?.phone) ? null : req.body?.phone) || phoneFromText(req.body?.query);
+      normalizePhone(unresolved(req.body?.phone) ? null : req.body?.phone) ||
+      phoneFromText([req.body?.query, req.body?.phone, req.body?.reason].filter((x) => x && !unresolved(x)).join(" "));
     const phone = normalizePhone(rawPhone);
-    if (rawPhone && !phone) {
+    // Only push back when they actually tried to give a number. A field holding
+    // a whole sentence is Bland's doing, not a caller misreading their digits.
+    const phoneField = unresolved(req.body?.phone) ? null : req.body?.phone;
+    const attempted = phoneField && /\d/.test(String(phoneField));
+    if (attempted && !phone) {
       return res.json({
         ok: false,
         reason: "bad_phone",

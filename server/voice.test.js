@@ -251,13 +251,16 @@ describe("availability", () => {
     expect(body.duration_min).toBe(90);
   });
 
-  it("asks which day rather than guessing at an unparseable date", async () => {
+  it("falls back to today when it cannot pin a day, and names the day it used", async () => {
+    // Bland substitutes {{input.date}} with the whole sentence, so refusing
+    // anything unparseable meant refusing every real call. Assuming today is
+    // safe BECAUSE the reply always names the day, so the caller can correct it.
     ctx = await boot({ bookings: [booking(COURT_A, "Padel 1", "2026-08-13T18:00:00", "2026-08-13T19:00:00")] });
     const body = await (
       await post(ctx.base, "/api/voice/availability", { date: "sometime next month" })
     ).json();
-    expect(body.ok).toBe(false);
-    expect(body.reason).toBe("unclear_date");
+    expect(body.ok).toBe(true);
+    expect(body.speech).toMatch(/today|tomorrow|on /i);
   });
 });
 
@@ -299,19 +302,22 @@ describe("texting the caller a link", () => {
     expect(body.speech).toMatch(/foundry padel dot com/);
   });
 
-  it("refuses a template we never offered", async () => {
+  it("falls back to the booking link rather than refusing an odd template", async () => {
+    // The template field often carries a sentence, not one of our three words.
     ctx = await boot();
     const body = await (
-      await post(ctx.base, "/api/voice/sms-link", { template: "spam" })
+      await post(ctx.base, "/api/voice/sms-link", {
+        template: "send them the thing for booking a court",
+        phone: "+15412704585",
+      })
     ).json();
-    expect(body.ok).toBe(false);
-    expect(body.reason).toBe("unknown_template");
+    expect(body.sent).toBe(true);
   });
 
   it("asks the caller to repeat a number it could not parse", async () => {
     ctx = await boot();
     const body = await (
-      await post(ctx.base, "/api/voice/sms-link", { phone: "five four one" })
+      await post(ctx.base, "/api/voice/sms-link", { phone: "5551" })
     ).json();
     expect(body.reason).toBe("bad_phone");
   });
@@ -390,7 +396,7 @@ describe("taking a message", () => {
     const body = await (
       await post(ctx.base, "/api/voice/message", {
         reason: "call me back",
-        phone: "five four one, um",
+        phone: "5551",
       })
     ).json();
     expect(body.ok).toBe(false);
