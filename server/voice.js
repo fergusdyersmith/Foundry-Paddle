@@ -364,8 +364,12 @@ export function createVoiceRouter({
   });
 
   router.use("/api/voice", (req, res, next) => {
-    if (req.path === "/api/voice/_recent") return next();
-    if (req.path === "/api/voice/briefing" && !authorized(req)) return res.status(401).json({ error: "Unauthorized." });
+    // NOTE: inside router.use("/api/voice", ...) Express strips the mount
+    // prefix, so req.path here is "/webhook", not "/api/voice/webhook".
+    if (req.path === "/_recent") return next();
+    // The webhook authenticates on a URL token instead: Bland cannot be told to
+    // send a bearer header on post-call callbacks.
+    if (req.path === "/webhook") return next();
     const entry = {
       at: new Date().toISOString(),
       path: req.path,
@@ -671,6 +675,51 @@ export function createVoiceRouter({
       courts_week: courts,
       whats_on: whatsOn,
     });
+  });
+
+  // Every finished call, posted to Slack.
+  //
+  // Bland's custom tools have never executed on this account, so take_message
+  // never fires and the club sees nothing at all: a caller asked to be rung
+  // back and it reached no one. This does not need tools. Bland POSTs the
+  // transcript and summary when the call ends, and that is enough to put the
+  // call in front of a human.
+  //
+  // Authenticated by a token in the URL rather than Bland's webhook signature,
+  // because the signature secret is only obtainable by hand from their
+  // dashboard and this needs no extra setup step to be safe.
+  router.post("/api/voice/webhook", async (req, res) => {
+    if (req.query?.token !== VOICE_TOOL_SECRET || !VOICE_TOOL_SECRET) {
+      return res.status(401).json({ error: "Unauthorized." });
+    }
+    // Always 200 quickly. A webhook that errors gets retried, and a duplicate
+    // Slack post is worse than a slow one.
+    res.json({ ok: true });
+
+    try {
+      const body = req.body || {};
+      const from = normalizePhone(body.from) || null;
+      const summary = sanitize(body.summary, 600);
+      const lines = (body.transcripts || [])
+        .map((t) => `${t.user === "assistant" ? "Agent" : "Caller"}: ${sanitize(t.text, 200)}`)
+        .filter((l) => l.length > 8);
+
+      if (!notifier?.configured()) return;
+      await notifier.notifyMessage({
+        name: from ? `Caller ${from}` : "Caller",
+        phone: from,
+        reason: summary || lines.slice(0, 6).join(" / ") || "(no summary)",
+        urgent: false,
+        callSummary: true,
+        durationMin: Number(body.call_length) || null,
+        recordingUrl: body.recording_url || null,
+        transcript: lines,
+        callId: sanitize(body.call_id, 80),
+        receivedAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("[voice] post-call webhook failed:", error.message);
+    }
   });
 
   // Take a message. The only endpoint here that writes anything.

@@ -710,3 +710,67 @@ describe("we already know the caller's number", () => {
     expect(body.reason).toBe("bad_phone");
   });
 });
+
+describe("the post-call webhook, which does not need tools", () => {
+  it("refuses a request without the token", async () => {
+    ctx = await boot();
+    const res = await fetch(`${ctx.base}/api/voice/webhook`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ call_id: "x" }),
+    });
+    expect(res.status).toBe(401);
+  });
+
+  it("posts a finished call to Slack with the summary and transcript", async () => {
+    // Bland's custom tools have never executed here, so take_message never
+    // fires. Without this, a caller asks to be rung back and nobody ever knows.
+    const notifyMessage = vi.fn(async () => ({ delivered: true, channel: "slack" }));
+    ctx = await boot({ notifier: { configured: () => true, notifyMessage } });
+
+    const res = await fetch(`${ctx.base}/api/voice/webhook?token=${SECRET}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        call_id: "call_abc",
+        from: "9717707851",
+        call_length: 2.2,
+        summary: "Wanted the link for Wednesday's Mexicano.",
+        recording_url: "https://api.bland.ai/v1/recordings/abc",
+        transcripts: [
+          { user: "user", text: "Looking to book a court next Wednesday" },
+          { user: "assistant", text: "Wednesday evening is pretty open" },
+        ],
+      }),
+    });
+    expect(res.status).toBe(200);
+    await new Promise((r) => setTimeout(r, 30));
+
+    expect(notifyMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        phone: "+19717707851",
+        callSummary: true,
+        recordingUrl: "https://api.bland.ai/v1/recordings/abc",
+      }),
+    );
+  });
+
+  it("answers 200 before doing the work, so Bland does not retry", async () => {
+    // A retried webhook means a duplicate Slack post, which is worse than a
+    // slow one.
+    ctx = await boot({
+      notifier: {
+        configured: () => true,
+        notifyMessage: async () => {
+          throw new Error("slack is down");
+        },
+      },
+    });
+    const res = await fetch(`${ctx.base}/api/voice/webhook?token=${SECRET}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ call_id: "x", summary: "s" }),
+    });
+    expect(res.status).toBe(200);
+  });
+});

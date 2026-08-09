@@ -77,7 +77,9 @@ export function buildSlackMessage(record) {
     ? ":rotating_light: Urgent message"
     : record.transferring
       ? ":twisted_rightwards_arrows: Caller being put through now"
-      : ":telephone_receiver: New message";
+      : record.callSummary
+        ? ":phone: Call finished"
+        : ":telephone_receiver: New message";
 
   const fields = [{ type: "mrkdwn", text: `*From*\n${name}` }];
   if (phone) {
@@ -88,10 +90,25 @@ export function buildSlackMessage(record) {
   const blocks = [
     { type: "header", text: { type: "plain_text", text: heading, emoji: true } },
     { type: "section", fields },
-    { type: "section", text: { type: "mrkdwn", text: `*Reason*\n${reason}` } },
+    {
+      type: "section",
+      text: { type: "mrkdwn", text: `*${record.callSummary ? "What they wanted" : "Reason"}*\n${reason}` },
+    },
   ];
 
+  // The transcript, folded away. Enough to see what was said without anyone
+  // having to open the recording.
+  if (record.transcript?.length) {
+    const convo = record.transcript.slice(0, 14).map(escapeSlack).join("\n");
+    blocks.push({
+      type: "section",
+      text: { type: "mrkdwn", text: "```" + convo.slice(0, 2600) + "```" },
+    });
+  }
+
   const context = [];
+  if (record.durationMin) context.push(`${record.durationMin.toFixed(1)} min`);
+  if (record.recordingUrl) context.push(`<${escapeSlack(record.recordingUrl)}|recording>`);
   if (record.transferring) {
     // Taken BEFORE the transfer was attempted, because a failed transfer drops
     // the caller into someone's personal voicemail and the message never gets
@@ -101,7 +118,11 @@ export function buildSlackMessage(record) {
   }
   if (record.receivedAt) context.push(`Taken ${escapeSlack(record.receivedAt)}`);
   if (record.callId) context.push(`Call \`${escapeSlack(record.callId)}\``);
-  context.push("React with :white_check_mark: to claim it");
+  context.push(
+    record.callSummary
+      ? "React with :white_check_mark: if this needs nothing further"
+      : "React with :white_check_mark: to claim it",
+  );
   blocks.push({
     type: "context",
     elements: [{ type: "mrkdwn", text: context.join("  •  ") }],

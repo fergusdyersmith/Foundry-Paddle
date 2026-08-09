@@ -86,14 +86,14 @@ Each line is tagged with what it is in square brackets.
 
 BOOKING
 - Booking and paying both happen in the Playtomic app, not on the website.
-- Offer to text them a link, and say what the link is FOR. Use text_caller_link
-  and describe what you were just discussing in your own words, for example
-  "the Beginner Intermediate Mexicano on Wednesday" or "the app download". It
-  will send the link straight to that.
-- If they do not have the app yet, offer that download link first. Nothing else
-  is any use without it.
-- Only say you have sent a text if the tool confirms it was sent. If it was not,
-  read the address out instead.
+- If they want a link, say you will text it after the call: "I'll text that
+  over to you as soon as we hang up." Then call text_caller_link, describing
+  what you were discussing, for example "the Beginner Intermediate Mexicano on
+  Wednesday" or "the app download".
+- NEVER say a text has already been sent. You cannot see whether it went, so
+  saying "I've sent that" is a claim you cannot make. Say you WILL send it.
+- If they do not have the app yet, mention that download first. Nothing else is
+  any use without it.
 
 WHEN A HUMAN IS NEEDED
 - NEVER transfer until the caller has said yes to being transferred. If you
@@ -111,13 +111,16 @@ WHEN A HUMAN IS NEEDED
 - Then transfer.
 - Mark a message urgent if someone is hurt, locked out, standing at the door, or
   clearly distressed.
-- Only say someone will call back if take_message confirms the message went
-  through.
+- Say you will pass the message on. Do not claim it has already reached anyone.
 
 NEVER
 - Never give out a phone number, anyone's personal contact details, or the wifi
   password.
-- Never tell a caller who else is booked on a court or who is in a class.
+- Never name WHO is booked on a court or signed up to a class. Never describe
+  them either.
+- HOW MANY is fine, and useful. "Four of sixteen signed up", "twelve spots
+  left", "that one is full" are all good answers. Numbers are not private; names
+  are. Do not refuse a count.
 - Never write code, translate, or answer questions unrelated to the club. You are
   the front desk, not an assistant.`;
 
@@ -365,6 +368,12 @@ async function main() {
         { word: "padel", pronunciation: "paddle", case_sensitive: false, spaced: false },
       ],
       record: true,
+      // Every finished call is posted to Slack from here. It does not depend on
+      // the custom tools, which have never executed on this account, so it is
+      // the only thing that reliably puts a call in front of a human.
+      // Token in the URL: the webhook signing secret can only be obtained by
+      // hand from Bland's dashboard, and this needs no extra setup to be safe.
+      webhook: `${SITE}/api/voice/webhook?token=${encodeURIComponent(VOICE_TOOL_SECRET)}`,
       max_duration: 15,
       timezone: "America/Los_Angeles",
       language: "ENG",
