@@ -918,3 +918,47 @@ describe("sending the RIGHT link", () => {
     ).toBe("Beginner/Intermediate Mexicano");
   });
 });
+
+describe("spotting urgency without the agent's flag", () => {
+  let V;
+  beforeEach(async () => {
+    vi.resetModules();
+    V = (await import("./voice.js")).__testables;
+  });
+
+  it.each([
+    ["Caller: I'm locked out at the front door"],
+    ["Caller: my partner fell and I think she's hurt"],
+    ["Caller: I've been waiting outside for twenty minutes"],
+    ["Caller: there's no one here and my court starts in five minutes"],
+  ])("hears %s as urgent", (line) => {
+    // take_message never fires, so the agent's urgent flag never reaches Slack.
+    expect(V.soundsUrgent([line])).toBe(true);
+  });
+
+  it.each([
+    ["Caller: how much is a court?"],
+    ["Caller: can you text me the booking link?"],
+    ["Caller: what time do you close?"],
+  ])("does not page the channel for %s", (line) => {
+    // A false urgent teaches people to mute the channel, which costs more than
+    // a missed one: every call reaches Slack either way.
+    expect(V.soundsUrgent([line])).toBe(false);
+  });
+
+  it("ignores the AGENT describing urgency", () => {
+    expect(V.soundsUrgent(["Agent: if you are ever locked out, call us"])).toBe(false);
+  });
+
+  it.each([
+    ["Caller: can someone call me back?"],
+    ["Agent: I'll pass that on to the team"],
+    ["Caller: can you take a message?"],
+  ])("marks %s as wanting a callback", (line) => {
+    expect(V.wantsCallback([line])).toBe(true);
+  });
+
+  it("does not mark an ordinary enquiry as needing a callback", () => {
+    expect(V.wantsCallback(["Caller: what are your hours?"])).toBe(false);
+  });
+});

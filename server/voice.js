@@ -249,6 +249,34 @@ export function promisedText(transcriptLines) {
   );
 }
 
+// take_message never fires, because Bland injects no tools, so the `urgent`
+// flag the agent was told to set never reaches Slack. A caller locked out at
+// the door would produce an ordinary card nobody hurries to. Read it off the
+// transcript instead.
+//
+// Deliberately narrow. A false urgent pages the channel and teaches people to
+// mute it, which costs more than a missed one: every call reaches Slack either
+// way, this only decides how loudly.
+const URGENT_SIGNS =
+  /\b(locked out|can'?t get in|no ?one (?:is )?here|nobody (?:is )?here|injur|hurt|bleeding|ambulance|emergency|hospital|fell|broken?|standing outside|waiting outside|at the door|been waiting)\b/i;
+
+/** Does this call need someone now, rather than a callback? */
+export function soundsUrgent(transcriptLines) {
+  return transcriptLines.some(
+    (l) => l.startsWith("Caller:") && URGENT_SIGNS.test(l),
+  );
+}
+
+// The agent says it will pass a message on. Worth marking, so a card that needs
+// a callback is not read as a routine call summary.
+const WANTS_CALLBACK =
+  /\b(call me back|ring me back|get back to me|have (?:someone|them) call|pass (?:that|this|it) on|leave a message|take a message)\b/i;
+
+/** Did anyone on the call ask for a human to come back to them? */
+export function wantsCallback(transcriptLines) {
+  return transcriptLines.some((l) => WANTS_CALLBACK.test(l));
+}
+
 /** Which link the caller asked for, read out of the same sentence. */
 export function templateFromText(text) {
   const raw = String(text || "").toLowerCase();
@@ -901,6 +929,8 @@ export function createVoiceRouter({
 export const __testables = {
   unresolved,
   promisedText,
+  soundsUrgent,
+  wantsCallback,
   matchEvent,
   parseWhen,
   templateFromText,

@@ -17,7 +17,7 @@
 // is missed, which is the better failure: a missing Slack card is noticed, a
 // duplicate one teaches people to ignore the channel.
 
-import { promisedText, matchEvent, templateFromText, spoken, spokenDate } from "./voice.js";
+import { promisedText, soundsUrgent, wantsCallback, matchEvent, templateFromText, spoken, spokenDate } from "./voice.js";
 import { deepLinkFromEvent } from "./smslink.js";
 import { sanitize, normalizePhone } from "./notify.js";
 
@@ -92,7 +92,9 @@ export function createCallPoller({
       name: from ? `Caller ${from}` : "Caller",
       phone: from,
       reason: sanitize(detail.summary, 600) || lines.slice(0, 6).join(" / ") || "(no summary)",
-      urgent: false,
+      // The agent's own urgent flag never arrives, so read it off the call.
+      urgent: soundsUrgent(lines),
+      needsCallback: wantsCallback(lines),
       callSummary: true,
       durationMin: Number(detail.call_length) || null,
       recordingUrl: detail.recording_url || null,

@@ -78,7 +78,7 @@ export function buildSlackMessage(record) {
     : record.transferring
       ? ":twisted_rightwards_arrows: Caller being put through now"
       : record.callSummary
-        ? ":phone: Call finished"
+        ? (record.needsCallback ? ":phone: Call finished, wants a callback" : ":phone: Call finished")
         : ":telephone_receiver: New message";
 
   const fields = [{ type: "mrkdwn", text: `*From*\n${name}` }];

@@ -164,3 +164,46 @@ describe("what it does with a finished call", () => {
     expect(notifier.notifyMessage).toHaveBeenCalledTimes(2);
   });
 });
+
+describe("urgency, since the agent's flag never arrives", () => {
+  it("pages the channel when a caller is locked out", async () => {
+    const calls = [call("a")];
+    const details = {
+      a: detail("a", []),
+      b: detail("b", [
+        { user: "user", text: "I'm locked out at the front door and my court starts now" },
+      ]),
+    };
+    const p = poller(calls, details);
+    await p.poll();
+    calls.unshift(call("b"));
+    await p.poll();
+    expect(notifier.notifyMessage.mock.calls[0][0].urgent).toBe(true);
+  });
+
+  it("leaves an ordinary enquiry unflagged", async () => {
+    const calls = [call("a")];
+    const details = {
+      a: detail("a", []),
+      b: detail("b", [{ user: "user", text: "how much is a court for 90 minutes?" }]),
+    };
+    const p = poller(calls, details);
+    await p.poll();
+    calls.unshift(call("b"));
+    await p.poll();
+    expect(notifier.notifyMessage.mock.calls[0][0].urgent).toBe(false);
+  });
+
+  it("marks a call that asked for a callback", async () => {
+    const calls = [call("a")];
+    const details = {
+      a: detail("a", []),
+      b: detail("b", [{ user: "user", text: "can someone call me back about memberships?" }]),
+    };
+    const p = poller(calls, details);
+    await p.poll();
+    calls.unshift(call("b"));
+    await p.poll();
+    expect(notifier.notifyMessage.mock.calls[0][0].needsCallback).toBe(true);
+  });
+});
