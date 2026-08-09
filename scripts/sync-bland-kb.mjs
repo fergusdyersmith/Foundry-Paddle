@@ -180,34 +180,52 @@ async function main() {
   if (!BLAND_API_KEY) throw new Error("BLAND_API_KEY is required to push");
 
   const config = readConfig();
-  const existing = config.knowledge_base_id;
+  const previous = config.knowledge_base_id;
 
-  const { status, json } = existing
-    ? await bland(`/v1/knowledge/${existing}`, {
-        method: "PUT",
-        body: { name: KB_NAME, description: `Synced ${today}`, text: doc },
-      })
-    : await bland("/v1/knowledge/learn", {
-        method: "POST",
-        body: { type: "text", name: KB_NAME, description: `Synced ${today}`, text: doc },
-      });
+  // ALWAYS create. Bland's PUT /v1/knowledge/{id} updates name and description
+  // only: "This endpoint does not modify the content of the knowledge base".
+  // It still answers 200 and bumps updated_at, so an update-in-place sync
+  // reports success while the agent keeps answering from the old text. That
+  // happened here, silently, until the file size gave it away.
+  //
+  // There is no content-update endpoint, so the shape is create-then-delete:
+  // create first, so there is never a moment with no knowledge base, and only
+  // delete the previous one once the new id is known.
+  const { status, json } = await bland("/v1/knowledge/learn", {
+    method: "POST",
+    body: { type: "text", name: KB_NAME, description: `Synced ${today}`, text: doc },
+  });
 
   if (status >= 400) {
     throw new Error(`Bland rejected the knowledge base (${status}): ${JSON.stringify(json).slice(0, 300)}`);
   }
 
-  // Bland's create response has moved around between shapes, and guessing wrong
-  // means the next run creates a DUPLICATE base rather than updating this one.
-  // So fall back to looking it up by name, which is authoritative.
-  let id = json?.data?.id || json?.id || json?.data?.vector_id || json?.vector_id || existing;
+  // The create response shape varies, so fall back to listing and taking the
+  // newest base with this name, which is authoritative.
+  let id = json?.data?.id || json?.id || json?.data?.vector_id || json?.vector_id;
   if (!id) {
     const list = await bland("/v1/knowledge");
-    id = (list.json?.data?.kbs || []).find((kb) => kb.name === KB_NAME)?.id;
+    id = (list.json?.data?.kbs || [])
+      .filter((kb) => kb.name === KB_NAME && kb.id !== previous)
+      .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))[0]?.id;
   }
   if (!id) throw new Error("Uploaded, but could not determine the knowledge base id");
 
   writeConfig({ ...config, knowledge_base_id: id, knowledge_synced_at: today });
-  console.log(`[kb] ${existing ? "updated" : "created"} ${id}`);
+  console.log(`[kb] created ${id} (${doc.length} chars)`);
+
+  if (previous && previous !== id) {
+    const del = await bland(`/v1/knowledge/${previous}`, { method: "DELETE" });
+    console.log(
+      del.status < 400
+        ? `[kb] deleted the previous base ${previous}`
+        : `[kb] WARNING: could not delete the previous base ${previous} (${del.status})`,
+    );
+  }
+
+  // The id changes on every sync, by necessity. Anything pointing at the old one
+  // is now pointing at a base that no longer exists.
+  console.log("[kb] NOTE: the id changed. Re-run the agent deploy so the number points at it.");
 }
 
 if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
