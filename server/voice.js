@@ -110,6 +110,64 @@ export function resolveDate(input, today) {
   return null;
 }
 
+/**
+ * Pull a date and a time out of the sentence Bland sends.
+ *
+ * Bland passes `input` as ONE natural-language string, e.g. "check court
+ * availability for tomorrow at 10 AM", no matter what input_schema declares.
+ * Confirmed across three real calls: with a JSON Schema of typed properties on
+ * the tool, `input` still arrived as a bare string and every {{input.date}} in
+ * the body resolved to nothing. So the parsing happens here, where we control
+ * it, rather than depending on a substitution that does not occur.
+ */
+export function parseWhen(text) {
+  const raw = String(text || "").toLowerCase();
+  let date = null;
+  let time = null;
+
+  if (/\btomorrow\b/.test(raw)) date = "tomorrow";
+  else if (/\b(today|tonight|this evening|this afternoon|right now|now)\b/.test(raw)) date = "today";
+  else {
+    const iso = raw.match(/\b(\d{4}-\d{2}-\d{2})\b/);
+    if (iso) date = iso[1];
+    else {
+      const day = raw.match(
+        /\b(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/,
+      );
+      if (day) date = day[1];
+    }
+  }
+
+  // "10 AM", "6pm", "6:30 pm", "18:00". Deliberately not bare digits: "4 players"
+  // and "90 minutes" must not read as a time.
+  const withMeridiem = raw.match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/);
+  if (withMeridiem) {
+    time = `${withMeridiem[1]}${withMeridiem[2] ? `:${withMeridiem[2]}` : ""}${withMeridiem[3]}`;
+  } else {
+    const twentyFour = raw.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
+    if (twentyFour) time = `${twentyFour[1]}:${twentyFour[2]}`;
+  }
+
+  return { date, time };
+}
+
+/** Which link the caller asked for, read out of the same sentence. */
+export function templateFromText(text) {
+  const raw = String(text || "").toLowerCase();
+  if (/\bmember|join|membership\b/.test(raw)) return "membership";
+  if (/\bdirection|address|where|find you|located\b/.test(raw)) return "directions";
+  if (/\bbook|court|reserve|play\b/.test(raw)) return "booking";
+  return null;
+}
+
+/** A callback number spoken inside the sentence, when no structured field came. */
+export function phoneFromText(text) {
+  const match = String(text || "").match(
+    /(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/,
+  );
+  return match ? match[0] : null;
+}
+
 /** "18:00", "6pm", "6:30 pm" -> minutes from midnight, or null. */
 export function resolveTime(input) {
   if (input == null || input === "" || unresolved(input)) return null;
@@ -268,7 +326,11 @@ export function createVoiceRouter({
     }
 
     const today = nowLocal(timezone);
-    const date = resolveDate(req.body?.date, today.date);
+    // Bland sends one natural-language string, so the structured fields are
+    // usually absent. Prefer them when present, parse the sentence otherwise.
+    const when = parseWhen(req.body?.query);
+    const rawDate = unresolved(req.body?.date) ? null : req.body?.date;
+    const date = resolveDate(rawDate ?? when.date, today.date);
     if (!date) {
       return res.json({
         ok: false,
@@ -279,7 +341,8 @@ export function createVoiceRouter({
 
     const requested = Number(req.body?.duration_min);
     const durationMin = [60, 90, 120].includes(requested) ? requested : 90;
-    const near = resolveTime(req.body?.time);
+    const rawTime = unresolved(req.body?.time) ? null : req.body?.time;
+    const near = resolveTime(rawTime ?? when.time);
 
     const result = computeAvailability(cache.bookings, {
       date,
@@ -313,7 +376,9 @@ export function createVoiceRouter({
     }
 
     const today = nowLocal(timezone);
-    const from = resolveDate(req.body?.date, today.date) || today.date;
+    const when = parseWhen(req.body?.query);
+    const rawDate = unresolved(req.body?.date) ? null : req.body?.date;
+    const from = resolveDate(rawDate ?? when.date, today.date) || today.date;
     const requestedDays = Number(req.body?.days);
     const days = Number.isFinite(requestedDays)
       ? Math.min(Math.max(1, requestedDays), LIMITS.maxDays)
@@ -339,7 +404,8 @@ export function createVoiceRouter({
 
   // Text the caller a link. Kumi does the sending; see server/smslink.js.
   router.post("/api/voice/sms-link", async (req, res) => {
-    const template = String(req.body?.template || "booking").trim().toLowerCase();
+    const given = unresolved(req.body?.template) ? "" : String(req.body?.template || "");
+    const template = (given.trim().toLowerCase() || templateFromText(req.body?.query)) || "booking";
     if (!TEMPLATES.has(template)) {
       return res.json({
         ok: false,
@@ -359,7 +425,8 @@ export function createVoiceRouter({
 
     // Bland knows the number the caller is on, but a caller can also give a different
     // one. Either way it has to be dialable before we hand it to Twilio.
-    const rawPhone = unresolved(req.body?.phone) ? null : req.body?.phone;
+    const rawPhone =
+      (unresolved(req.body?.phone) ? null : req.body?.phone) || phoneFromText(req.body?.query);
     const phone = normalizePhone(rawPhone);
     if (rawPhone && !phone) {
       return res.json({
@@ -397,7 +464,9 @@ export function createVoiceRouter({
       });
     }
 
-    const reason = unresolved(req.body?.reason) ? "" : sanitize(req.body?.reason, 500);
+    const reason =
+      (unresolved(req.body?.reason) ? "" : sanitize(req.body?.reason, 500)) ||
+      sanitize(req.body?.query, 500);
     if (!reason) {
       return res.json({
         ok: false,
@@ -406,7 +475,8 @@ export function createVoiceRouter({
       });
     }
 
-    const rawPhone = unresolved(req.body?.phone) ? null : req.body?.phone;
+    const rawPhone =
+      (unresolved(req.body?.phone) ? null : req.body?.phone) || phoneFromText(req.body?.query);
     const phone = normalizePhone(rawPhone);
     if (rawPhone && !phone) {
       return res.json({
@@ -448,6 +518,9 @@ export function createVoiceRouter({
 
 export const __testables = {
   unresolved,
+  parseWhen,
+  templateFromText,
+  phoneFromText,
   resolveDate,
   resolveTime,
   selectSlots,

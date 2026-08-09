@@ -99,7 +99,13 @@ function tools() {
       url: `${SITE}/api/voice/availability`,
       method: "POST",
       headers: auth,
+      // `query` carries the WHOLE sentence. Bland sends `input` as one natural
+      // -language string no matter what input_schema declares, verified across
+      // three real calls, so the structured fields below almost always arrive
+      // empty and the endpoint parses `query` instead. Both are sent so that a
+      // future Bland that does populate them is used in preference.
       body: {
+        query: "{{input}}",
         date: "{{input.date}}",
         time: "{{input.time}}",
         duration_min: "{{input.duration_min}}",
@@ -137,7 +143,7 @@ function tools() {
       url: `${SITE}/api/voice/schedule`,
       method: "POST",
       headers: auth,
-      body: { date: "{{input.date}}", days: "{{input.days}}" },
+      body: { query: "{{input}}", date: "{{input.date}}", days: "{{input.days}}" },
       input_schema: {
         type: "object",
         properties: {
@@ -158,6 +164,7 @@ function tools() {
       method: "POST",
       headers: auth,
       body: {
+        query: "{{input}}",
         phone: "{{input.phone}}",
         template: "{{input.template}}",
         call_id: "{{call_id}}",
@@ -186,6 +193,7 @@ function tools() {
       method: "POST",
       headers: auth,
       body: {
+        query: "{{input}}",
         name: "{{input.name}}",
         phone: "{{input.phone}}",
         reason: "{{input.reason}}",

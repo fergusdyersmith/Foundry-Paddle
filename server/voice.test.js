@@ -478,6 +478,34 @@ describe("turning data into something speakable", () => {
     expect(V.resolveTime("sometime after work")).toBeNull();
   });
 
+  it.each([
+    ["check court availability for tomorrow at 10 AM", "tomorrow", "10am"],
+    ["is anything free tonight", "today", null],
+    ["do you have a court at 6pm on Friday", "friday", "6pm"],
+    ["what's open right now", "today", null],
+    ["anything at 18:00 tomorrow", "tomorrow", "18:00"],
+    ["availability on 2026-08-20", "2026-08-20", null],
+  ])("reads %s as date=%s time=%s", (sentence, date, time) => {
+    // Bland sends ONE natural-language string, whatever input_schema declares.
+    // Three real calls failed on this before it was parsed here.
+    expect(V.parseWhen(sentence)).toEqual({ date, time });
+  });
+
+  it("does not mistake a player count or a duration for a time", () => {
+    expect(V.parseWhen("a court for 4 players for 90 minutes").time).toBeNull();
+  });
+
+  it("picks the right link out of the sentence", () => {
+    expect(V.templateFromText("text me the booking link")).toBe("booking");
+    expect(V.templateFromText("send me membership info")).toBe("membership");
+    expect(V.templateFromText("what's your address")).toBe("directions");
+  });
+
+  it("recovers a callback number spoken inside the sentence", () => {
+    expect(V.phoneFromText("take a message, call me on 541 270 4585")).toBe("541 270 4585");
+    expect(V.phoneFromText("no number here")).toBeNull();
+  });
+
   it("treats an unsubstituted tool template as absent, not as a value", () => {
     // A real test call was lost to this: Bland sent the literal "{{input.date}}"
     // and the endpoint refused it as an unparseable date, so the agent told the
