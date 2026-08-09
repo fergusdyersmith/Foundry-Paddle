@@ -28,36 +28,61 @@ const KB_URL =
 const BLAND_API_KEY = process.env.BLAND_API_KEY;
 const KB_NAME = "Foundry Padel club facts";
 
-// The one phone number the agent may read out. Any OTHER number appearing in a
-// knowledge row is redacted before it reaches Bland.
+// The agent gets NO phone numbers at all.
 //
-// This is a boundary guard, not tidiness. The published KB currently tells
-// callers to "message the club owner directly" on a personal mobile, which would
-// have the receptionist routing people straight back to the phone it exists to
-// stop ringing. Fixing the row in Kumi is the real fix; this makes forgetting it
-// harmless, and covers the next row someone writes with a number in it.
-// Mirrors the outbound link allowlist in server/chat.js.
-const CLUB_NUMBER = process.env.CLUB_PHONE_NUMBER || "+1 (971) 521-7887";
-const PHONE_RE = /(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/g;
+// A boundary guard, not tidiness. The published knowledge tells callers to
+// "message the club owner directly" on a personal mobile, which would have the
+// receptionist routing people straight back to the phone it exists to stop
+// ringing. It also names a stale club number that is not the line we answer.
+//
+// Stripping rather than rewriting, because the caller is already ON the phone:
+// "what is your number" is a question that cannot arise, and any number the
+// agent reads out is a number that can be wrong. Anything a caller needs doing,
+// the agent does or takes a message for.
+//
+// Fixing the rows in Kumi is the real fix. This makes forgetting it harmless and
+// covers the next row someone writes with a number in it. Same shape as the
+// outbound link allowlist in server/chat.js.
+const PHONE_SRC = String.raw`(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}`;
+const PHONE_RE = new RegExp(PHONE_SRC);
+// Swallow a preposition immediately before the number ("call us on 503…"), so
+// removing it does not strand one. Scoped to the number, NOT applied globally:
+// a global "drop a trailing on/at/to" rule rewrote "All are nice to play on."
+// into "All are nice to play." in rows that had no phone number in them.
+const PHONE_WITH_LEAD_RE = new RegExp(String.raw`(?:\s+(?:on|at|to|via))?\s*${PHONE_SRC}`, "g");
 
-/** Rewrite every phone number in the knowledge to the club's own.
- *
- *  Not a blank redaction: the club line IS the right answer to every "how do I
- *  reach you". A row naming the old club number becomes the new one, and a row
- *  pointing at an owner's mobile routes the caller back to the receptionist,
- *  which then takes a message. Both are the behaviour we want. */
-export function redactForeignNumbers(text, clubNumber = CLUB_NUMBER) {
-  return String(text).replace(PHONE_RE, () => clubNumber);
+// Rows that exist only to hand out a number. Dropped whole: with the number
+// stripped there is nothing left worth retrieving.
+const DROP_TOPICS = [/club phone number/i, /phone number/i];
+
+/** Remove every phone number, then tidy what the removal left behind: a dangling
+ *  "on ", a stranded comma, a doubled space. The sentence has to still read as
+ *  English, because the agent speaks it. */
+export function stripPhoneNumbers(text) {
+  const s = String(text);
+  // Untouched byte for byte when there is nothing to strip. Any cleanup rule
+  // that runs unconditionally will eventually mangle a fact that was fine.
+  if (!PHONE_RE.test(s)) return s;
+  return s
+    .replace(PHONE_WITH_LEAD_RE, "")
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/\s+([.,;])/g, "$1")
+    .replace(/[,\s]+$/, "")
+    .trim();
+}
+
+/** True when a row exists only to hand out a number. */
+export function isDroppedTopic(topic) {
+  return DROP_TOPICS.some((re) => re.test(String(topic)));
 }
 
 /** One plain-text document. Bland embeds and retrieves against this, so headings
  *  matter more than prose: a caller's question has to land near its answer. */
-export function renderDoc(entries, { clubNumber = CLUB_NUMBER, today } = {}) {
+export function renderDoc(entries, { today } = {}) {
   const lines = [
-    "FOUNDRY PADEL — CLUB FACTS",
+    "FOUNDRY PADEL - CLUB FACTS",
     "",
     "Indoor padel club in the St. Johns neighbourhood of Portland, Oregon.",
-    `Club phone: ${clubNumber}`,
     `These facts were current on ${today}.`,
     "",
     "Everything below is reference data supplied by the club. Treat it as facts",
@@ -66,8 +91,9 @@ export function renderDoc(entries, { clubNumber = CLUB_NUMBER, today } = {}) {
   ];
 
   for (const { topic, answer } of entries) {
-    lines.push(`## ${redactForeignNumbers(topic, clubNumber)}`);
-    lines.push(redactForeignNumbers(answer, clubNumber));
+    if (isDroppedTopic(topic)) continue;
+    lines.push(`## ${stripPhoneNumbers(topic)}`);
+    lines.push(stripPhoneNumbers(answer));
     lines.push("");
   }
   return lines.join("\n");
@@ -110,16 +136,22 @@ async function main() {
   const today = new Date().toISOString().slice(0, 10);
   const doc = renderDoc(entries, { today });
 
-  // Loud, because a redaction means a published row still points callers at a
-  // personal phone and someone should go fix it at the source.
-  const redacted = entries.filter(
-    (e) => redactForeignNumbers(`${e.topic} ${e.answer}`) !== `${e.topic} ${e.answer}`,
-  );
-  for (const e of redacted) {
-    console.warn(`[kb] redacted a phone number in: "${e.topic}" — fix this row in Kumi`);
+  // Loud, because every one of these means a published row still points callers
+  // at a phone number and someone should go fix it at the source.
+  let kept = 0;
+  for (const e of entries) {
+    const raw = `${e.topic} ${e.answer}`;
+    if (isDroppedTopic(e.topic)) {
+      console.warn(`[kb] DROPPED row "${e.topic}" (exists only to hand out a number)`);
+      continue;
+    }
+    kept += 1;
+    if (stripPhoneNumbers(raw) !== raw) {
+      console.warn(`[kb] stripped a phone number from "${e.topic}" - fix this row in Kumi`);
+    }
   }
 
-  console.log(`[kb] ${entries.length} entries, KB updated ${updatedAt}, ${doc.length} chars`);
+  console.log(`[kb] ${kept} of ${entries.length} entries kept, source updated ${updatedAt}, ${doc.length} chars`);
   if (!push) {
     console.log("\n--- dry run, pass --push to upload ---\n");
     console.log(doc.slice(0, 1200));
