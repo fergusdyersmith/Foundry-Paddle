@@ -21,6 +21,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_PATH = path.join(__dirname, "..", "bland", "config.json");
+const SUPPLEMENT_PATH = path.join(__dirname, "..", "bland", "knowledge-supplement.json");
 
 const KB_URL =
   process.env.KUMI_PUBLIC_KB_URL ||
@@ -133,13 +134,31 @@ async function main() {
   const { entries = [], updated_at: updatedAt } = await res.json();
   if (!entries.length) throw new Error("No published knowledge rows; refusing to sync an empty base");
 
+  // Facts staged locally because Kumi has no HTTP write path for knowledge rows.
+  // Warned about individually below: while any of these exist, the phone agent
+  // knows things the website chatbot does not.
+  let supplement = [];
+  try {
+    supplement = JSON.parse(readFileSync(SUPPLEMENT_PATH, "utf8")).entries || [];
+  } catch {
+    supplement = [];
+  }
+
+  const all = [...entries, ...supplement];
   const today = new Date().toISOString().slice(0, 10);
-  const doc = renderDoc(entries, { today });
+  const doc = renderDoc(all, { today });
 
   // Loud, because every one of these means a published row still points callers
   // at a phone number and someone should go fix it at the source.
+  if (supplement.length) {
+    console.warn(
+      `[kb] ${supplement.length} fact(s) are staged in bland/knowledge-supplement.json and NOT in Kumi.`,
+    );
+    console.warn("[kb] Until they are published there, the website chatbot cannot answer them.");
+  }
+
   let kept = 0;
-  for (const e of entries) {
+  for (const e of all) {
     const raw = `${e.topic} ${e.answer}`;
     if (isDroppedTopic(e.topic)) {
       console.warn(`[kb] DROPPED row "${e.topic}" (exists only to hand out a number)`);
@@ -151,7 +170,7 @@ async function main() {
     }
   }
 
-  console.log(`[kb] ${kept} of ${entries.length} entries kept, source updated ${updatedAt}, ${doc.length} chars`);
+  console.log(`[kb] ${kept} of ${all.length} entries kept, source updated ${updatedAt}, ${doc.length} chars`);
   if (!push) {
     console.log("\n--- dry run, pass --push to upload ---\n");
     console.log(doc.slice(0, 1200));
