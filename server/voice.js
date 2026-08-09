@@ -180,22 +180,55 @@ export function matchEvent(text, events, today) {
   const words = String(text || "")
     .toLowerCase()
     .split(/[^a-z0-9]+/)
-    .filter((w) => w.length > 2 && !STOPWORDS.has(w));
+    // Four letters and up: three-letter words are almost all filler, and this
+    // runs over an entire call transcript rather than one sentence.
+    .filter((w) => w.length > 3 && !STOPWORDS.has(w));
   if (!words.length) return null;
+
+  // What KIND of thing it is, never which one. A caller saying "tournament"
+  // must not select whichever tournament happens to be the only one with that
+  // word in its title. Level words like beginner and advanced are NOT here:
+  // those genuinely tell two events apart.
+  const KIND = new Set([
+    "tournament", "tournaments", "clinic", "clinics", "class", "classes",
+    "match", "matches", "course", "courses", "open", "padel", "foundry",
+    "session", "sessions", "lesson", "lessons", "social", "play", "night",
+    "private", "group",
+  ]);
+  const titleWords = (e) =>
+    new Set(
+      String(e.title || "")
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .filter((w) => w.length > 3 && !KIND.has(w)),
+    );
+
+  // How many events use each title word. A word in ONE title ("mexicano") is
+  // worth far more than one in half of them ("tournament", "padel").
+  const across = new Map();
+  for (const e of events) {
+    for (const w of titleWords(e)) across.set(w, (across.get(w) || 0) + 1);
+  }
 
   let best = null;
   for (const event of events) {
-    const haystack = `${event.title} ${spokenDate(event.date, today)} ${event.booking_type}`.toLowerCase();
+    const title = titleWords(event);
     let score = 0;
-    for (const w of words) if (haystack.includes(w)) score += 1;
+    for (const w of new Set(words)) {
+      if (!title.has(w)) continue;
+      // Distinctive to this one event, so a single hit is enough on its own.
+      score += across.get(w) === 1 ? 2 : 1;
+    }
     if (!score) continue;
-    // Prefer the soonest match, so "the Mexicano" means the next one.
     if (!best || score > best.score || (score === best.score && event.date < best.event.date)) {
       best = { event, score };
     }
   }
-  // One incidental word in common is not a match. "tournament" alone should not
-  // pick an arbitrary tournament.
+
+  // Two points: one distinctive word, or two shared ordinary ones. A transcript
+  // full of pleasantries scores nothing, which is what matters: a real call
+  // about booking a court matched a tournament nobody had mentioned, and the
+  // caller was texted a link to it.
   return best && best.score >= 2 ? best.event : null;
 }
 
@@ -205,8 +238,8 @@ export function matchEvent(text, events, today) {
 // inference context, for either API generation. So text_caller_link never
 // fires, and that promise would go unkept.
 //
-// It does not need their tools. The post-call webhook carries the transcript
-// and the caller's number, which is everything required to send it ourselves.
+// It does not need their tools. The finished call carries the transcript and
+// the caller's number, which is everything required to send it ourselves.
 const PROMISED_TEXT = /\b(i(?:'| wi)?ll (?:text|send)|text(?:ing)? (?:that|it|you)|send(?:ing)? (?:you )?(?:that|the link))\b/i;
 
 /** Did the agent promise to text them something? */
@@ -219,6 +252,10 @@ export function promisedText(transcriptLines) {
 /** Which link the caller asked for, read out of the same sentence. */
 export function templateFromText(text) {
   const raw = String(text || "").toLowerCase();
+  // Checked FIRST: someone asking what Playtomic is, or how to get the app,
+  // needs the download before any other link is any use to them. "book" and
+  // "court" appear in the same breath and would otherwise always win.
+  if (/\b(app|download|playtomic|install)\b/.test(raw)) return "app";
   if (/\bmember|join|membership\b/.test(raw)) return "membership";
   if (/\bdirection|address|where|find you|located\b/.test(raw)) return "directions";
   if (/\bbook|court|reserve|play\b/.test(raw)) return "booking";

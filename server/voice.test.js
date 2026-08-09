@@ -879,3 +879,42 @@ describe("the post-call text, since Bland's tools never execute", () => {
     expect(sendLink).not.toHaveBeenCalled();
   });
 });
+
+describe("sending the RIGHT link", () => {
+  let V;
+  beforeEach(async () => {
+    vi.resetModules();
+    V = (await import("./voice.js")).__testables;
+  });
+
+  const events = [
+    { title: "Beginner/Intermediate Mexicano", date: "2026-08-12", start_time: "18:00", booking_type: "TOURNAMENT" },
+    { title: "Tennis-to-Padel: Daytime Morning Crossover", date: "2026-08-11", start_time: "10:00", booking_type: "PUBLIC_CLASS" },
+  ];
+
+  it("matches nothing on a call that never mentioned an event", () => {
+    // A real call: "how do I book a court", "what is Playtomic", "send me the
+    // link". It matched a tournament nobody had mentioned and texted that.
+    const transcript =
+      "Caller: how do you actually book a court / Caller: what is Playtomic / " +
+      "Agent: Playtomic is the app we use for all bookings and payments / " +
+      "Caller: can you send me the link / Agent: I'll text that over / " +
+      "Agent: have a good day";
+    expect(V.matchEvent(transcript, events, "2026-08-09")).toBeNull();
+  });
+
+  it("sends the app download when they ask what Playtomic is", () => {
+    expect(V.templateFromText("what is Playtomic, can you send me the link")).toBe("app");
+    expect(V.templateFromText("how do I download the app")).toBe("app");
+  });
+
+  it("still sends the booking link when they just want to book", () => {
+    expect(V.templateFromText("send me the link to book a court")).toBe("booking");
+  });
+
+  it("still matches a genuinely named event", () => {
+    expect(
+      V.matchEvent("text me the Beginner Intermediate Mexicano link", events, "2026-08-09").title,
+    ).toBe("Beginner/Intermediate Mexicano");
+  });
+});
