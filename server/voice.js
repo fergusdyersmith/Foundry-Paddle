@@ -81,6 +81,17 @@ function addDays(isoDate, days) {
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
+// What each Playtomic booking type IS, in the words a caller uses. Without this
+// the agent told a caller there were no tournaments on Wednesday while the
+// Beginner/Intermediate Mexicano sat in the briefing: Playtomic files it as a
+// TOURNAMENT but nothing in its title says so.
+const EVENT_KIND = {
+  TOURNAMENT: "Tournament",
+  PUBLIC_CLASS: "Clinic",
+  COURSE_CLASS: "Course",
+  OPEN_MATCH: "Open match",
+};
+
 /** A tool template that did not get substituted, e.g. the literal string
  *  "{{input.date}}". Treated as absent rather than as a value: a misconfigured
  *  tool should fall back to a sensible default, not tell the caller we cannot
@@ -576,13 +587,14 @@ export function createVoiceRouter({
       : events.events
           .filter((e) => e.date >= today.date && e.date <= addDays(today.date, days - 1))
           .map((e) => {
+            const kind = EVENT_KIND[e.booking_type] || "Event";
             const where = e.courts?.length ? ` on ${e.courts.join(", ")}` : "";
             const price = e.price ? `, ${e.price}` : "";
             const left =
               e.capacity != null && e.signed_up != null
                 ? `, ${e.signed_up} of ${e.capacity} signed up`
                 : "";
-            return `${spokenDate(e.date, today.date)} ${spoken(e.start_time)}: ${e.title}${price}${left}${where}`;
+            return `${spokenDate(e.date, today.date)} ${spoken(e.start_time)} [${kind}]: ${e.title}${price}${left}${where}`;
           });
 
     const courts = lines.join("\n");

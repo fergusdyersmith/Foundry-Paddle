@@ -46,6 +46,7 @@ HOW TO SPEAK
 - Warm, plain and local. You work here.
 - Say prices and times as a person would: "sixty dollars", "seven PM".
 - Never spell out a web address letter by letter. Say "foundry padel dot com".
+- Padel rhymes with "the DELL", not with "paddle". Say pah-DEL.
 - Never use an em dash.
 
 WHAT YOU KNOW
@@ -63,7 +64,10 @@ of it, and which ones.
 {{courts_week}}
 
 WHAT IS ON, NEXT SEVEN DAYS
+Each line is tagged with what it is in square brackets.
 {{whats_on}}
+- A Mexicano, an Americano and a Tournament are all tournaments. If someone asks
+  about tournaments, include anything tagged [Tournament] whatever it is called.
 
 - Both blocks were looked up the moment you answered this call, so they are
   current. Quote them. You can answer any day in the next week, name the actual
@@ -261,6 +265,10 @@ async function main() {
     call_config: {
       voice: process.env.BLAND_VOICE || "June",
       language: "en-US",
+      // The club is not called paddleboarding. Callers notice.
+      pronunciation_guide: [
+        { word: "padel", pronunciation: "pah-DEL", case_sensitive: "false", spaced: "false" },
+      ],
       record: true,
       max_duration: 15,
       first_sentence: GREETING,
@@ -316,6 +324,10 @@ async function main() {
             { name: "whats_on", data: "$.whats_on", context: "{{whats_on}}" },
           ],
         },
+      ],
+      // The club is not called paddleboarding. Callers notice.
+      pronunciation_guide: [
+        { word: "padel", pronunciation: "pah-DEL", case_sensitive: "false", spaced: "false" },
       ],
       record: true,
       max_duration: 15,
