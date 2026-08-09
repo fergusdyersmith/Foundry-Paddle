@@ -7,6 +7,7 @@ import { createChatRouter } from "./server/chat.js";
 import { createVoiceRouter } from "./server/voice.js";
 import { createNotifier } from "./server/notify.js";
 import { createLinkSender } from "./server/smslink.js";
+import { createCallPoller } from "./server/callpoller.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // SITE_DIST exists so the routing tests can point at a fixture tree instead of
@@ -1106,6 +1107,17 @@ if (isEntrypoint) {
   // Only when actually serving — tests import this module and must not start
   // a timer or reach out to Playtomic.
   startCacheWarmer();
+
+  // Ask Bland about finished calls, rather than waiting for a webhook that
+  // never arrives. See server/callpoller.js for why.
+  createCallPoller({
+    apiKey: process.env.BLAND_API_KEY,
+    number: process.env.CLUB_PHONE_NUMBER || "+19715217887",
+    notifier: createNotifier(),
+    linkSender: createLinkSender(),
+    cachedEvents,
+    timezone: CLUB_TIMEZONE,
+  }).start();
 }
 
 export { app };
