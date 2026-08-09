@@ -808,6 +808,45 @@ function cachedEvents() {
   return { events: warmEvents.data, ageMs, stale: ageMs > BOOKINGS_CACHE_TTL };
 }
 
+// Single-flight warm-up, so a cold process does not fail every caller.
+//
+// A Railway restart empties these caches. The warmer starts immediately but
+// needs a token call plus up to 25 paged Playtomic fetches, and any call landing
+// in that window was told "I can't see the court calendar this second". That
+// happened to a real test call seconds after a deploy.
+//
+// So a cold cache now WAITS, briefly and once, rather than degrading instantly.
+// Bounded well under the tool's 8s timeout, and shared between concurrent
+// callers so ten simultaneous calls cause one fetch, not ten.
+let warmInFlight = null;
+
+async function ensureWarm(timeoutMs = 5000) {
+  if (bookingsCache.data.length && warmEvents.data) return true;
+  if (!PLAYTOMIC_CLIENT_ID || !PLAYTOMIC_CLIENT_SECRET) return false;
+
+  if (!warmInFlight) {
+    warmInFlight = (async () => {
+      try {
+        warmEvents = { data: await getEvents(), fetchedAt: Date.now() };
+      } catch (error) {
+        console.error("[warm] cold warm failed:", error.message);
+      } finally {
+        warmInFlight = null;
+      }
+    })();
+  }
+
+  // Give up waiting rather than hold the caller. The fetch keeps running, so the
+  // next question a few seconds later is answered from a warm cache.
+  let timer;
+  const bounded = new Promise((resolve) => {
+    timer = setTimeout(resolve, timeoutMs);
+  });
+  await Promise.race([warmInFlight, bounded]);
+  clearTimeout(timer);
+  return Boolean(bookingsCache.data.length);
+}
+
 function startCacheWarmer() {
   if (!PLAYTOMIC_CLIENT_ID || !PLAYTOMIC_CLIENT_SECRET) {
     console.log("[warm] Playtomic not configured; cache warmer not started");
@@ -956,6 +995,7 @@ app.use(
   createVoiceRouter({
     cachedBookings,
     cachedEvents,
+    ensureWarm,
     computeAvailability,
     notifier: createNotifier(),
     linkSender: createLinkSender(),

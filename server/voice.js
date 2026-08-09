@@ -294,6 +294,7 @@ export function scheduleSpeech(events, today) {
 export function createVoiceRouter({
   cachedBookings,
   cachedEvents,
+  ensureWarm = null,
   computeAvailability,
   notifier = null,
   linkSender = null,
@@ -314,8 +315,14 @@ export function createVoiceRouter({
   });
 
   // Is a court free? Cache-only.
-  router.post("/api/voice/availability", (req, res) => {
-    const cache = cachedBookings();
+  router.post("/api/voice/availability", async (req, res) => {
+    // A cold process waits once, briefly, rather than telling every caller the
+    // calendar is unavailable for the first few seconds after a deploy.
+    let cache = cachedBookings();
+    if (!cache && ensureWarm) {
+      await ensureWarm();
+      cache = cachedBookings();
+    }
     if (!cache) {
       return res.json({
         ok: false,
@@ -364,8 +371,12 @@ export function createVoiceRouter({
   });
 
   // What is on: clinics, courses, tournaments, open matches. Cache-only.
-  router.post("/api/voice/schedule", (req, res) => {
-    const cache = cachedEvents();
+  router.post("/api/voice/schedule", async (req, res) => {
+    let cache = cachedEvents();
+    if (!cache && ensureWarm) {
+      await ensureWarm();
+      cache = cachedEvents();
+    }
     if (!cache) {
       return res.json({
         ok: false,

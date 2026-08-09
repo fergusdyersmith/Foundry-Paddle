@@ -31,6 +31,7 @@ async function boot({
   ageMs = 0,
   notifier = undefined,
   linkSender = undefined,
+  ensureWarm = undefined,
 } = {}) {
   vi.resetModules();
   if (secret === null) delete process.env.VOICE_TOOL_SECRET;
@@ -47,6 +48,7 @@ async function boot({
         bookings === null ? null : { bookings, ageMs, stale: ageMs > 5 * 60 * 1000 },
       cachedEvents: () =>
         events === null ? null : { events, ageMs, stale: ageMs > 5 * 60 * 1000 },
+      ensureWarm,
       computeAvailability: server.__testables.computeAvailability,
       notifier:
         notifier === undefined
@@ -106,6 +108,33 @@ describe("who may call the tool endpoints", () => {
     ctx = await boot();
     const res = await post(ctx.base, "/api/voice/availability", {});
     expect(res.status).toBe(200);
+  });
+});
+
+describe("a cold cache waits once, briefly, before giving up", () => {
+  it("warms on demand rather than failing the first caller after a deploy", async () => {
+    // A Railway restart empties the cache. A real test call landed in that
+    // window and was told the calendar was unavailable.
+    let warmed = false;
+    const warmBooking = booking(COURT_A, "Padel 1", "2026-08-13T18:00:00", "2026-08-13T19:00:00");
+    ctx = await boot({
+      bookings: null,
+      ensureWarm: async () => {
+        warmed = true;
+        return true;
+      },
+    });
+    const res = await post(ctx.base, "/api/voice/availability", { date: "2026-08-13" });
+    expect(warmed).toBe(true);
+    expect(res.status).toBe(200);
+    expect(warmBooking).toBeTruthy();
+  });
+
+  it("still degrades honestly when the warm-up cannot deliver", async () => {
+    ctx = await boot({ bookings: null, ensureWarm: async () => false });
+    const body = await (await post(ctx.base, "/api/voice/availability", {})).json();
+    expect(body.ok).toBe(false);
+    expect(body.reason).toBe("no_fresh_data");
   });
 });
 
