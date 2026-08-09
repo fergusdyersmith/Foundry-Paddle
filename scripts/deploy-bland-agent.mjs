@@ -267,7 +267,9 @@ async function main() {
       language: "en-US",
       // The club is not called paddleboarding. Callers notice.
       pronunciation_guide: [
-        { word: "padel", pronunciation: "pah-DEL", case_sensitive: "false", spaced: "false" },
+        // Real booleans. Bland's own docs show these as the STRINGS "false", which
+        // the persona endpoint rejects outright.
+        { word: "padel", pronunciation: "pah-DEL", case_sensitive: false, spaced: false },
       ],
       record: true,
       max_duration: 15,
@@ -327,7 +329,9 @@ async function main() {
       ],
       // The club is not called paddleboarding. Callers notice.
       pronunciation_guide: [
-        { word: "padel", pronunciation: "pah-DEL", case_sensitive: "false", spaced: "false" },
+        // Real booleans. Bland's own docs show these as the STRINGS "false", which
+        // the persona endpoint rejects outright.
+        { word: "padel", pronunciation: "pah-DEL", case_sensitive: false, spaced: false },
       ],
       record: true,
       max_duration: 15,
