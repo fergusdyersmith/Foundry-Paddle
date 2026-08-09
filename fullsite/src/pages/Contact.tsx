@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Instagram, Facebook, Mail, MapPin, Clock } from "lucide-react";
+import { Instagram, Facebook, Mail, MapPin, Clock, Car } from "lucide-react";
 import { GOOGLE_MAPS_EMBED_SRC, GOOGLE_MAPS_URL } from "@/constants/location";
 import StayInTouchForm from "@/components/StayInTouchForm";
 import WhatsAppJoinLink from "@/components/WhatsAppJoinLink";
@@ -17,7 +17,7 @@ const Contact = () => {
     <main className="bg-background min-h-screen pt-24">
       <Seo
         title="Contact & Location — 8613 N Crawford St | Foundry Padel Portland"
-        description="Find Foundry Padel at 8613 N Crawford St, Portland, OR 97203 — in St. Johns near Cathedral Park. Open daily 7am–10pm. Email, socials, map and directions."
+        description="Find Foundry Padel at 8613 N Crawford St, Portland, OR 97203 — in St. Johns near Cathedral Park. Open daily 7am–10pm. Parking on site, plus map, directions and how to find the entrance."
         path="/contact"
       />
       <section className="py-20 px-6">
@@ -48,6 +48,20 @@ const Contact = () => {
                       8613 N Crawford St, Portland, OR 97203
                     </a>
                     <p className="font-body text-xs text-muted-foreground">Portland — near Cathedral Park</p>
+                    {/* First-timers stand outside the rollup doors and cannot find
+                        the way in. It is the most common question on the phone
+                        after the address itself. */}
+                    <p className="font-body text-xs text-muted-foreground mt-2">
+                      If the two rollup doors are closed, the entrance is the door to
+                      the left of them, in the brick building.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <Car size={18} className="text-primary mt-1 shrink-0" />
+                  <div>
+                    <p className="font-body text-sm text-foreground">6 parking spots on site</p>
+                    <p className="font-body text-xs text-muted-foreground">Plenty of street parking nearby</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">

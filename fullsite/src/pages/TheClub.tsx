@@ -5,15 +5,15 @@ import Seo from "@/components/Seo";
 const spaces = [
   {
     title: "THE COURTS",
-    desc: "Four panoramic glass courts built to World Padel Tour specifications. LED-lit, climate-controlled, and designed for serious play. Whether you're rallying with friends or competing in a league, the courts are the heart of Foundry.",
-    detail: "WPT-spec · LED lighting · Climate controlled",
+    desc: "Four panoramic glass courts built to World Padel Tour specifications. LED-lit, heated through the winter, and designed for serious play. Whether you're rallying with friends or competing in a league, the courts are the heart of Foundry.",
+    detail: "WPT-spec · LED lighting · Heated in winter",
     image: "c948355b4e525fd8e6d3f81de38e0a9dcffb5ffa-3984x2490.avif",
     imageAlt: "Indoor padel court with a player ready to strike the ball",
   },
   {
     title: "THE BAR",
     desc: "Post-match beer or a glass of wine. The bar is the club's gathering point — a place to debrief, strategize, or just hang.",
-    detail: "Local beer · Wine · Post-match hangs",
+    detail: "Local beer · Wine · Air conditioned",
     image: "cafe.png",
     imageAlt: "Members gathered around a communal table at the club bar",
   },
