@@ -317,6 +317,7 @@ export function createVoiceRouter({
 
   router.use("/api/voice", (req, res, next) => {
     if (req.path === "/api/voice/_recent") return next();
+    if (req.path === "/api/voice/briefing" && !authorized(req)) return res.status(401).json({ error: "Unauthorized." });
     const entry = {
       at: new Date().toISOString(),
       path: req.path,
@@ -505,6 +506,56 @@ export function createVoiceRouter({
       sent: result.sent,
       reason: result.reason,
       speech: linkSpeech(template, result),
+    });
+  });
+
+  // A briefing, fetched once at the start of every call.
+  //
+  // Bland's custom tools have never executed on this account: the model selects
+  // them and plays their speech line, but no HTTP request ever arrives, with no
+  // log or error on either side. dynamic_data is a different mechanism, run at
+  // call start, and it injects plain variables into the prompt.
+  //
+  // The trade is honest and worth naming: this is a SNAPSHOT taken when the
+  // phone was answered, not a live lookup, and it covers today and tomorrow
+  // rather than any date. That is most of what callers ask, and a two-minute
+  // -old answer beats "I can't check that from here".
+  router.get("/api/voice/briefing", async (req, res) => {
+    const today = nowLocal(timezone);
+    const tomorrow = addDays(today.date, 1);
+
+    let bookings = cachedBookings();
+    if (!bookings && ensureWarm) {
+      await ensureWarm();
+      bookings = cachedBookings();
+    }
+    const events = cachedEvents();
+
+    const day = (date) => {
+      if (!bookings) return "I can't see the court calendar right now.";
+      const result = computeAvailability(bookings.bookings, {
+        date,
+        durationMin: 90,
+        nowDate: today.date,
+        nowTime: today.time,
+      });
+      if (!result.slots.length) return "nothing free for 90 minutes.";
+      const times = selectSlots(result.slots, null, 5).map((s) => spoken(s.start));
+      return `${listSpoken(times)} open for 90 minutes.`;
+    };
+
+    const upcoming = events
+      ? scheduleSpeech(
+          events.events.filter((e) => e.date >= today.date).slice(0, LIMITS.maxEventsReturned),
+          today.date,
+        )
+      : "I can't see the class schedule right now.";
+
+    res.json({
+      date: today.date,
+      courts_today: day(today.date),
+      courts_tomorrow: day(tomorrow),
+      whats_on: upcoming,
     });
   });
 
