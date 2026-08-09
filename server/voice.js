@@ -302,17 +302,38 @@ export function createVoiceRouter({
 }) {
   const router = express.Router();
 
+  // Last few tool requests, in memory, readable over HTTP.
+  //
+  // Railway's log stream does not surface this process's stdout reliably, and
+  // six test calls were spent inferring what Bland sends from call transcripts.
+  // This answers it directly: whether the request arrives at all, whether the
+  // bearer header survives Bland's tool layer, and which field carries what.
+  const recent = [];
+
+  router.get("/api/voice/_recent", (req, res) => {
+    if (!authorized(req)) return res.status(401).json({ error: "Unauthorized." });
+    res.json({ count: recent.length, requests: recent });
+  });
+
   router.use("/api/voice", (req, res, next) => {
-    // Log EVERY hit before auth. Six test calls were spent inferring what Bland
-    // sends from call transcripts; one line here answers it directly, including
-    // whether the request arrives at all and whether the bearer header survives.
-    console.log(
-      "[voice] %s %s auth=%s body=%s",
-      req.method,
-      req.path,
-      req.get("authorization") ? "present" : "MISSING",
-      JSON.stringify(req.body || {}).slice(0, 400),
-    );
+    if (req.path === "/api/voice/_recent") return next();
+    const entry = {
+      at: new Date().toISOString(),
+      path: req.path,
+      auth: req.get("authorization") ? "present" : "MISSING",
+      body: JSON.parse(JSON.stringify(req.body || {})),
+    };
+    recent.unshift(entry);
+    recent.length = Math.min(recent.length, 20);
+    console.log("[voice] %s auth=%s body=%s", req.path, entry.auth, JSON.stringify(entry.body).slice(0, 300));
+
+    // Record what we answered, which is the other half of the picture.
+    const send = res.json.bind(res);
+    res.json = (payload) => {
+      entry.answered = { ok: payload?.ok, reason: payload?.reason, speech: payload?.speech };
+      return send(payload);
+    };
+
     if (!authorized(req)) {
       // Deliberately terse: an unauthenticated caller learns nothing about
       // whether the secret is unset or merely wrong.
