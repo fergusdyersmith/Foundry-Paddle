@@ -199,6 +199,23 @@ export function matchEvent(text, events, today) {
   return best && best.score >= 2 ? best.event : null;
 }
 
+// The agent tells callers it will text them a link once the call ends. Bland's
+// custom tools have never executed on this account, confirmed by their own
+// server-side log inspection: no tool definition is ever injected into the
+// inference context, for either API generation. So text_caller_link never
+// fires, and that promise would go unkept.
+//
+// It does not need their tools. The post-call webhook carries the transcript
+// and the caller's number, which is everything required to send it ourselves.
+const PROMISED_TEXT = /\b(i(?:'| wi)?ll (?:text|send)|text(?:ing)? (?:that|it|you)|send(?:ing)? (?:you )?(?:that|the link))\b/i;
+
+/** Did the agent promise to text them something? */
+export function promisedText(transcriptLines) {
+  return transcriptLines.some(
+    (l) => l.startsWith("Agent:") && PROMISED_TEXT.test(l),
+  );
+}
+
 /** Which link the caller asked for, read out of the same sentence. */
 export function templateFromText(text) {
   const raw = String(text || "").toLowerCase();
@@ -704,6 +721,30 @@ export function createVoiceRouter({
         .map((t) => `${t.user === "assistant" ? "Agent" : "Caller"}: ${sanitize(t.text, 200)}`)
         .filter((l) => l.length > 8);
 
+      // Keep the promise the agent made on the call.
+      let texted = null;
+      if (promisedText(lines) && from && linkSender?.configured()) {
+        const said = lines.join(" ");
+        const today = nowLocal(timezone);
+        const events = cachedEvents();
+        const matched = events ? matchEvent(said, events.events, today.date) : null;
+        const deep = matched ? deepLinkFromEvent(matched) : null;
+        const result = await linkSender.sendLink({
+          phone: from,
+          template: templateFromText(said) || "booking",
+          deepLink: deep?.kind || null,
+          itemId: deep?.id || null,
+          label: matched
+            ? `${matched.title}, ${spokenDate(matched.date, today.date)} at ${spoken(matched.start_time)}`
+            : null,
+          callId: sanitize(body.call_id, 80),
+        });
+        texted = result.sent
+          ? `Texted ${matched ? matched.title : "the booking link"}`
+          : `Could NOT text them (${result.reason}). The agent said it would.`;
+        console.log("[voice] post-call text: %s", texted);
+      }
+
       if (!notifier?.configured()) return;
       await notifier.notifyMessage({
         name: from ? `Caller ${from}` : "Caller",
@@ -714,6 +755,7 @@ export function createVoiceRouter({
         durationMin: Number(body.call_length) || null,
         recordingUrl: body.recording_url || null,
         transcript: lines,
+        texted,
         callId: sanitize(body.call_id, 80),
         receivedAt: new Date().toISOString(),
       });
@@ -804,6 +846,7 @@ export function createVoiceRouter({
 
 export const __testables = {
   unresolved,
+  promisedText,
   matchEvent,
   parseWhen,
   templateFromText,

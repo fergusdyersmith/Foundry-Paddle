@@ -107,6 +107,8 @@ export function buildSlackMessage(record) {
   }
 
   const context = [];
+  // Whether the text the agent promised on the call actually went out.
+  if (record.texted) context.push(escapeSlack(record.texted));
   if (record.durationMin) context.push(`${record.durationMin.toFixed(1)} min`);
   if (record.recordingUrl) context.push(`<${escapeSlack(record.recordingUrl)}|recording>`);
   if (record.transferring) {

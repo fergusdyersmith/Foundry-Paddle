@@ -774,3 +774,107 @@ describe("the post-call webhook, which does not need tools", () => {
     expect(res.status).toBe(200);
   });
 });
+
+describe("keeping the promise the agent made on the call", () => {
+  let V;
+  beforeEach(async () => {
+    vi.resetModules();
+    V = (await import("./voice.js")).__testables;
+  });
+
+  it.each([
+    ["Agent: I'll text that over to you as soon as we hang up."],
+    ["Agent: I'll send you the link for the Open Match on Wednesday."],
+    ["Agent: Texting that to you now."],
+  ])("spots the promise in %s", (line) => {
+    expect(V.promisedText([line])).toBe(true);
+  });
+
+  it("does not fire on a caller saying it", () => {
+    // Only what the AGENT committed to counts. A caller saying "text me" that
+    // the agent never agreed to is not a promise to keep.
+    expect(V.promisedText(["Caller: can you text me the link?"])).toBe(false);
+  });
+
+  it("does not fire on an ordinary call", () => {
+    expect(
+      V.promisedText(["Agent: We're open seven to ten every day.", "Caller: great"]),
+    ).toBe(false);
+  });
+});
+
+describe("the post-call text, since Bland's tools never execute", () => {
+  it("sends the link the agent promised, to the number they called from", async () => {
+    // Confirmed by Bland's own server-side inspection: no tool definition is
+    // ever injected into the inference context, so text_caller_link cannot
+    // fire. The webhook has the transcript and the caller id, which is all it
+    // takes to keep the promise ourselves.
+    const sendLink = vi.fn(async () => ({ sent: true, reason: null }));
+    const notifyMessage = vi.fn(async () => ({ delivered: true, channel: "slack" }));
+    ctx = await boot({
+      linkSender: { configured: () => true, sendLink },
+      notifier: { configured: () => true, notifyMessage },
+    });
+
+    await fetch(`${ctx.base}/api/voice/webhook?token=${SECRET}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        call_id: "call_x",
+        from: "9717707851",
+        summary: "Wanted the booking link.",
+        transcripts: [
+          { user: "user", text: "Send me the link" },
+          { user: "assistant", text: "I'll text that over to you as soon as we hang up." },
+        ],
+      }),
+    });
+    await new Promise((r) => setTimeout(r, 40));
+
+    expect(sendLink).toHaveBeenCalledWith(
+      expect.objectContaining({ phone: "+19717707851" }),
+    );
+    // Slack says whether it actually went, so a silent failure is visible.
+    expect(notifyMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ texted: expect.stringContaining("Texted") }),
+    );
+  });
+
+  it("says so in Slack when the promised text could NOT be sent", async () => {
+    const notifyMessage = vi.fn(async () => ({ delivered: true, channel: "slack" }));
+    ctx = await boot({
+      linkSender: { configured: () => true, sendLink: async () => ({ sent: false, reason: "cooldown" }) },
+      notifier: { configured: () => true, notifyMessage },
+    });
+    await fetch(`${ctx.base}/api/voice/webhook?token=${SECRET}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        call_id: "call_y", from: "9717707851",
+        transcripts: [{ user: "assistant", text: "I'll text that over." }],
+      }),
+    });
+    await new Promise((r) => setTimeout(r, 40));
+    expect(notifyMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ texted: expect.stringContaining("Could NOT") }),
+    );
+  });
+
+  it("texts nobody when the agent never promised one", async () => {
+    const sendLink = vi.fn(async () => ({ sent: true, reason: null }));
+    ctx = await boot({
+      linkSender: { configured: () => true, sendLink },
+      notifier: { configured: () => true, notifyMessage: async () => ({ delivered: true }) },
+    });
+    await fetch(`${ctx.base}/api/voice/webhook?token=${SECRET}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        call_id: "call_z", from: "9717707851",
+        transcripts: [{ user: "assistant", text: "We're open seven to ten every day." }],
+      }),
+    });
+    await new Promise((r) => setTimeout(r, 40));
+    expect(sendLink).not.toHaveBeenCalled();
+  });
+});
