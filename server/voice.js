@@ -509,6 +509,26 @@ export function createVoiceRouter({
     });
   });
 
+  /** A day's free time as merged windows, each naming the courts that are free
+   *  for the whole window. Built from 30-minute probes and then merged, so
+   *  "2:30 to 6 PM, Padel 1 and Padel 3" is one line rather than seven. */
+  function freeWindows(bookings, date, today) {
+    const result = computeAvailability(bookings, {
+      date,
+      durationMin: 30,
+      nowDate: today.date,
+      nowTime: today.time,
+    });
+    const windows = [];
+    for (const slot of result.slots) {
+      const key = slot.courts.join("|");
+      const last = windows[windows.length - 1];
+      if (last && last.key === key && last.end === slot.start) last.end = slot.end;
+      else windows.push({ key, start: slot.start, end: slot.end, courts: slot.courts });
+    }
+    return windows;
+  }
+
   // A briefing, fetched once at the start of every call.
   //
   // Bland's custom tools have never executed on this account: the model selects
@@ -522,7 +542,7 @@ export function createVoiceRouter({
   // -old answer beats "I can't check that from here".
   router.get("/api/voice/briefing", async (req, res) => {
     const today = nowLocal(timezone);
-    const tomorrow = addDays(today.date, 1);
+    const days = Math.min(Math.max(1, Number(req.query.days) || 7), 14);
 
     let bookings = cachedBookings();
     if (!bookings && ensureWarm) {
@@ -531,31 +551,57 @@ export function createVoiceRouter({
     }
     const events = cachedEvents();
 
-    const day = (date) => {
-      if (!bookings) return "I can't see the court calendar right now.";
-      const result = computeAvailability(bookings.bookings, {
-        date,
-        durationMin: 90,
-        nowDate: today.date,
-        nowTime: today.time,
-      });
-      if (!result.slots.length) return "nothing free for 90 minutes.";
-      const times = selectSlots(result.slots, null, 5).map((s) => spoken(s.start));
-      return `${listSpoken(times)} open for 90 minutes.`;
-    };
+    const lines = [];
+    if (!bookings) {
+      lines.push("Court calendar unavailable.");
+    } else {
+      for (let i = 0; i < days; i += 1) {
+        const date = addDays(today.date, i);
+        const when = spokenDate(date, today.date);
+        const windows = freeWindows(bookings.bookings, date, today);
+        if (!windows.length) {
+          lines.push(`${when}: fully booked.`);
+          continue;
+        }
+        const parts = windows.map(
+          (w) =>
+            `${spoken(w.start)}-${spoken(w.end)} ${w.courts.length} free (${w.courts.join(", ")})`,
+        );
+        lines.push(`${when}: ${parts.join("; ")}`);
+      }
+    }
 
-    const upcoming = events
-      ? scheduleSpeech(
-          events.events.filter((e) => e.date >= today.date).slice(0, LIMITS.maxEventsReturned),
-          today.date,
-        )
-      : "I can't see the class schedule right now.";
+    const eventLines = !events
+      ? ["Class schedule unavailable."]
+      : events.events
+          .filter((e) => e.date >= today.date && e.date <= addDays(today.date, days - 1))
+          .map((e) => {
+            const where = e.courts?.length ? ` on ${e.courts.join(", ")}` : "";
+            const price = e.price ? `, ${e.price}` : "";
+            const left =
+              e.capacity != null && e.signed_up != null
+                ? `, ${e.signed_up} of ${e.capacity} signed up`
+                : "";
+            return `${spokenDate(e.date, today.date)} ${spoken(e.start_time)}: ${e.title}${price}${left}${where}`;
+          });
+
+    const courts = lines.join("\n");
+    const whatsOn = eventLines.join("\n");
+
+    // Everything here lands in the agent's prompt, and an oversized prompt on a
+    // voice model costs latency and instruction-following. Say so rather than
+    // letting it grow silently.
+    const total = courts.length + whatsOn.length;
+    if (total > 12000) {
+      console.warn("[voice] briefing is %d chars, which is large for a prompt", total);
+    }
 
     res.json({
       date: today.date,
-      courts_today: day(today.date),
-      courts_tomorrow: day(tomorrow),
-      whats_on: upcoming,
+      days,
+      chars: total,
+      courts_week: courts,
+      whats_on: whatsOn,
     });
   });
 

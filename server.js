@@ -508,6 +508,8 @@ function mapBookingGroup(group) {
     price: booking.price || null,
     booking_type: bookingType,
     court: courts.length <= 1 ? courts[0] || null : `${courts.length} courts`,
+    // The individual courts too, so the phone agent can say which ones.
+    courts,
     signed_up: participantIds.size,
     book_url: bookingDeepLink(booking),
   };
