@@ -284,6 +284,19 @@ async function main() {
   const personaId = persona?.data?.id || config.persona_id;
   console.log(`[agent] persona ${config.persona_id ? "updated" : "created"}: ${personaId}`);
 
+  // PROMOTE. A PATCH writes the DRAFT version only, so without this the live
+  // agent keeps running the version it was created with. It spent a whole
+  // afternoon pointed at a knowledge base that had since been deleted, which is
+  // invisible from every endpoint except the persona's own version comparison.
+  const draftId = persona?.data?.current_draft_version_id;
+  if (draftId) {
+    await bland(`/v1/personas/${personaId}/versions/promote`, {
+      method: "POST",
+      body: { version_id: draftId },
+    });
+    console.log(`[agent] promoted draft ${draftId} to production`);
+  }
+
   // Point the number at it. Transfer and recording live on the number.
   await bland(`/v1/inbound/${PHONE_NUMBER}/update`, {
     method: "POST",
@@ -291,12 +304,10 @@ async function main() {
     body: {
       prompt: PROMPT,
       first_sentence: GREETING,
-      // FULL definitions inline, not ids. Verified against a real call: tool ids
-      // in `custom_tools` are accepted with a 200 and then silently stored as
-      // null, and the persona's `default_tools` never reaches an inbound call.
-      // The agent had no tools at all and told the caller it could not check
-      // availability "from here". Only `tools` with whole objects works.
-      tools: tools(),
+      // Tool IDs from the registry. Bland stores these into its `tools` field,
+      // so the number references the same definitions the persona uses rather
+      // than a second inline copy that can drift.
+      custom_tools: Object.values(toolIds),
       transfer_phone_number: TRANSFER_TO,
       record: true,
       max_duration: 15,
@@ -314,6 +325,33 @@ async function main() {
     body: { inbound_numbers: [PHONE_NUMBER] },
   });
   console.log(`[agent] attached ${PHONE_NUMBER} to the persona`);
+
+  // Read back what Bland actually holds. Every wiring bug in this build was
+  // silent: a 200 that stored null, a PATCH that only touched a draft, an
+  // update that cleared the persona link. Assert instead of assuming.
+  const liveNumber = await bland(`/v1/inbound/${PHONE_NUMBER}`, { byot: true });
+  const livePersona = await bland(`/v1/personas/${personaId}`);
+  const prod = livePersona?.data?.current_production_version || {};
+  const numberTools = (() => {
+    const t = liveNumber?.tools;
+    return typeof t === "string" ? JSON.parse(t) : t;
+  })();
+
+  const problems = [];
+  if (!(prod.kb_ids || []).includes(config.knowledge_base_id)) {
+    problems.push(`persona production kb_ids is ${JSON.stringify(prod.kb_ids)}, expected ${config.knowledge_base_id}`);
+  }
+  if ((prod.default_tools || []).length !== Object.keys(toolIds).length) {
+    problems.push(`persona production default_tools is ${JSON.stringify(prod.default_tools)}`);
+  }
+  if (!numberTools || numberTools.length !== Object.keys(toolIds).length) {
+    problems.push(`number tools is ${JSON.stringify(numberTools)}`);
+  }
+  if (problems.length) {
+    for (const p of problems) console.error(`[agent] MISCONFIGURED: ${p}`);
+    throw new Error("Deployed, but Bland did not store what we sent. See above.");
+  }
+  console.log("[agent] verified: knowledge base and tools are live on the number");
 
   writeConfig({
     ...config,
