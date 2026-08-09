@@ -81,10 +81,18 @@ function addDays(isoDate, days) {
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
+/** A tool template that did not get substituted, e.g. the literal string
+ *  "{{input.date}}". Treated as absent rather than as a value: a misconfigured
+ *  tool should fall back to a sensible default, not tell the caller we cannot
+ *  understand them. This exact failure lost a real test call. */
+export function unresolved(value) {
+  return typeof value === "string" && value.includes("{{");
+}
+
 /** Speech-to-text hands us words, not ISO dates. Accept both, and refuse
  *  anything we cannot resolve rather than guessing at a date. */
 export function resolveDate(input, today) {
-  if (input == null || input === "") return today;
+  if (input == null || input === "" || unresolved(input)) return today;
   const raw = String(input).trim().toLowerCase();
   if (ISO_DATE.test(raw)) return raw;
   if (raw === "today" || raw === "tonight") return today;
@@ -104,7 +112,7 @@ export function resolveDate(input, today) {
 
 /** "18:00", "6pm", "6:30 pm" -> minutes from midnight, or null. */
 export function resolveTime(input) {
-  if (input == null || input === "") return null;
+  if (input == null || input === "" || unresolved(input)) return null;
   const raw = String(input).trim().toLowerCase().replace(/\s+/g, "");
   const m = raw.match(/^(\d{1,2})(?::(\d{2}))?(am|pm)?$/);
   if (!m) return null;
@@ -351,8 +359,9 @@ export function createVoiceRouter({
 
     // Bland knows the number the caller is on, but a caller can also give a different
     // one. Either way it has to be dialable before we hand it to Twilio.
-    const phone = normalizePhone(req.body?.phone);
-    if (req.body?.phone && !phone) {
+    const rawPhone = unresolved(req.body?.phone) ? null : req.body?.phone;
+    const phone = normalizePhone(rawPhone);
+    if (rawPhone && !phone) {
       return res.json({
         ok: false,
         sent: false,
@@ -364,7 +373,7 @@ export function createVoiceRouter({
     const result = await linkSender.sendLink({
       phone,
       template,
-      callId: sanitize(req.body?.call_id, 80),
+      callId: unresolved(req.body?.call_id) ? "" : sanitize(req.body?.call_id, 80),
     });
 
     return res.json({
@@ -388,7 +397,7 @@ export function createVoiceRouter({
       });
     }
 
-    const reason = sanitize(req.body?.reason, 500);
+    const reason = unresolved(req.body?.reason) ? "" : sanitize(req.body?.reason, 500);
     if (!reason) {
       return res.json({
         ok: false,
@@ -397,8 +406,9 @@ export function createVoiceRouter({
       });
     }
 
-    const phone = normalizePhone(req.body?.phone);
-    if (req.body?.phone && !phone) {
+    const rawPhone = unresolved(req.body?.phone) ? null : req.body?.phone;
+    const phone = normalizePhone(rawPhone);
+    if (rawPhone && !phone) {
       return res.json({
         ok: false,
         reason: "bad_phone",
@@ -407,13 +417,13 @@ export function createVoiceRouter({
     }
 
     const { delivered } = await notifier.notifyMessage({
-      name: sanitize(req.body?.name, 80),
+      name: unresolved(req.body?.name) ? "" : sanitize(req.body?.name, 80),
       phone,
       reason,
       // The agent decides this from the call: injury, someone locked out, a
       // caller already standing at the door, or plain distress.
       urgent: req.body?.urgent === true || req.body?.urgent === "true",
-      callId: sanitize(req.body?.call_id, 80),
+      callId: unresolved(req.body?.call_id) ? "" : sanitize(req.body?.call_id, 80),
       receivedAt: new Date().toISOString(),
     });
 
@@ -437,6 +447,7 @@ export function createVoiceRouter({
 }
 
 export const __testables = {
+  unresolved,
   resolveDate,
   resolveTime,
   selectSlots,

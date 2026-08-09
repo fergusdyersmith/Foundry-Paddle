@@ -104,10 +104,27 @@ function tools() {
         time: "{{input.time}}",
         duration_min: "{{input.duration_min}}",
       },
+      // Real JSON Schema, not {example}. With only an example, Bland passes
+      // `input` as a bare STRING ("check court availability tonight"), so every
+      // {{input.date}} in the body resolves to literal template text and the
+      // endpoint rightly refuses it. Cost a whole test call to find.
       input_schema: {
-        example: { date: "today", time: "6pm", duration_min: 90 },
-        description:
-          "date: 'today', 'tomorrow', a weekday name, or YYYY-MM-DD. time: what the caller asked for, like '6pm'. duration_min: 60, 90 or 120, default 90.",
+        type: "object",
+        properties: {
+          date: {
+            type: "string",
+            description: "'today', 'tomorrow', a weekday name, or YYYY-MM-DD. Default today.",
+          },
+          time: {
+            type: "string",
+            description: "The time the caller asked about, like '6pm' or '18:00'. Optional.",
+          },
+          duration_min: {
+            type: "integer",
+            description: "Session length: 60, 90 or 120. Default 90.",
+          },
+        },
+        required: ["date"],
       },
       response: { speech: "$.speech", any_available: "$.any_available" },
       speech: "Let me have a look at the courts.",
@@ -122,8 +139,12 @@ function tools() {
       headers: auth,
       body: { date: "{{input.date}}", days: "{{input.days}}" },
       input_schema: {
-        example: { date: "today", days: 7 },
-        description: "date: where to start, default today. days: how many days ahead, default 7.",
+        type: "object",
+        properties: {
+          date: { type: "string", description: "Where to start. Default today." },
+          days: { type: "integer", description: "How many days ahead to look. Default 7." },
+        },
+        required: [],
       },
       response: { speech: "$.speech", count: "$.count" },
       speech: "Let me check what's coming up.",
@@ -142,9 +163,16 @@ function tools() {
         call_id: "{{call_id}}",
       },
       input_schema: {
-        example: { phone: "+15035550123", template: "booking" },
-        description:
-          "phone: the number to text, digits are fine. template: one of booking, membership, directions.",
+        type: "object",
+        properties: {
+          phone: { type: "string", description: "The number to text. Digits are fine." },
+          template: {
+            type: "string",
+            enum: ["booking", "membership", "directions"],
+            description: "Which link to send.",
+          },
+        },
+        required: ["phone", "template"],
       },
       response: { speech: "$.speech", sent: "$.sent" },
       speech: "Sending that over now.",
@@ -165,14 +193,18 @@ function tools() {
         call_id: "{{call_id}}",
       },
       input_schema: {
-        example: {
-          name: "Dana Whitfield",
-          phone: "+15035550123",
-          reason: "Wants to book a court for four on Saturday",
-          urgent: false,
+        type: "object",
+        properties: {
+          name: { type: "string", description: "The caller's name." },
+          phone: { type: "string", description: "Callback number." },
+          reason: { type: "string", description: "What the message is about." },
+          urgent: {
+            type: "boolean",
+            description:
+              "True only if someone is hurt, locked out, at the door, or clearly distressed.",
+          },
         },
-        description:
-          "urgent: true only if someone is hurt, locked out, at the door, or clearly distressed.",
+        required: ["reason"],
       },
       response: { speech: "$.speech", ok: "$.ok" },
       speech: "Let me take that down.",

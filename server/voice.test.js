@@ -478,6 +478,17 @@ describe("turning data into something speakable", () => {
     expect(V.resolveTime("sometime after work")).toBeNull();
   });
 
+  it("treats an unsubstituted tool template as absent, not as a value", () => {
+    // A real test call was lost to this: Bland sent the literal "{{input.date}}"
+    // and the endpoint refused it as an unparseable date, so the agent told the
+    // caller it had no live availability. A misconfigured tool should fall back
+    // to a sensible default, not accuse the caller of being unclear.
+    expect(V.resolveDate("{{input.date}}", "2026-08-13")).toBe("2026-08-13");
+    expect(V.resolveTime("{{input.time}}")).toBeNull();
+    expect(V.unresolved("{{input.phone}}")).toBe(true);
+    expect(V.unresolved("6pm")).toBe(false);
+  });
+
   it("returns slots near the time asked for, not merely the earliest ones", () => {
     // The caller asked about 6 PM. Offering them 7 AM is a useless answer.
     // 07:00 through 21:30 on a 30-minute grid, as a real day looks.
