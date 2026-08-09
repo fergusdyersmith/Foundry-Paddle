@@ -303,6 +303,16 @@ export function createVoiceRouter({
   const router = express.Router();
 
   router.use("/api/voice", (req, res, next) => {
+    // Log EVERY hit before auth. Six test calls were spent inferring what Bland
+    // sends from call transcripts; one line here answers it directly, including
+    // whether the request arrives at all and whether the bearer header survives.
+    console.log(
+      "[voice] %s %s auth=%s body=%s",
+      req.method,
+      req.path,
+      req.get("authorization") ? "present" : "MISSING",
+      JSON.stringify(req.body || {}).slice(0, 400),
+    );
     if (!authorized(req)) {
       // Deliberately terse: an unauthenticated caller learns nothing about
       // whether the secret is unset or merely wrong.
