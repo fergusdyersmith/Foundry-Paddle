@@ -232,21 +232,55 @@ export function matchEvent(text, events, today) {
   return best && best.score >= 2 ? best.event : null;
 }
 
-// The agent tells callers it will text them a link once the call ends. Bland's
-// custom tools have never executed on this account, confirmed by their own
-// server-side log inspection: no tool definition is ever injected into the
-// inference context, for either API generation. So text_caller_link never
-// fires, and that promise would go unkept.
+// The agent tells a caller it is texting them a link. Sometimes it then does
+// not call the tool, and the promise goes unkept. The finished call carries the
+// transcript and the caller's number, which is all we need to send it ourselves.
 //
-// It does not need their tools. The finished call carries the transcript and
-// the caller's number, which is everything required to send it ourselves.
-const PROMISED_TEXT = /\b(i(?:'| wi)?ll (?:text|send)|text(?:ing)? (?:that|it|you)|send(?:ing)? (?:you )?(?:that|the link))\b/i;
+// PAST TENSE MATTERS MOST. On 10 Aug the agent said "I've sent that link to
+// five four one..." and never called the tool. This regex only matched future
+// and present tense, so the backstop stayed silent too and the caller hung up
+// believing a text was on its way. A claim already made is the case that most
+// needs covering, not the least: nobody is going to call back to check.
+const PROMISED_TEXT =
+  /\b(i(?:'| wi)?ll (?:text|send)|i(?:'ve| have) (?:just )?(?:sent|texted)|i (?:just )?sent|(?:that|it|the link)(?:'s|s| is| has been| was)? on its way|(?:that|it|the link) (?:has been|was) (?:sent|texted)|you should (?:have|get) (?:that|it|the link)|text(?:ing|ed)? (?:that|it|you)|send(?:ing|t)? (?:you )?(?:that|the link))\b/i;
 
-/** Did the agent promise to text them something? */
+/** Did the agent tell them a text was coming, in any tense? */
 export function promisedText(transcriptLines) {
   return transcriptLines.some(
     (l) => l.startsWith("Agent:") && PROMISED_TEXT.test(l),
   );
+}
+
+// Calls whose link the agent already sent for itself, mid-call. The poller
+// runs a minute behind and would otherwise send a second identical text.
+// Bounded and short-lived: it only has to outlive the poll that follows the
+// call, and losing it on a restart costs a duplicate text, not a missing one.
+const sentLinkCalls = new Set();
+const MAX_SENT_CALLS = 300;
+
+export function markLinkSent(callId) {
+  if (!callId) return;
+  sentLinkCalls.add(callId);
+  while (sentLinkCalls.size > MAX_SENT_CALLS) {
+    sentLinkCalls.delete(sentLinkCalls.values().next().value);
+  }
+}
+
+export function linkAlreadySent(callId) {
+  return Boolean(callId) && sentLinkCalls.has(callId);
+}
+
+// Where to send it, when the caller named a number that is not the one they
+// are calling from. Only lines about sending count: a number that turns up
+// anywhere else in a call is somebody else's, and texting it would be worse
+// than sending nothing.
+export function textDestination(transcriptLines) {
+  for (const line of transcriptLines) {
+    if (!PROMISED_TEXT.test(line) && !/\b(text|send)\b/i.test(line)) continue;
+    const found = phoneFromText(line.replace(/^(Agent|Caller):\s*/, ""));
+    if (found) return found;
+  }
+  return null;
 }
 
 // take_message never fires, because Bland injects no tools, so the `urgent`
@@ -290,12 +324,40 @@ export function templateFromText(text) {
   return null;
 }
 
+const DIGIT_WORDS = {
+  zero: "0", oh: "0", o: "0", nought: "0",
+  one: "1", two: "2", three: "3", four: "4", five: "5",
+  six: "6", seven: "7", eight: "8", nine: "9",
+};
+
+/** "five four one two seven zero four five eight five" -> "5412704585".
+ *
+ *  Bland transcribes a number read aloud as words, so a caller giving a
+ *  different callback number leaves nothing for a digit regex to find. This
+ *  reads a run of number words back into digits. It needs a full run of ten or
+ *  eleven to return anything, which is why an ordinary "court for four" cannot
+ *  be mistaken for a phone number. */
+export function spokenPhone(text) {
+  const words = String(text || "").toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  let run = "";
+  for (const w of words) {
+    if (DIGIT_WORDS[w]) run += DIGIT_WORDS[w];
+    else if (/^\d+$/.test(w)) run += w;
+    else {
+      if (run.length === 10 || run.length === 11) return run;
+      run = "";
+    }
+    if (run.length > 11) run = "";
+  }
+  return run.length === 10 || run.length === 11 ? run : null;
+}
+
 /** A callback number spoken inside the sentence, when no structured field came. */
 export function phoneFromText(text) {
   const match = String(text || "").match(
     /(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/,
   );
-  return match ? match[0] : null;
+  return match ? match[0] : spokenPhone(text);
 }
 
 /** "18:00", "6pm", "6:30 pm" -> minutes from midnight, or null. */
@@ -668,6 +730,11 @@ export function createVoiceRouter({
       callId: unresolved(req.body?.call_id) ? "" : sanitize(req.body?.call_id, 80),
     });
 
+    // So the poller does not send the same link again a minute later.
+    if (result.sent) {
+      markLinkSent(unresolved(req.body?.call_id) ? "" : sanitize(req.body?.call_id, 80));
+    }
+
     return res.json({
       ok: true,
       sent: result.sent,
@@ -803,16 +870,23 @@ export function createVoiceRouter({
         .map((t) => `${t.user === "assistant" ? "Agent" : "Caller"}: ${sanitize(t.text, 200)}`)
         .filter((l) => l.length > 8);
 
-      // Keep the promise the agent made on the call.
+      // Keep the promise the agent made on the call, unless it kept it itself.
+      // The tool fires mid-call now, so without this check a caller gets the
+      // same link twice: once from the agent and once from us a minute later.
       let texted = null;
-      if (promisedText(lines) && from && linkSender?.configured()) {
+      const callId = sanitize(body.call_id, 80);
+      if (callId && sentLinkCalls.has(callId)) {
+        texted = "link sent during the call";
+      } else if (promisedText(lines) && from && linkSender?.configured()) {
         const said = lines.join(" ");
         const today = nowLocal(timezone);
         const events = cachedEvents();
         const matched = events ? matchEvent(said, events.events, today.date) : null;
         const deep = matched ? deepLinkFromEvent(matched) : null;
         const result = await linkSender.sendLink({
-          phone: from,
+          // A caller who reads out a different number wants it there, not on
+          // the phone they happen to be holding.
+          phone: normalizePhone(textDestination(lines)) || from,
           template: templateFromText(said) || "booking",
           deepLink: deep?.kind || null,
           itemId: deep?.id || null,
@@ -929,6 +1003,10 @@ export function createVoiceRouter({
 export const __testables = {
   unresolved,
   promisedText,
+  textDestination,
+  spokenPhone,
+  markLinkSent,
+  linkAlreadySent,
   soundsUrgent,
   wantsCallback,
   matchEvent,

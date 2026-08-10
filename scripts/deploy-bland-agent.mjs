@@ -96,18 +96,16 @@ Each line is tagged with what it is in square brackets.
 
 BOOKING
 - Booking and paying both happen in the Playtomic app, not on the website.
-- If they want a link, SEND IT NOW, while they are still on the phone. Call
-  text_caller_link straight away, describing what you were discussing, for
-  example "the Beginner Intermediate Mexicano on Wednesday" or "the app
-  download". Do not say you will send it later. Do not wait until the end of
-  the call. The send takes a couple of seconds and they can check it before
-  they hang up, which is the whole point.
-- If they give you a different number to text, use that one, and read it back
-  as you send.
-- Only say it has been sent AFTER the tool has told you it went. If the tool
-  says it could not, say so plainly and offer to take a message instead.
-  Claiming a text you have not sent is the worst thing you can do here: they
-  hang up happy and nothing arrives.
+- If they want a link, CALL text_caller_link. That is the only thing that
+  sends a text. Saying "I've sent it" does not send it. You have said that on
+  a real call without calling the tool, and the caller sat waiting for a text
+  that was never going to arrive.
+- Call the tool FIRST, before you say anything about a text. Then say what
+  came back. Never announce a send you have not made, in any tense: not "I've
+  sent it", not "that's on its way", not "you should have it in a moment".
+- If they give you a different number, pass it to the tool as the phone
+  parameter, and read it back as you send.
+- If the tool says it could not, say so plainly and offer to take a message.
 - If they do not have the app yet, mention that download first. Nothing else is
   any use without it.
 
@@ -191,8 +189,12 @@ function skills(toolIds) {
       name: "text_the_caller_a_link",
       tools: [{ tool_id: toolIds.text_caller_link }],
       prompt:
-        "Send the caller the link they asked for NOW, while they are still on the phone. Use the number they are calling from unless they gave a different one, in which case use theirs. Do not offer to send it later; send it, then tell them what the result was.",
-      condition: "The link has been sent, or the caller has been told it could not be",
+        "Call text_caller_link. Nothing else sends a text: describing one, or saying you have sent one, sends nothing. Call it before you say anything about a text, then tell the caller what it returned. Use the number they are calling from unless they gave a different one, in which case pass theirs as phone.",
+      // Anchored on the tool returning, not on the caller being told. An exit
+      // condition the agent can satisfy by talking is one it will satisfy by
+      // talking: on 10 Aug it said "I've sent that link to five four one..."
+      // and never called anything.
+      condition: "text_caller_link has returned a result",
       description:
         "Caller asks to be texted a link: booking, memberships, directions, or the Playtomic app download",
     },

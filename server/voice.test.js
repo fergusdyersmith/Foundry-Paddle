@@ -962,3 +962,64 @@ describe("spotting urgency without the agent's flag", () => {
     expect(V.wantsCallback(["Caller: what are your hours?"])).toBe(false);
   });
 });
+
+describe("keeping a promise the agent made and then did not keep", () => {
+  let promisedText, textDestination, spokenPhone, markLinkSent, linkAlreadySent;
+  beforeEach(async () => {
+    vi.resetModules();
+    ({ promisedText, textDestination, spokenPhone, markLinkSent, linkAlreadySent } =
+      await import("./voice.js"));
+  });
+
+  it("catches a text the agent claims it has ALREADY sent", () => {
+    // The failure that cost a caller their link on 10 Aug: the agent said the
+    // text was gone, called nothing, and the backstop only looked for future
+    // tense so it stayed silent too.
+    expect(promisedText(["Agent: I've sent that link to five four one two seven zero four five eight five."])).toBe(true);
+    expect(promisedText(["Agent: I just sent that over."])).toBe(true);
+    expect(promisedText(["Agent: That's on its way to you now."])).toBe(true);
+  });
+
+  it("still catches the future tense it always caught", () => {
+    expect(promisedText(["Agent: I'll text that over as soon as we hang up."])).toBe(true);
+    expect(promisedText(["Agent: Sending that over now."])).toBe(true);
+  });
+
+  it("does not fire on a call where no text was ever mentioned", () => {
+    expect(promisedText(["Agent: We're open until ten tonight.", "Caller: Great."])).toBe(false);
+  });
+
+  it("reads a number the caller spelled out digit by digit", () => {
+    // Bland transcribes a spoken number as words, so a digit regex finds
+    // nothing and the text would go to the phone they happen to be holding.
+    expect(spokenPhone("five four one two seven zero four five eight five")).toBe("5412704585");
+    expect(spokenPhone("text it to five four one, two seven zero, four five eight five")).toBe("5412704585");
+  });
+
+  it("does not mistake ordinary counting for a phone number", () => {
+    expect(spokenPhone("a court for four on Saturday at seven")).toBe(null);
+    expect(spokenPhone("we have four courts")).toBe(null);
+  });
+
+  it("sends to the number they asked for, not the one they called from", () => {
+    const lines = [
+      "Caller: Can you text me the Playtomic link to five four one two seven zero four five eight five?",
+      "Agent: Sending that over now.",
+    ];
+    expect(textDestination(lines)).toBe("5412704585");
+  });
+
+  it("ignores a number said in a line that has nothing to do with texting", () => {
+    const lines = ["Caller: My old club was on five oh three three eight zero one zero zero five."];
+    expect(textDestination(lines)).toBe(null);
+  });
+
+  it("does not send again when the agent already sent it during the call", () => {
+    // The poller runs a minute behind. Now that the tool fires mid-call, an
+    // unconditional backstop is a second identical text, not a rescue.
+    markLinkSent("call_dup");
+    expect(linkAlreadySent("call_dup")).toBe(true);
+    expect(linkAlreadySent("call_other")).toBe(false);
+    expect(linkAlreadySent("")).toBe(false);
+  });
+});

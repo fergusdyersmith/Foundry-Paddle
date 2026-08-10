@@ -17,7 +17,17 @@
 // is missed, which is the better failure: a missing Slack card is noticed, a
 // duplicate one teaches people to ignore the channel.
 
-import { promisedText, soundsUrgent, wantsCallback, matchEvent, templateFromText, spoken, spokenDate } from "./voice.js";
+import {
+  promisedText,
+  textDestination,
+  linkAlreadySent,
+  soundsUrgent,
+  wantsCallback,
+  matchEvent,
+  templateFromText,
+  spoken,
+  spokenDate,
+} from "./voice.js";
 import { deepLinkFromEvent } from "./smslink.js";
 import { sanitize, normalizePhone } from "./notify.js";
 
@@ -63,17 +73,22 @@ export function createCallPoller({
       .map((t) => `${t.user === "assistant" ? "Agent" : "Caller"}: ${sanitize(t.text, 200)}`)
       .filter((l) => l.length > 8);
 
-    // Keep the promise the agent made, since the tool that should have done it
-    // during the call never fires.
+    // Keep the promise the agent made, when it did not keep it itself. The tool
+    // fires mid-call now, so sending again a minute later would be a second
+    // identical text rather than a rescue.
     let texted = null;
-    if (promisedText(lines) && from && linkSender?.configured()) {
+    if (linkAlreadySent(detail.call_id)) {
+      texted = "link sent during the call";
+    } else if (promisedText(lines) && from && linkSender?.configured()) {
       const said = lines.join(" ");
       const today = new Date().toLocaleDateString("en-CA", { timeZone: timezone });
       const events = cachedEvents?.();
       const matched = events ? matchEvent(said, events.events, today) : null;
       const deep = matched ? deepLinkFromEvent(matched) : null;
       const result = await linkSender.sendLink({
-        phone: from,
+        // A caller who reads out a different number wants it there, not on the
+        // phone they happen to be holding.
+        phone: normalizePhone(textDestination(lines)) || from,
         template: templateFromText(said) || "booking",
         deepLink: deep?.kind || null,
         itemId: deep?.id || null,
