@@ -55,6 +55,13 @@ export function normalizePhone(input) {
   if (!cleaned) return null;
 
   if (cleaned.startsWith("+")) {
+    // A plus in front of exactly ten digits is not a country code and a
+    // number: it is a North American number with a plus bolted on. The voice
+    // agent does this, having been told the tool wants E.164. On 10 Aug it
+    // sent "+5412704585", which Twilio read as Argentina and refused, so a
+    // caller who had spelled out their number twice got nothing.
+    const digits = cleaned.slice(1);
+    if (digits.length === 10) return `+${DEFAULT_COUNTRY_CODE}${digits}`;
     return /^\+\d{8,15}$/.test(cleaned) ? cleaned : null;
   }
   const digits = cleaned.replace(/\D/g, "");

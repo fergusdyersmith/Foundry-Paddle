@@ -318,3 +318,18 @@ describe("a message taken on the way to a human", () => {
     expect(msg.text).toMatch(/^URGENT: /);
   });
 });
+
+describe("a phone number the voice agent mangled", () => {
+  it("reads a plus in front of ten digits as North American, not Argentine", () => {
+    // The agent is told the tool wants E.164, so it puts a + on the ten digits
+    // the caller read out. Twilio then sees country code 54 and refuses, and a
+    // caller who spelled their number out twice gets nothing.
+    expect(normalizePhone("+5412704585")).toBe("+15412704585");
+    expect(normalizePhone("+9717707851")).toBe("+19717707851");
+  });
+
+  it("still accepts a real E.164 number untouched", () => {
+    expect(normalizePhone("+15412704585")).toBe("+15412704585");
+    expect(normalizePhone("+447700900123")).toBe("+447700900123");
+  });
+});

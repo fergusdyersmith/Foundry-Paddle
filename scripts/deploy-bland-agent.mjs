@@ -83,11 +83,10 @@ Each line is tagged with what it is in square brackets.
 - A Mexicano, an Americano and a Tournament are all tournaments. If someone asks
   about tournaments, include anything tagged [Tournament] whatever it is called.
 
-- Both blocks were looked up the moment you answered this call. For a general
-  question, quote them: they cover the next seven days, name the courts, and
-  give how many places are taken.
-- For a SPECIFIC day and time, prefer looking it up live, which is current to
-  the second. The blocks are a fallback if the lookup cannot answer.
+- Both blocks were looked up the moment you answered this call. Courts cover
+  today and tomorrow only. What is on covers the next seven days.
+- For any other day, and for a SPECIFIC time, look it up live. It is current
+  to the second and takes a moment.
 - Beyond seven days, say the Playtomic app has the full calendar.
 - A caller wants the SHAPE of it, not a recital. "Tomorrow evening is wide open,
   four courts from six" beats reading every window aloud.
@@ -446,6 +445,19 @@ async function main() {
       record: true,
       max_duration: 15,
       first_sentence: GREETING,
+      // Dead air is what ruins a call. On 10 Aug there was a 3.6 second gap
+      // between the caller finishing and the agent starting, and our own
+      // endpoints answered in 92-235ms, so none of it was ours.
+      //
+      // 400 rather than Bland's 500 default: how long silence must run before
+      // the agent takes its turn. Not lower, because callers read phone
+      // numbers aloud on this line and pause between the groups of digits.
+      // Cutting someone off mid-number costs more than the tenth of a second.
+      interruption_threshold: 400,
+      // Lower than the 0.7 default. A receptionist quoting prices and times
+      // wants the likeliest next word, and less sampling is fractionally
+      // quicker into the bargain.
+      temperature: 0.3,
       timezone: "America/Los_Angeles",
       transfer_phone_number: TRANSFER_TO,
     },
@@ -517,6 +529,10 @@ async function main() {
       // hand from Bland's dashboard, and this needs no extra setup to be safe.
       webhook: `${SITE}/api/voice/webhook?token=${encodeURIComponent(VOICE_TOOL_SECRET)}`,
       max_duration: 15,
+      // Same latency settings as the persona. Which of the two the live call
+      // actually reads is not documented, so both carry them.
+      interruption_threshold: 400,
+      temperature: 0.3,
       timezone: "America/Los_Angeles",
       language: "ENG",
       voice: process.env.BLAND_VOICE || "June",

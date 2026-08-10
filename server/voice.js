@@ -788,11 +788,19 @@ export function createVoiceRouter({
     }
     const events = cachedEvents();
 
+    // The court grid is the single biggest thing in the agent's prompt, and the
+    // prompt is re-read on every turn: a caller waits for it before every
+    // sentence, not just the first. Seven days of it bought about two thousand
+    // characters to save a lookup on questions the agent should be looking up
+    // live anyway. Today and tomorrow cover what people actually ring about;
+    // anything further goes to check_courts, which is current to the second.
+    const courtDays = Math.min(days, 2);
+
     const lines = [];
     if (!bookings) {
       lines.push("Court calendar unavailable.");
     } else {
-      for (let i = 0; i < days; i += 1) {
+      for (let i = 0; i < courtDays; i += 1) {
         const date = addDays(today.date, i);
         const when = spokenDate(date, today.date);
         const windows = freeWindows(bookings.bookings, date, today);
@@ -806,6 +814,7 @@ export function createVoiceRouter({
         );
         lines.push(`${when}: ${parts.join("; ")}`);
       }
+      if (days > courtDays) lines.push("Any other day: look it up.");
     }
 
     const eventLines = !events
@@ -814,7 +823,9 @@ export function createVoiceRouter({
           .filter((e) => e.date >= today.date && e.date <= addDays(today.date, days - 1))
           .map((e) => {
             const kind = EVENT_KIND[e.booking_type] || "Event";
-            const where = e.courts?.length ? ` on ${e.courts.join(", ")}` : "";
+            // Which courts a clinic is on is almost never asked and costs
+            // about a line of prompt per event across the week.
+            const where = "";
             const price = e.price ? `, ${e.price}` : "";
             const left =
               e.capacity != null && e.signed_up != null
