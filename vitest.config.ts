@@ -12,6 +12,9 @@ export default defineConfig({
     // node environment with a `@vitest-environment node` docblock.
     include: [
       "src/**/*.{test,spec}.{ts,tsx}",
+      // fullsite/ IS the production marketing site (root src/ is legacy and never
+      // reaches production), so it was the one tree with no test coverage at all.
+      "fullsite/src/**/*.{test,spec}.{ts,tsx}",
       "server/**/*.{test,spec}.{js,ts}",
       // Sync scripts carry real logic (what the phone agent is allowed to say),
       // so their tests have to run with everything else rather than by hand.

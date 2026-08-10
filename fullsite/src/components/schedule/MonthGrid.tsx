@@ -8,10 +8,11 @@ import {
   startOfMonth,
   startOfWeek,
 } from "date-fns";
+import { WEEKDAYS, WEEK_STARTS_ON } from "@/lib/calendar";
 import { TYPE_DOT_COLORS, TYPE_LABELS } from "@/constants/events";
 import type { PadelEvent } from "@/types/events";
 
-const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
 const MAX_CHIPS = 3;
 
 function DayChip({ event }: { event: PadelEvent }) {
@@ -27,7 +28,7 @@ function DayChip({ event }: { event: PadelEvent }) {
   );
 }
 
-/** Desktop calendar grid (Mon–Sun weeks) for a single month. Each day cell
+/** Desktop calendar grid (Sun–Sat weeks) for a single month. Each day cell
  *  shows up to a few event chips and is clickable when it has events. */
 export default function MonthGrid({
   monthStart,
@@ -38,8 +39,10 @@ export default function MonthGrid({
   eventsByDate: Map<string, PadelEvent[]>;
   onSelectDay: (day: Date) => void;
 }) {
-  const gridStart = startOfWeek(startOfMonth(monthStart), { weekStartsOn: 1 });
-  const gridEnd = endOfWeek(endOfMonth(monthStart), { weekStartsOn: 1 });
+  // 0 = Sunday. Stated explicitly rather than relying on the date-fns default, so the
+  // pairing with WEEKDAYS above is visible at the point it matters.
+  const gridStart = startOfWeek(startOfMonth(monthStart), { weekStartsOn: WEEK_STARTS_ON });
+  const gridEnd = endOfWeek(endOfMonth(monthStart), { weekStartsOn: WEEK_STARTS_ON });
   const days = eachDayOfInterval({ start: gridStart, end: gridEnd });
 
   return (
