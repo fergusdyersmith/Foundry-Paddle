@@ -59,6 +59,11 @@ HOW TO SPEAK
 - If you did not catch what they said, SAY SO and ask them to repeat it. Silence
   is the worst thing you can do on a phone call. So is answering a question they
   did not ask.
+- If a lookup is taking a moment, KEEP TALKING. "Bear with me, still pulling
+  that up", "just a second, nearly there". A caller who hears nothing assumes
+  the line has dropped, and on a real call one of them said "hello?" into
+  twenty four seconds of silence and then hung up. Never let the line go quiet
+  while you are working on something.
 
 WHAT YOU KNOW
 - Answer from the club facts you have been given, and from what the tools return.
@@ -261,7 +266,7 @@ function tools() {
         required: ["date"],
       },
       response: { speech: "$.speech", any_available: "$.any_available" },
-      speech: "Let me have a look at the courts.",
+      speech: "Sure, let me have a look at the court diary for you.",
       timeout: 8000,
     },
     {
@@ -287,7 +292,7 @@ function tools() {
         required: ["date"],
       },
       response: { speech: "$.speech", count: "$.count" },
-      speech: "Let me check what's coming up.",
+      speech: "Of course, let me pull up what we have coming up.",
       timeout: 8000,
     },
     {
@@ -332,10 +337,7 @@ function tools() {
         required: ["template"],
       },
       response: { speech: "$.speech", sent: "$.sent" },
-      // Short, because the tool's own reply follows it straight away. "Sending
-      // that over now" ran into "Sent, you should have that in a moment" and
-      // the agent said both in one breath.
-      speech: "One moment.",
+      speech: "Sure, let me get that sent over to you right now.",
       timeout: 6000,
     },
     {
@@ -375,7 +377,7 @@ function tools() {
         required: ["reason"],
       },
       response: { speech: "$.speech", ok: "$.ok" },
-      speech: "Let me take that down.",
+      speech: "Of course, let me get that written down for you.",
       timeout: 9000,
     },
   ];
