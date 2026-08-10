@@ -77,9 +77,11 @@ export function buildSlackMessage(record) {
     ? ":rotating_light: Urgent message"
     : record.transferring
       ? ":twisted_rightwards_arrows: Caller being put through now"
-      : record.callSummary
-        ? (record.needsCallback ? ":phone: Call finished, wants a callback" : ":phone: Call finished")
-        : ":telephone_receiver: New message";
+      : record.messageTaken
+        ? ":telephone_receiver: Message taken, call finished"
+        : record.callSummary
+          ? (record.needsCallback ? ":phone: Call finished, wants a callback" : ":phone: Call finished")
+          : ":telephone_receiver: New message";
 
   const fields = [{ type: "mrkdwn", text: `*From*\n${name}` }];
   if (phone) {
@@ -171,10 +173,10 @@ export function createNotifier({
     }
   }
 
-  async function postViaApi(record) {
+  async function postViaApi(record, updateTs = null) {
     const message = buildSlackMessage(record);
     const res = await withTimeout((signal) =>
-      fetchImpl("https://slack.com/api/chat.postMessage", {
+      fetchImpl(`https://slack.com/api/${updateTs ? "chat.update" : "chat.postMessage"}`, {
         method: "POST",
         headers: {
           authorization: `Bearer ${botToken}`,
@@ -182,6 +184,7 @@ export function createNotifier({
         },
         body: JSON.stringify({
           channel,
+          ...(updateTs ? { ts: updateTs } : {}),
           ...message,
           // @channel only for genuinely urgent calls. It is the one thing that
           // still reaches someone whose notifications are set to mentions only,
@@ -201,10 +204,11 @@ export function createNotifier({
       console.error("[notify] Slack rejected the message", {
         status: res.status,
         error: body.error,
+        update: Boolean(updateTs),
       });
       return false;
     }
-    return true;
+    return body.ts || updateTs || true;
   }
 
   async function postViaWebhook(record) {
@@ -223,14 +227,59 @@ export function createNotifier({
     return true;
   }
 
-  async function postToSlack(record) {
+  async function postToSlack(record, updateTs = null) {
     if (!useBotToken && !webhookUrl) return false;
     try {
-      return useBotToken ? await postViaApi(record) : await postViaWebhook(record);
+      return useBotToken ? await postViaApi(record, updateTs) : await postViaWebhook(record);
     } catch (error) {
       console.error("[notify] Slack delivery failed:", error.message);
       return false;
     }
+  }
+
+  // One card per phone call, edited in place.
+  //
+  // The agent can reach take_message more than once in a conversation. It did
+  // on 10 Aug: a caller said "can you take a message", it took one immediately
+  // with a reason it made up from the conversation so far, then took the real
+  // one thirty seconds later. Two cards for one call, the first meaningless,
+  // and nothing on either saying which was current.
+  //
+  // The prompt now waits for the caller to actually say the message, which is
+  // the real fix. This is the backstop: the second take edits the first card
+  // and appends, so nothing is invented and nothing is lost. Bot token only;
+  // an incoming webhook cannot edit what it posted.
+  const cardByCall = new Map(); // call_id -> { ts, record }
+  const MAX_TRACKED_CALLS = 200;
+
+  function remember(callId, ts, record) {
+    if (!callId || typeof ts !== "string") return;
+    cardByCall.set(callId, { ts, record });
+    // Bounded, and a call is only ever revisited within its own few minutes.
+    while (cardByCall.size > MAX_TRACKED_CALLS) {
+      cardByCall.delete(cardByCall.keys().next().value);
+    }
+  }
+
+  /** Merge a repeat take into the card already posted for this call. */
+  function mergeRecord(prior, next) {
+    const seen = prior.reason ? prior.reason.split("\n") : [];
+    return {
+      ...prior,
+      ...next,
+      // Keep the name we already had if this take did not carry one.
+      name: next.name || prior.name,
+      phone: next.phone || prior.phone,
+      // Urgent is sticky: a later, calmer take must not downgrade a card that
+      // already pinged the channel.
+      urgent: Boolean(prior.urgent || next.urgent),
+      // The post-call summary lands on this same card a minute later. Without
+      // this the heading would flip to a plain "Call finished" and the fact
+      // that somebody is waiting on a callback would stop being the first
+      // thing you see.
+      messageTaken: Boolean(prior.messageTaken || !prior.callSummary),
+      reason: seen.includes(next.reason) ? prior.reason : [...seen, next.reason].join("\n"),
+    };
   }
 
   return {
@@ -241,6 +290,7 @@ export function createNotifier({
     async notifyMessage(record) {
       // The durable half. Logged before any network call, and deliberately
       // structured so it can be grepped out of Railway logs after the fact.
+      // Logged per take, not per card, so a merge is still visible here.
       console.log(
         "[message] %s",
         JSON.stringify({
@@ -254,11 +304,16 @@ export function createNotifier({
         }),
       );
 
-      const delivered = await postToSlack(record);
+      const prior = record.callId ? cardByCall.get(record.callId) : null;
+      const toPost = prior ? mergeRecord(prior.record, record) : record;
+      const result = await postToSlack(toPost, prior?.ts || null);
+      const delivered = Boolean(result);
       if (!delivered) {
         console.error("[message] NOT DELIVERED to any notifier", {
           call_id: record.callId,
         });
+      } else {
+        remember(record.callId, prior?.ts || result, toPost);
       }
       return { delivered, channel: delivered ? "slack" : null };
     },

@@ -21,6 +21,11 @@ function okFetch() {
   return vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ ok: true }) }));
 }
 
+/** Slack returns the message timestamp, which is the handle for editing it. */
+function tsFetch(ts) {
+  return vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ ok: true, ts }) }));
+}
+
 const BOT = { botToken: "xoxb-test", channel: "#front-desk" };
 
 describe("a caller cannot use their own words as Slack markup", () => {
@@ -148,6 +153,87 @@ describe("delivery decides what the agent says next", () => {
     fetchImpl.mockClear();
     await notifier.notifyMessage(RECORD);
     expect(JSON.parse(fetchImpl.mock.calls[0][1].body).text).not.toMatch(/<!channel>/);
+  });
+
+  it("edits the first card instead of posting a second one for the same call", async () => {
+    // Seen on a real call: the agent took a message the moment the caller said
+    // "can you take a message", with a reason it invented, then took the real
+    // one half a minute later. Two cards for one phone call, the first
+    // meaningless, and nothing saying which was current.
+    const fetchImpl = tsFetch("1723300000.000100");
+    const notifier = createNotifier({ ...BOT, fetchImpl });
+    await notifier.notifyMessage({ ...RECORD, reason: "wants to leave a message" });
+    await notifier.notifyMessage({ ...RECORD, reason: "corporate membership pricing" });
+
+    expect(fetchImpl.mock.calls[0][0]).toBe("https://slack.com/api/chat.postMessage");
+    const [url, init] = fetchImpl.mock.calls[1];
+    expect(url).toBe("https://slack.com/api/chat.update");
+    expect(JSON.parse(init.body).ts).toBe("1723300000.000100");
+  });
+
+  it("keeps the earlier message when it edits, rather than replacing it", async () => {
+    // Whoever works the channel has to see everything the caller said, so the
+    // takes accumulate. Dropping the first would quietly lose a message.
+    const fetchImpl = tsFetch("1723300000.000100");
+    const notifier = createNotifier({ ...BOT, fetchImpl });
+    await notifier.notifyMessage({ ...RECORD, reason: "wants a callback" });
+    await notifier.notifyMessage({ ...RECORD, reason: "about corporate rates" });
+
+    const body = JSON.parse(fetchImpl.mock.calls[1][1].body);
+    expect(JSON.stringify(body)).toContain("wants a callback");
+    expect(JSON.stringify(body)).toContain("about corporate rates");
+  });
+
+  it("does not let a calmer second take downgrade an urgent card", async () => {
+    // The @channel ping already went out. A card that stops looking urgent
+    // after someone has been paged is worse than one that stays loud.
+    const fetchImpl = tsFetch("1723300000.000100");
+    const notifier = createNotifier({ ...BOT, fetchImpl });
+    await notifier.notifyMessage({ ...RECORD, urgent: true, reason: "locked out at the door" });
+    await notifier.notifyMessage({ ...RECORD, urgent: false, reason: "also asked about rates" });
+
+    expect(JSON.parse(fetchImpl.mock.calls[1][1].body).text).toMatch(/^<!channel> /);
+  });
+
+  it("keeps separate calls on separate cards", async () => {
+    const fetchImpl = tsFetch("1723300000.000100");
+    const notifier = createNotifier({ ...BOT, fetchImpl });
+    await notifier.notifyMessage({ ...RECORD, callId: "call_a" });
+    await notifier.notifyMessage({ ...RECORD, callId: "call_b" });
+    expect(fetchImpl.mock.calls.map(([url]) => url)).toEqual([
+      "https://slack.com/api/chat.postMessage",
+      "https://slack.com/api/chat.postMessage",
+    ]);
+  });
+
+  it("posts a fresh card when Bland gave us no call id to group by", async () => {
+    const fetchImpl = tsFetch("1723300000.000100");
+    const notifier = createNotifier({ ...BOT, fetchImpl });
+    await notifier.notifyMessage({ ...RECORD, callId: "" });
+    await notifier.notifyMessage({ ...RECORD, callId: "" });
+    expect(fetchImpl.mock.calls[1][0]).toBe("https://slack.com/api/chat.postMessage");
+  });
+
+  it("folds the post-call summary into the message card, still headed as a message", async () => {
+    // The poller posts a minute after the call ends. Two cards per call was
+    // the old behaviour; one that ends up carrying the transcript is better,
+    // as long as it does not stop announcing that someone is owed a callback.
+    const fetchImpl = tsFetch("1723300000.000100");
+    const notifier = createNotifier({ ...BOT, fetchImpl });
+    await notifier.notifyMessage({ ...RECORD, reason: "wants a callback about rates" });
+    await notifier.notifyMessage({
+      ...RECORD,
+      reason: "Caller asked about court pricing",
+      callSummary: true,
+      transcript: ["assistant: Thanks for calling", "user: what do courts cost"],
+      recordingUrl: "https://example.com/rec.wav",
+    });
+
+    const body = JSON.parse(fetchImpl.mock.calls[1][1].body);
+    expect(fetchImpl.mock.calls[1][0]).toBe("https://slack.com/api/chat.update");
+    expect(JSON.stringify(body)).toContain("Message taken, call finished");
+    expect(JSON.stringify(body)).toContain("wants a callback about rates");
+    expect(JSON.stringify(body)).toContain("recording");
   });
 
   it("falls back to a webhook when there is no bot token", async () => {
