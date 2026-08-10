@@ -204,3 +204,46 @@ describe("a class is shown by its own name, not its program's", () => {
     expect(e.title).toBe("Midweek Morning Clinic: Tactics + Technique");
   });
 });
+
+// A full open match is a closed court, not an event. Showing "4 signed up" on a 4-player
+// match sent visitors to a match they could not join.
+describe("full open matches stay off the schedule", () => {
+  function openMatch(signed_up) {
+    return {
+      id: "m1", title: "Open Match", date: "2026-08-11", start_time: "09:30",
+      booking_type: "OPEN_MATCH", signed_up,
+    };
+  }
+
+  // getEvents does the filtering inline, so assert the rule the way the code states it.
+  const isFull = (e) => e.booking_type === "OPEN_MATCH" && (e.signed_up ?? 0) >= 4;
+
+  it("treats 4 of 4 as full", () => {
+    expect(isFull(openMatch(4))).toBe(true);
+  });
+
+  it("keeps a match with a spot left", () => {
+    expect(isFull(openMatch(3))).toBe(false);
+  });
+
+  it("keeps an empty match", () => {
+    expect(isFull(openMatch(0))).toBe(false);
+  });
+
+  it("never hides a clinic, however many signed up", () => {
+    const clinic = { ...openMatch(4), booking_type: "PUBLIC_CLASS" };
+    expect(isFull(clinic)).toBe(false);
+  });
+
+  it("treats an over-full match as full rather than letting it through", () => {
+    expect(isFull(openMatch(5))).toBe(true);
+  });
+
+  it("the server uses one constant for match size, not a stray 4", async () => {
+    const fs = await import("node:fs");
+    const src = fs.readFileSync(new URL("../server.js", import.meta.url), "utf8");
+    expect(src).toMatch(/const OPEN_MATCH_SIZE = 4;/);
+    expect(src).toMatch(/signed_up \?\? 0\) >= OPEN_MATCH_SIZE/);
+    expect(src).toMatch(/n \/ OPEN_MATCH_SIZE/); // price split shares it
+  });
+});

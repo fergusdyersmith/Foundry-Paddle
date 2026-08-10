@@ -268,6 +268,9 @@ const EVENT_BOOKING_TYPES = new Set([
   "OPEN_MATCH",
 ]);
 
+// Padel is 2v2. Used both to hide full matches and to split the court price.
+const OPEN_MATCH_SIZE = 4;
+
 const BOOKING_TYPE_LABELS = {
   COURSE_CLASS: "Course",
   PUBLIC_CLASS: "Clinic",
@@ -650,6 +653,15 @@ async function getEvents({ from = null, to = null } = {}) {
     }
   }
 
+  // A FULL open match is not an event, it is a closed court. Showing "4 signed up"
+  // on a 4-player match invites someone to click through to a match they cannot join,
+  // which is worse than not listing it: the schedule exists to answer "what can I do
+  // this week?". Padel open matches are always 4 (the price split below has assumed it
+  // since this endpoint was written).
+  events = events.filter(
+    (e) => !(e.booking_type === "OPEN_MATCH" && (e.signed_up ?? 0) >= OPEN_MATCH_SIZE),
+  );
+
   // Open matches: the bookings API reports the court total; four players split
   // it evenly, so show the per-person share.
   for (const e of events) {
@@ -659,7 +671,7 @@ async function getEvents({ from = null, to = null } = {}) {
       e.price = null;
       continue;
     }
-    const per = n / 4;
+    const per = n / OPEN_MATCH_SIZE;
     e.price = `$${Number.isInteger(per) ? per : per.toFixed(2)}`;
   }
 
