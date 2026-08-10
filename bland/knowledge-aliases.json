@@ -277,6 +277,24 @@
       "how long is the contract",
       "can I stop paying",
       "is there a minimum term"
+    ],
+    "Email and getting in touch": [
+      "what email can I use",
+      "what's your email",
+      "what is your email address",
+      "who do I email",
+      "who can I email",
+      "how do I contact you",
+      "how do I get in touch",
+      "is there an email address"
+    ],
+    "Who owns the club": [
+      "who owns the club",
+      "who are the owners",
+      "who runs the place",
+      "who runs the club",
+      "who started the club",
+      "when did you open"
     ]
   }
 }
