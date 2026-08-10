@@ -540,6 +540,47 @@ function cleanPrice(price) {
   return Number.isFinite(n) && n > 0 ? price : null;
 }
 
+const CLASS_TYPES = new Set(["PUBLIC_CLASS", "COURSE_CLASS"]);
+
+/** Overlay Kumi's per-class facts onto the public schedule, matched by class id with a
+ *  title+date fallback. Pure and exported so the naming rule is testable — it decides
+ *  what a visitor reads, and it silently disagreed with Playtomic for every clinic. */
+function applyKumiClassInfo(events, classes) {
+  const byId = new Map();
+  const byTitleDate = new Map();
+  for (const c of classes || []) {
+    const info = {
+      price: cleanPrice(c.price) || (c.price === "Free" ? "Free" : null),
+      capacity: Number.isFinite(c.max_players) ? c.max_players : null,
+      registered: Number.isFinite(c.num_registered) ? c.num_registered : null,
+      name: (c.name || "").trim() || null,
+    };
+    // A name alone is worth keeping. This used to drop any class with no price and no
+    // capacity, which would have excluded exactly the free clinics we are here to rename.
+    if (!info.price && info.capacity == null && !info.name) continue;
+    if (c.academy_class_id) byId.set(c.academy_class_id, info);
+    if (c.name && c.start_utc) {
+      const local = toLocalParts(new Date(c.start_utc), CLUB_TIMEZONE);
+      byTitleDate.set(`${c.name.trim().toLowerCase()}|${local.date}|${local.time}`, info);
+    }
+  }
+  for (const e of events) {
+    if (!CLASS_TYPES.has(e.booking_type)) continue;
+    // The title fallback can only fire when the two sources already AGREE on the name,
+    // so for a mislabelled class the id match is the only one that can help it.
+    const match =
+      byId.get(e.id) ||
+      byTitleDate.get(`${(e.title || "").trim().toLowerCase()}|${e.date}|${e.start_time}`);
+    e.price = match?.price || null; // never show a court total as a player price
+    e.capacity = match?.capacity ?? null;
+    if (match?.registered != null) e.signed_up = match.registered;
+    // Prefer the class's own name over its program's. Only ever an upgrade: with no
+    // match the bookings-API title stands, which is exactly what shipped before.
+    if (match?.name) e.title = match.name;
+  }
+  return events;
+}
+
 async function getEvents({ from = null, to = null } = {}) {
   const bookings = (await fetchPlaytomicBookings()).filter((b) =>
     EVENT_BOOKING_TYPES.has(effectiveBookingType(b)),
@@ -564,33 +605,17 @@ async function getEvents({ from = null, to = null } = {}) {
   // a player pays. Kumi's classes feed carries the real per-person price —
   // swap it in for clinics/courses, matched by class id (activity_id ==
   // academy_class_id) with a title+date fallback.
-  const CLASS_TYPES = new Set(["PUBLIC_CLASS", "COURSE_CLASS"]);
+  //
+  // It also carries the real CLASS NAME. The thirdparty bookings API returns the
+  // PROGRAM a class belongs to, not the class itself, so the Tuesday 10am clinic
+  // showed "Tennis-to-Padel: Daytime Morning Crossover" when Playtomic (and Kumi,
+  // and the coach) all call it "Midweek Morning Clinic: Tactics + Technique". All
+  // three of Foundry's clinics were mislabelled this way. Only the per-class
+  // manager endpoint exposes both, as `name` alongside a separate `program_id`,
+  // and Kumi's ingest already reads it — so the fix is to trust the feed we are
+  // already fetching rather than add a second Playtomic call per class.
   try {
-    const kumi = await fetchKumiClasses();
-    const byId = new Map();
-    const byTitleDate = new Map();
-    for (const c of kumi.classes || []) {
-      const info = {
-        price: cleanPrice(c.price) || (c.price === "Free" ? "Free" : null),
-        capacity: Number.isFinite(c.max_players) ? c.max_players : null,
-        registered: Number.isFinite(c.num_registered) ? c.num_registered : null,
-      };
-      if (!info.price && info.capacity == null) continue;
-      if (c.academy_class_id) byId.set(c.academy_class_id, info);
-      if (c.name && c.start_utc) {
-        const local = toLocalParts(new Date(c.start_utc), CLUB_TIMEZONE);
-        byTitleDate.set(`${c.name.trim().toLowerCase()}|${local.date}|${local.time}`, info);
-      }
-    }
-    for (const e of events) {
-      if (!CLASS_TYPES.has(e.booking_type)) continue;
-      const match =
-        byId.get(e.id) ||
-        byTitleDate.get(`${(e.title || "").trim().toLowerCase()}|${e.date}|${e.start_time}`);
-      e.price = match?.price || null; // never show a court total as a player price
-      e.capacity = match?.capacity ?? null;
-      if (match?.registered != null) e.signed_up = match.registered;
-    }
+    applyKumiClassInfo(events, (await fetchKumiClasses()).classes || []);
 
     const kumiT = await fetchKumiTournaments();
     const tById = new Map();
@@ -938,9 +963,13 @@ app.get("/api/events/range", async (req, res) => {
 // display/discovery endpoint (it carries per-class coach assignments, which
 // Playtomic's thirdparty bookings API does not). Proxying keeps the browser on
 // our origin (no CORS) and shields padelmaps.org behind a short cache.
+// days=35, not 14, and not only for the Coaching page any more: /api/events/range uses
+// this feed to correct class NAMES, and the calendar spans this month plus next. At 14
+// days everything past a fortnight silently kept the program name instead. 35 matches the
+// tournaments feed below and comfortably covers the ~30 days Playtomic returns at all.
 const KUMI_CLASSES_URL =
   process.env.KUMI_CLASSES_URL ||
-  "https://padelmaps.org/api/coaching/classes?slug=foundry-padel&days=14";
+  "https://padelmaps.org/api/coaching/classes?slug=foundry-padel&days=35";
 const COACH_CLASSES_TTL = 5 * 60 * 1000;
 let coachClassesCache = { data: null, fetchedAt: 0 };
 
@@ -1126,6 +1155,7 @@ export { app };
 // what the public schedule shows, but were previously unreachable from a test.
 export const __testables = {
   effectiveBookingType,
+  applyKumiClassInfo,
   groupEventBookings,
   mapBookingGroup,
   bookingDeepLink,
