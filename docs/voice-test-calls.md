@@ -42,8 +42,10 @@ Slack `#front-desk` gets a card for every call within a minute, whatever else ha
 | "Can someone call me back?" | Slack card headed **wants a callback** | Never claims it already reached a person |
 | "I want to speak to someone" | Notes what it is about, THEN transfers | Must not transfer before you say yes |
 
-A text arrives **after** you hang up, not during. That is expected: Bland's tools
-never execute, so the send happens once the call ends.
+A text should now arrive **during** the call, within a few seconds of the agent
+saying it sent one. If it only turns up after you hang up, the skill did not fire
+and the call poller caught it instead: check `/api/voice/_recent` for a request
+timestamped before the call ended.
 
 ## 3. The ones that matter most when they go wrong
 
@@ -69,14 +71,33 @@ Read a transcript and you miss all of this. Listen to a recording instead
 - Does it read the address at a pace you could write down?
 - Does it sound like the club, or like a call centre?
 
+## 5. The ones to run now that tools actually fire
+
+These are the cases that could not be tested at all while tools were dead, so
+none of them has ever been exercised on a real call.
+
+| Say this | Should happen | Watch for |
+|---|---|---|
+| "Is court 3 free at 6 tonight?" | A **live** lookup, not the briefing | Ask twice with a booking made in between; the answer must change |
+| "Text me the link, actually make that 541 555 0123" | The second number wins | A skill firing twice, or texting caller ID |
+| "Text me the link" then immediately "actually don't" | One text at most, and it says so honestly | Two texts, or claiming it cancelled one it already sent |
+| Ask for a court, then a clinic, then a text, in one call | Three skills in one call | The second skill not firing after the first |
+| "Text me the link" while the number is on the daily cap | Says it could not, offers another way | Silently claiming success. Kumi returns `ok:false` |
+| "Take a message, and also text me the booking link" | Both, in one call | Only the last one firing |
+| Give a name once, then ask for a callback | Does **not** ask your name again | |
+| Ask for a court on a day the club is closed | Says closed, does not offer times | |
+
 ## What is known-broken, so do not chase it
 
-- **Custom tools never execute.** Bland ticket T-1001, confirmed by their own
-  server-side inspection: no tool definition is injected into the inference
-  context. Every read comes from the call-start briefing, every write from the
-  call poller. A pause after "let me check" is that.
-- **The briefing is a snapshot** from when the phone was answered. A court booked
-  mid-call is not reflected.
+- **The post-call webhook never fires.** Bland ticket T-1001. Slack cards come
+  from `server/callpoller.js` polling instead, so a card can be up to a minute
+  behind the call.
+- **A tool only reaches the model through a Skill.** If someone adds a tool to
+  `default_tools` in the dashboard it will look configured and do nothing.
+  Change tools in `scripts/deploy-bland-agent.mjs` and redeploy.
+- **The briefing is still a snapshot** from when the phone was answered. It backs
+  general "what's on this week" answers; a specific day and time should trigger a
+  live lookup instead.
 - **Transfers ring the owner's mobile**, not Jake or Monica, until their numbers
   are added.
 - **No recording announcement.** Fine while testing; must be decided before the

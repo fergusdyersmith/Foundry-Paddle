@@ -1,5 +1,25 @@
 # Bland support: custom tools are never executed on inbound calls
 
+> ## RESOLVED, 9 Aug 2026: the mechanism is Skills
+>
+> A tool listed in the persona's `default_tools` is never injected into the
+> inference context. A tool attached to a **skill** is, and fires. Nothing below
+> was a configuration mistake; the whole surface we were configuring is not the
+> one that carries tools into a call.
+>
+> First real execution, 17:16:56, mid-call:
+>
+> ```
+> POST /api/voice/sms-link  {"template":"app","caller_number":"+1971770xxxx"}
+> -> {"ok":true,"speech":"Sent. You should have that in a moment."}
+> ```
+>
+> The caller received the text. Skills are configured in
+> `scripts/deploy-bland-agent.mjs`; two shape traps are recorded there.
+>
+> The rest of this document is kept as the record of what was ruled out, and is
+> the basis for the reply in `docs/bland-support-reply.md`.
+
 **Summary.** On our account, custom tools are selected by the model but never
 executed. The agent plays the tool's `speech` line and then either falls silent
 or invents an outcome. No HTTP request ever reaches our endpoint, and
