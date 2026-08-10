@@ -781,12 +781,19 @@ export function createVoiceRouter({
     const today = nowLocal(timezone);
     const days = Math.min(Math.max(1, Number(req.query.days) || 7), 14);
 
+    // Warm on EITHER being cold, not just the courts. The two caches fill
+    // independently, and gating only on bookings meant a briefing taken in the
+    // window between them went out saying "Class schedule unavailable" while
+    // the court grid was perfectly fine. That is the whole call: the briefing
+    // is fetched once, when the phone is answered, so the agent is blind to
+    // classes for its entire duration.
     let bookings = cachedBookings();
-    if (!bookings && ensureWarm) {
+    let events = cachedEvents();
+    if ((!bookings || !events) && ensureWarm) {
       await ensureWarm();
       bookings = cachedBookings();
+      events = cachedEvents();
     }
-    const events = cachedEvents();
 
     // The court grid is the single biggest thing in the agent's prompt, and the
     // prompt is re-read on every turn: a caller waits for it before every

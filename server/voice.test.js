@@ -1023,3 +1023,25 @@ describe("keeping a promise the agent made and then did not keep", () => {
     expect(linkAlreadySent("")).toBe(false);
   });
 });
+
+describe("the call-start briefing", () => {
+  it("warms when the class cache is cold even though the courts are warm", async () => {
+    // The two caches fill independently. Gating the warm-up on bookings alone
+    // sent out a briefing reading "Class schedule unavailable" beside a
+    // perfectly good court grid, and the briefing is fetched once per call, so
+    // the agent stayed blind to classes for the whole conversation.
+    let warmed = 0;
+    ctx = await boot({
+      bookings: [],
+      events: null,
+      ensureWarm: async () => {
+        warmed += 1;
+        return true;
+      },
+    });
+    const res = await fetch(`${ctx.base}/api/voice/briefing`, {
+      headers: { authorization: `Bearer ${SECRET}` },
+    });
+    expect(warmed).toBe(1);
+  });
+});
