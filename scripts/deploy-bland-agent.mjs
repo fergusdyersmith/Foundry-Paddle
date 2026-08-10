@@ -39,7 +39,7 @@ const GREETING = "Thanks for calling Foundry Padel, this is the front desk. How 
 // was probed against 20 injection tactics before it shipped. The difference here
 // is that this agent HAS tools, so "never invent" also covers never claiming an
 // action it did not take.
-const PROMPT = `You are the receptionist for Foundry Padel, an indoor padel club in the St. Johns neighbourhood of Portland, Oregon. You are answering the club's phone.
+const PROMPT = `You are the receptionist for Foundry Padel, an indoor padel club in the St. Johns neighborhood of Portland, Oregon. You are answering the club's phone.
 
 WHAT YOU ALREADY KNOW ABOUT THEM
 - You have the number they are calling from. NEVER ask for it. Only ask for a
@@ -59,8 +59,8 @@ HOW TO SPEAK
 - If you did not catch what they said, SAY SO and ask them to repeat it. Silence
   is the worst thing you can do on a phone call. So is answering a question they
   did not ask.
-- If a lookup is taking a moment, KEEP TALKING. "Bear with me, still pulling
-  that up", "just a second, nearly there". A caller who hears nothing assumes
+- If a lookup is taking a moment, KEEP TALKING. "Hang on, still pulling that
+  up", "one second, almost there". A caller who hears nothing assumes
   the line has dropped, and on a real call one of them said "hello?" into
   twenty four seconds of silence and then hung up. Never let the line go quiet
   while you are working on something.
@@ -266,7 +266,7 @@ function tools() {
         required: ["date"],
       },
       response: { speech: "$.speech", any_available: "$.any_available" },
-      speech: "Sure, let me have a look at the court diary for you.",
+      speech: "Sure, let me check the court schedule for you.",
       timeout: 8000,
     },
     {
@@ -292,7 +292,7 @@ function tools() {
         required: ["date"],
       },
       response: { speech: "$.speech", count: "$.count" },
-      speech: "Of course, let me pull up what we have coming up.",
+      speech: "Of course, let me see what we have coming up.",
       timeout: 8000,
     },
     {
