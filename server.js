@@ -545,6 +545,35 @@ function cleanPrice(price) {
 
 const CLASS_TYPES = new Set(["PUBLIC_CLASS", "COURSE_CLASS"]);
 
+/** The Playtomic match id an open match deep-links to. The event's own `id` is the
+ *  booking/activity id, which is NOT the match id, so the link is the only carrier. */
+function openMatchId(event) {
+  const m = /\/matches\/([0-9a-fA-F-]{8,})/.exec(event?.book_url || "");
+  return m ? m[1] : null;
+}
+
+/** Name an open match by the LEVELS it is for. "Open Match" alone told a visitor nothing
+ *  about whether it was for them, and level is the first thing anyone wants to know.
+ *
+ *  Straddling matches carry BOTH labels ("Intermediate/Advanced") because picking one is
+ *  a lie in either direction. A match with no known range keeps the plain title: an
+ *  unlabelled match is honest, a wrongly labelled one is not. Pure and exported — this
+ *  is visitor-facing wording, and the last untested change to this file took the
+ *  schedule down. */
+function applyKumiOpenMatchLevels(events, openMatches) {
+  const byId = new Map();
+  for (const m of openMatches || []) {
+    const labels = (m?.levels || []).filter(Boolean);
+    if (m?.playtomic_match_id && labels.length) byId.set(m.playtomic_match_id, labels);
+  }
+  for (const e of events) {
+    if (e.booking_type !== "OPEN_MATCH") continue;
+    const labels = byId.get(openMatchId(e));
+    if (labels?.length) e.title = `${labels.join("/")} Open Match`;
+  }
+  return events;
+}
+
 /** Overlay Kumi's per-class facts onto the public schedule, matched by class id with a
  *  title+date fallback. Pure and exported so the naming rule is testable — it decides
  *  what a visitor reads, and it silently disagreed with Playtomic for every clinic. */
@@ -652,6 +681,16 @@ async function getEvents({ from = null, to = null } = {}) {
     for (const e of events) {
       if (CLASS_TYPES.has(e.booking_type) || e.booking_type === "TOURNAMENT") e.price = null;
     }
+  }
+
+  // Level labels for open matches. Its OWN try: this feed is the newest dependency here
+  // and the least important thing on the page. If Kumi is unreachable the matches simply
+  // keep reading "Open Match", rather than the failure also wiping the class names and
+  // per-person prices that the block above just applied.
+  try {
+    applyKumiOpenMatchLevels(events, (await fetchKumiOpenMatches()).open_matches || []);
+  } catch (error) {
+    console.warn("open-match levels unavailable:", error?.message || error);
   }
 
   // A FULL open match is not an event, it is a closed court. Showing "4 signed up"
@@ -1013,6 +1052,22 @@ async function fetchKumiTournaments() {
   return data;
 }
 
+const KUMI_OPEN_MATCHES_URL =
+  process.env.KUMI_OPEN_MATCHES_URL ||
+  "https://padelmaps.org/api/coaching/open-matches?slug=foundry-padel&days=35";
+let kumiOpenMatchesCache = { data: null, fetchedAt: 0 };
+
+async function fetchKumiOpenMatches() {
+  if (kumiOpenMatchesCache.data && Date.now() - kumiOpenMatchesCache.fetchedAt < COACH_CLASSES_TTL) {
+    return kumiOpenMatchesCache.data;
+  }
+  const upstream = await fetch(KUMI_OPEN_MATCHES_URL, { headers: { Accept: "application/json" } });
+  if (!upstream.ok) throw new Error(`Kumi open matches fetch failed (${upstream.status})`);
+  const data = await upstream.json();
+  kumiOpenMatchesCache = { data, fetchedAt: Date.now() };
+  return data;
+}
+
 app.get("/api/coaching/classes", async (req, res) => {
   try {
     return res.json(await fetchKumiClasses());
@@ -1169,6 +1224,8 @@ export { app };
 export const __testables = {
   effectiveBookingType,
   applyKumiClassInfo,
+  applyKumiOpenMatchLevels,
+  openMatchId,
   groupEventBookings,
   mapBookingGroup,
   bookingDeepLink,

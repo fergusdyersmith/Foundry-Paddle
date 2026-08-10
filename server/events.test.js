@@ -1,6 +1,6 @@
 /** @vitest-environment node */
 import { describe, it, expect, beforeAll } from "vitest";
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -245,5 +245,113 @@ describe("full open matches stay off the schedule", () => {
     expect(src).toMatch(/const OPEN_MATCH_SIZE = 4;/);
     expect(src).toMatch(/signed_up \?\? 0\) >= OPEN_MATCH_SIZE/);
     expect(src).toMatch(/n \/ OPEN_MATCH_SIZE/); // price split shares it
+  });
+});
+
+// "Open Match" alone told a visitor nothing about whether it was for them. Levels live
+// only in Kumi — the thirdparty bookings API the schedule is built from has none.
+describe("open matches are named by the levels they are for", () => {
+  const MATCH_ID = "e9dbc5f7-69c4-4d0c-91ab-c8d6dfa1b62e";
+
+  function openMatch(overrides = {}) {
+    return {
+      id: "b6dbdff4-0c5d-4e77-9e59-2e89f2e0f077", // booking id, NOT the match id
+      title: "Open Match",
+      booking_type: "OPEN_MATCH",
+      book_url: `https://app.playtomic.com/matches/${MATCH_ID}`,
+      ...overrides,
+    };
+  }
+
+  const kumiMatch = (levels, id = MATCH_ID) => ({
+    playtomic_match_id: id,
+    levels,
+  });
+
+  it("keys off the match id in the link, not the booking id", () => {
+    // These genuinely differ on the live feed; matching on e.id finds nothing.
+    expect(T.openMatchId(openMatch())).toBe(MATCH_ID);
+    expect(T.openMatchId(openMatch())).not.toBe(openMatch().id);
+  });
+
+  it("names a single-bucket match", () => {
+    const [e] = T.applyKumiOpenMatchLevels([openMatch()], [kumiMatch(["Beginner"])]);
+    expect(e.title).toBe("Beginner Open Match");
+  });
+
+  it("names a straddling match with both labels", () => {
+    const [e] = T.applyKumiOpenMatchLevels(
+      [openMatch()],
+      [kumiMatch(["Intermediate", "Advanced"])],
+    );
+    expect(e.title).toBe("Intermediate/Advanced Open Match");
+  });
+
+  it("keeps the plain title when the level is unknown", () => {
+    // An unlabelled match is honest; a wrongly labelled one is not.
+    const [e] = T.applyKumiOpenMatchLevels([openMatch()], [kumiMatch([])]);
+    expect(e.title).toBe("Open Match");
+  });
+
+  it("keeps the plain title when Kumi knows nothing about the match", () => {
+    const [e] = T.applyKumiOpenMatchLevels([openMatch()], []);
+    expect(e.title).toBe("Open Match");
+  });
+
+  it("never renames a clinic or a tournament", () => {
+    const clinic = openMatch({ booking_type: "PUBLIC_CLASS", title: "Smash the basics" });
+    const [e] = T.applyKumiOpenMatchLevels([clinic], [kumiMatch(["Advanced"])]);
+    expect(e.title).toBe("Smash the basics");
+  });
+
+  it("does not cross-label a different match", () => {
+    const [e] = T.applyKumiOpenMatchLevels(
+      [openMatch()],
+      [kumiMatch(["Advanced"], "11111111-2222-3333-4444-555555555555")],
+    );
+    expect(e.title).toBe("Open Match");
+  });
+
+  it("survives a missing book_url", () => {
+    const [e] = T.applyKumiOpenMatchLevels(
+      [openMatch({ book_url: undefined })],
+      [kumiMatch(["Beginner"])],
+    );
+    expect(e.title).toBe("Open Match");
+  });
+
+  it("a failing levels feed cannot wipe class names or prices", () => {
+    // The class overlay runs in a separate try; this one is the newest and least
+    // important dependency on the page.
+    const fsSrc = readFileSync(new URL("../server.js", import.meta.url), "utf8");
+    // the CALL site, not the function definition (both contain the name)
+    const i = fsSrc.indexOf("applyKumiOpenMatchLevels(events, (await fetchKumiOpenMatches");
+    const before = fsSrc.lastIndexOf("try {", i);
+    const afterClasses = fsSrc.indexOf("applyKumiClassInfo(events");
+    expect(before).toBeGreaterThan(afterClasses); // its own try, opened later
+    expect(fsSrc.slice(i, i + 400)).toMatch(/catch \(error\)/);
+  });
+});
+
+// The full-open-match filter rebinds `events`, and it was declared const, so getEvents
+// threw "Assignment to constant variable" on every call and the public schedule served
+// 502s. node --check passes (it is a RUNTIME TypeError) and the unit tests above call the
+// helpers directly, so nothing caught it. This does.
+describe("getEvents can actually run", () => {
+  const src = () => readFileSync(new URL("../server.js", import.meta.url), "utf8");
+
+  it("declares events with let, because the filter rebinds it", () => {
+    expect(src()).toMatch(/let events = groupEventBookings\(bookings\)/);
+    expect(src()).not.toMatch(/const events = groupEventBookings/);
+  });
+
+  it("has no other const that is later reassigned in getEvents", () => {
+    const body = src().slice(src().indexOf("async function getEvents("));
+    const fnBody = body.slice(0, body.indexOf("\n}\n"));
+    const consts = [...fnBody.matchAll(/^\s*const (\w+) =/gm)].map((m) => m[1]);
+    for (const name of consts) {
+      const reassigned = new RegExp(`^\\s*${name} = `, "m").test(fnBody);
+      expect(reassigned, `${name} is const but reassigned`).toBe(false);
+    }
   });
 });
