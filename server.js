@@ -592,7 +592,8 @@ async function getEvents({ from = null, to = null } = {}) {
   // see sessions already under way. The public schedule must not inherit that:
   // an open match that finished an hour ago is not something to advertise.
   const nowParts = toLocalParts(new Date(), CLUB_TIMEZONE);
-  const events = groupEventBookings(bookings)
+  // `let`, not `const`: the full-open-match filter below rebinds this.
+  let events = groupEventBookings(bookings)
     .map(mapBookingGroup)
     .filter(
       (e) => e.date > nowParts.date || (e.date === nowParts.date && e.end_time > nowParts.time),
