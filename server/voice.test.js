@@ -49,6 +49,7 @@ async function boot({
       cachedEvents: () =>
         events === null ? null : { events, ageMs, stale: ageMs > 5 * 60 * 1000 },
       ensureWarm,
+      playtomicTenantId: "tenant-uuid-for-tests",
       computeAvailability: server.__testables.computeAvailability,
       notifier:
         notifier === undefined
@@ -1074,5 +1075,54 @@ describe("the call-start briefing", () => {
       headers: { authorization: `Bearer ${SECRET}` },
     });
     expect(warmed).toBe(1);
+  });
+});
+
+describe("which link a court booking actually gets", () => {
+  it("texts the club's Playtomic page, not the website that only embeds it", async () => {
+    // Booking a court is not an event, so nothing ever matched and every court
+    // caller got foundrypadel.com/book. The prompt tells them in the same
+    // breath that booking happens in the app and not on the website, so the
+    // text contradicted the call it came from.
+    const sendLink = vi.fn(async () => ({ sent: true, reason: null }));
+    ctx = await boot({ linkSender: { configured: () => true, sendLink }, events: [] });
+
+    await post(ctx.base, "/api/voice/sms-link", {
+      template: "booking",
+      query: "what the availability is tomorrow",
+      call_id: "call_courts",
+      caller_number: "+15412704585",
+    });
+
+    expect(sendLink).toHaveBeenCalledWith(
+      expect.objectContaining({ deepLink: "courts", itemId: expect.any(String) }),
+    );
+  });
+
+  it("still prefers the clinic they named over the general courts link", async () => {
+    const sendLink = vi.fn(async () => ({ sent: true, reason: null }));
+    ctx = await boot({
+      linkSender: { configured: () => true, sendLink },
+      events: [
+        {
+          title: "Off the Wall Masterclass",
+          date: "2026-08-12",
+          start_time: "20:00",
+          booking_type: "PUBLIC_CLASS",
+          id: "evt-otw",
+        },
+      ],
+    });
+
+    await post(ctx.base, "/api/voice/sms-link", {
+      template: "booking",
+      query: "the Off the Wall Masterclass",
+      call_id: "call_clinic",
+      caller_number: "+15412704585",
+    });
+
+    expect(sendLink).toHaveBeenCalledWith(
+      expect.objectContaining({ label: expect.stringContaining("Off the Wall") }),
+    );
   });
 });

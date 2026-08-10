@@ -1107,6 +1107,7 @@ app.use(
     computeAvailability,
     notifier: createNotifier(),
     linkSender: createLinkSender(),
+    playtomicTenantId: PLAYTOMIC_TENANT_ID,
     timezone: CLUB_TIMEZONE,
   }),
 );

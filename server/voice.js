@@ -487,6 +487,9 @@ export function createVoiceRouter({
   cachedBookings,
   cachedEvents,
   ensureWarm = null,
+  // The club's own Playtomic id, so a court booking can be texted as a link
+  // into Playtomic rather than to a page that only embeds it.
+  playtomicTenantId = null,
   computeAvailability,
   notifier = null,
   linkSender = null,
@@ -717,7 +720,16 @@ export function createVoiceRouter({
     const today = nowLocal(timezone);
     const events = cachedEvents();
     const matched = events ? matchEvent(text, events.events, today.date) : null;
-    const deep = matched ? deepLinkFromEvent(matched) : null;
+    // Booking a court is not an event, so nothing ever matched and every court
+    // caller got the website. That page is a Playtomic embed, and the prompt
+    // tells callers in the same breath that booking happens in the app and not
+    // on the website, so the text contradicted the call. "courts" opens the
+    // club's own Playtomic page, which is where they were going anyway.
+    const deep =
+      (matched ? deepLinkFromEvent(matched) : null) ||
+      (template === "booking" && playtomicTenantId
+        ? { kind: "courts", id: playtomicTenantId }
+        : null);
 
     const result = await linkSender.sendLink({
       phone,
