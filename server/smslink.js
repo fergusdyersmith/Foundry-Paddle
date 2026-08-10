@@ -116,6 +116,10 @@ export function linkSpeech(template, { sent, reason }) {
   switch (reason) {
     case "cooldown":
       return "I've already sent that to you in the last few minutes, so it should be there. Have a look for it.";
+    case "per_call":
+      // Three in one conversation. Almost certainly the agent looping rather
+      // than a caller who genuinely wants a fourth link.
+      return `That's a few I've sent you now, so I'll leave it there. Everything else is at ${fallback}.`;
     case "not_domestic":
       // Kumi deliberately never sends international SMS.
       return `I can't text that number, but you'll find it at ${fallback}.`;
