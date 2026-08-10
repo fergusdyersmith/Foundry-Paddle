@@ -32,6 +32,17 @@ const TRANSFER_TO = process.env.TRANSFER_PHONE_NUMBER || "+15412704585";
 
 const GREETING = "Thanks for calling Foundry Padel, this is the front desk. How can I help?";
 
+// Esteban: adult male, General American, warm and energetic, fast pace, Bland's
+// own pick for customer support. Pinned by ID rather than name because names
+// are not unique on Bland: there are several voices called "June", and a lookup
+// by name could quietly resolve to a different one.
+//
+// This is the value the live agent uses. Changing the voice in Bland's
+// dashboard does not survive: the persona is written from this file on every
+// deploy, so a dashboard edit is reverted the next time anyone runs it, and it
+// reads as "the change didn't save" rather than "something overwrote it".
+const VOICE = process.env.BLAND_VOICE || "60974bf8-151e-44e2-812e-4dc958aac5f3";
+
 // Deliberately short. A long prompt on a voice model buys latency and drift, and
 // everything factual lives in the knowledge base instead.
 //
@@ -451,7 +462,7 @@ async function main() {
     default_tools: Object.values(toolIds),
     skills: skills(toolIds),
     call_config: {
-      voice: process.env.BLAND_VOICE || "June",
+      voice: VOICE,
       language: "en-US",
       // "paddle", deliberately. The correct Spanish is pah-DEL, and the club's
       // knowledge base explains that to anyone who asks, but this voice renders
@@ -556,7 +567,7 @@ async function main() {
       temperature: 0.3,
       timezone: "America/Los_Angeles",
       language: "ENG",
-      voice: process.env.BLAND_VOICE || "June",
+      voice: VOICE,
     },
   });
   console.log(`[agent] configured ${PHONE_NUMBER}`);
@@ -598,6 +609,14 @@ async function main() {
   }
   for (const sk of liveSkills) {
     if (!(sk.tools || []).length) problems.push(`skill ${sk.name} has no tool attached`);
+  }
+  // The voice is the one setting anyone hears within a second of the phone
+  // being answered, and the only one a person is likely to change in the
+  // dashboard. Assert it, so "I changed the voice and it went back" is caught
+  // by a deploy rather than by a phone call.
+  const liveVoice = prod.call_config?.voice || prod.voice;
+  if (liveVoice && liveVoice !== VOICE) {
+    problems.push(`persona production voice is ${JSON.stringify(liveVoice)}, expected ${VOICE}`);
   }
   if (problems.length) {
     for (const p of problems) console.error(`[agent] MISCONFIGURED: ${p}`);
