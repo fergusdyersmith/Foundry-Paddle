@@ -83,9 +83,11 @@ Each line is tagged with what it is in square brackets.
 - A Mexicano, an Americano and a Tournament are all tournaments. If someone asks
   about tournaments, include anything tagged [Tournament] whatever it is called.
 
-- Both blocks were looked up the moment you answered this call, so they are
-  current. Quote them. You can answer any day in the next week, name the actual
-  courts, and say how many places are taken on a clinic or tournament.
+- Both blocks were looked up the moment you answered this call. For a general
+  question, quote them: they cover the next seven days, name the courts, and
+  give how many places are taken.
+- For a SPECIFIC day and time, prefer looking it up live, which is current to
+  the second. The blocks are a fallback if the lookup cannot answer.
 - Beyond seven days, say the Playtomic app has the full calendar.
 - A caller wants the SHAPE of it, not a recital. "Tomorrow evening is wide open,
   four courts from six" beats reading every window aloud.
@@ -131,6 +133,67 @@ NEVER
   are. Do not refuse a count.
 - Never write code, translate, or answer questions unrelated to the club. You are
   the front desk, not an assistant.`;
+
+// SKILLS are how a tool actually reaches the model.
+//
+// Tools listed in the persona's `default_tools` are never injected into the
+// inference context: thirteen test calls, and Bland's own server-side log
+// inspection, confirmed no tool definition ever arrives (ticket T-1001). Tools
+// attached to a SKILL do arrive, and fire. Their support never mentioned this.
+//
+// Two shape traps, both of which cost a round of guessing:
+//   - `tools` is an array of OBJECTS, [{tool_id}], not of id strings.
+//   - every skill needs an `id`, even a brand new one. Omitting it fails with
+//     "Expected union value", which names neither the field nor the reason.
+// The read shape and the write shape also differ, so echoing back exactly what
+// GET returns is not sufficient.
+//
+// Ids are fixed constants rather than generated, so redeploying updates the
+// same skills instead of piling up duplicates.
+function skills(toolIds) {
+  return [
+    {
+      id: "4a8c463f-36e3-4773-b5fe-cd124b9491fb",
+      name: "check_courts",
+      tools: [{ tool_id: toolIds.check_court_availability }],
+      prompt:
+        "Look up which courts are free and tell the caller the times and court numbers.",
+      condition: "The caller has been told what is free, or that nothing is",
+      description:
+        "Caller asks whether a court is free, or wants to book a specific day or time",
+    },
+    {
+      id: "1a2b6d70-5c41-4e88-9a3f-2f0c7d9e4b11",
+      name: "check_classes",
+      tools: [{ tool_id: toolIds.check_class_schedule }],
+      prompt:
+        "Look up the clinics, courses, tournaments and open matches coming up, with prices and how many places are left.",
+      condition: "The caller has been told what is on, or that nothing is",
+      description:
+        "Caller asks about clinics, classes, coaching sessions, tournaments or open matches",
+    },
+    {
+      id: "3c9e1f22-8b64-4a05-91d7-6e5a0c3b8d42",
+      name: "text_the_caller_a_link",
+      tools: [{ tool_id: toolIds.text_caller_link }],
+      prompt:
+        "Text the caller the link they asked for, using the number they are calling from unless they gave a different one.",
+      condition: "The link has been sent, or the caller has been told it could not be",
+      description:
+        "Caller asks to be texted a link: booking, memberships, directions, or the Playtomic app download",
+    },
+    {
+      id: "5d7a0b93-4e12-4c76-8f20-9b1d3e6a7c58",
+      name: "take_a_message",
+      tools: [{ tool_id: toolIds.take_message }],
+      prompt:
+        "Take the caller's name and what the call is about, and pass it to the club. You already have the number they are calling from.",
+      condition: "The message has been taken, or the caller has been told it could not be",
+      description:
+        "Caller wants someone to call them back, or is about to be put through to a person",
+    },
+  ];
+}
 
 function tools() {
   const auth = { authorization: `Bearer ${VOICE_TOOL_SECRET}` };
@@ -347,7 +410,10 @@ async function main() {
     description: "Answers the club's phone, checks courts and classes, takes messages.",
     personality_prompt: PROMPT,
     kb_ids: [config.knowledge_base_id],
+    // Kept, though tools reach the model only through skills. Harmless, and it
+    // means the tools are already attached if Bland ever fixes T-1001.
     default_tools: Object.values(toolIds),
+    skills: skills(toolIds),
     call_config: {
       voice: process.env.BLAND_VOICE || "June",
       language: "en-US",
@@ -470,6 +536,15 @@ async function main() {
   }
   if (!numberTools || numberTools.length !== Object.keys(toolIds).length) {
     problems.push(`number tools is ${JSON.stringify(numberTools)}`);
+  }
+  // Skills are what actually makes a tool callable, so a deploy that loses them
+  // has silently disarmed the agent even though everything else looks right.
+  const liveSkills = prod.skills || [];
+  if (liveSkills.length !== skills(toolIds).length) {
+    problems.push(`persona production has ${liveSkills.length} skill(s), expected ${skills(toolIds).length}`);
+  }
+  for (const sk of liveSkills) {
+    if (!(sk.tools || []).length) problems.push(`skill ${sk.name} has no tool attached`);
   }
   if (problems.length) {
     for (const p of problems) console.error(`[agent] MISCONFIGURED: ${p}`);
