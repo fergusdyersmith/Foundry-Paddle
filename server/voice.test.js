@@ -288,6 +288,37 @@ describe("texting the caller a link", () => {
     );
   });
 
+  it("sends a link straight to the clinic they named", async () => {
+    // The server has always been able to deep-link a specific event, but the
+    // tool schema had no field for saying which one. A caller asked for "the
+    // link to that clinic tomorrow" and the agent went silent for twenty four
+    // seconds, having been asked for something it could not express.
+    const sendLink = vi.fn(async () => ({ sent: true, reason: null }));
+    ctx = await boot({
+      linkSender: { configured: () => true, sendLink },
+      events: [
+        {
+          title: "Midweek Morning Clinic: Tactics + Technique",
+          date: "2026-08-11",
+          start_time: "10:00",
+          booking_type: "CLINIC",
+          id: "evt-mid",
+        },
+      ],
+    });
+
+    await post(ctx.base, "/api/voice/sms-link", {
+      template: "booking",
+      query: "the Midweek Morning Clinic tomorrow",
+      phone: "+15412704585",
+      call_id: "call_deep",
+    });
+
+    expect(sendLink).toHaveBeenCalledWith(
+      expect.objectContaining({ label: expect.stringContaining("Midweek Morning Clinic") }),
+    );
+  });
+
   it("does not claim a text went out when it did not", async () => {
     ctx = await boot({
       linkSender: {

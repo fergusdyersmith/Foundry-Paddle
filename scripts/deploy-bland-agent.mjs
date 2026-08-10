@@ -104,6 +104,9 @@ BOOKING
   sent it", not "that's on its way", not "you should have it in a moment".
 - If they give you a different number, pass it to the tool as the phone
   parameter, and read it back as you send.
+- If they want the link to a PARTICULAR class, clinic or tournament, put what
+  they asked for in query, in their words, and they get a link straight to it.
+- They can ask for more than one link in a call. Send each one.
 - If the tool says it could not, say so plainly and offer to take a message.
 - If they do not have the app yet, mention that download first. Nothing else is
   any use without it.
@@ -192,8 +195,10 @@ function skills(toolIds) {
       // Anchored on the tool returning, not on the caller being told. An exit
       // condition the agent can satisfy by talking is one it will satisfy by
       // talking: on 10 Aug it said "I've sent that link to five four one..."
-      // and never called anything.
-      condition: "text_caller_link has returned a result",
+      // and never called anything. "This link" rather than "the link", so a
+      // caller asking for a second one re-enters instead of finding the skill
+      // already finished.
+      condition: "text_caller_link has returned a result for this link",
       description:
         "Caller asks to be texted a link: booking, memberships, directions, or the Playtomic app download",
     },
@@ -298,6 +303,7 @@ function tools() {
         // the link" never has to read their own number back to us.
         caller_number: "{{from}}",
         template: "{{input.template}}",
+        query: "{{input.query}}",
         call_id: "{{call_id}}",
       },
       input_schema: {
@@ -312,12 +318,25 @@ function tools() {
             enum: ["booking", "membership", "directions", "app"],
             description: "Which link to send. Use 'app' for the Playtomic download.",
           },
+          // The server has always matched a named clinic or tournament and sent
+          // a link straight to it, but the schema gave the model nowhere to say
+          // which one. A caller asked for "the link to that clinic tomorrow"
+          // and the agent went silent for twenty four seconds: it had been
+          // asked for something the tool could not express.
+          query: {
+            type: "string",
+            description:
+              "What they asked for, in their words, e.g. 'the Midweek Morning Clinic tomorrow'. Send this whenever they want a specific class, clinic or tournament rather than the club in general.",
+          },
         },
         required: ["template"],
       },
       response: { speech: "$.speech", sent: "$.sent" },
-      speech: "Sending that over now.",
-      timeout: 9000,
+      // Short, because the tool's own reply follows it straight away. "Sending
+      // that over now" ran into "Sent, you should have that in a moment" and
+      // the agent said both in one breath.
+      speech: "One moment.",
+      timeout: 6000,
     },
     {
       name: "take_message",
