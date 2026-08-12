@@ -755,7 +755,10 @@ function minToHhmm(min) {
 // Renamed in one place so the phone agent, the briefing and the public events
 // feed cannot disagree.
 export function courtLabel(name) {
-  return String(name || "").replace(/^\s*padel\s*/i, "Court ").trim();
+  // \b so only the whole word matches: without it "Padelito" became "Court ito".
+  // Kept identical to court_label() in Kumi (app/utils/courts.py) so the schedule
+  // page and the club's texts cannot call the same court different things.
+  return String(name || "").replace(/^\s*padel\b\s*/i, "Court ").trim();
 }
 
 function courtsFromBookings(bookings) {
