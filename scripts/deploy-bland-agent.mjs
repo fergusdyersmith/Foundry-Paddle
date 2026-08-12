@@ -43,6 +43,19 @@ const GREETING = "Thanks for calling Foundry Padel, this is the front desk. How 
 // reads as "the change didn't save" rather than "something overwrote it".
 const VOICE = process.env.BLAND_VOICE || "60974bf8-151e-44e2-812e-4dc958aac5f3";
 
+// "auto" is Bland's English-and-Spanish detection. Pinned to English, a Spanish
+// caller's speech was force-transcribed into English-sounding nonsense: "¿Hola?"
+// arrived as "Paula?", the agent answered "This is Foundry Padel, how can I
+// help you?" twice, and the call ended in half a minute.
+//
+// Padel is a Spanish sport with a large Spanish-speaking following in Portland,
+// so this is a caller the club actually has. Their choice, made explicitly.
+//
+// NOT `babel` or `fluent`, which cover every language but are experimental.
+// Detection here is narrowed to the two languages this club really gets, which
+// is also the version least likely to misfire on an English caller.
+const LANGUAGE = process.env.BLAND_LANGUAGE || "auto";
+
 // Deliberately short. A long prompt on a voice model buys latency and drift, and
 // everything factual lives in the knowledge base instead.
 //
@@ -58,6 +71,8 @@ WHAT YOU ALREADY KNOW
 - If they gave their name, use it. Do not ask twice.
 
 HOW TO SPEAK
+- ANSWER IN THE LANGUAGE THEY SPEAK TO YOU IN. Spanish caller, Spanish reply,
+  for the whole call. Do not switch back to English unless they do.
 - One or two sentences. Let them talk.
 - Warm, plain and local. You work here.
 - Prices and times as a person says them: "sixty dollars", "seven PM".
@@ -420,7 +435,7 @@ async function main() {
     skills: skills(toolIds),
     call_config: {
       voice: VOICE,
-      language: "en-US",
+      language: LANGUAGE,
       // "paddle", deliberately. The correct Spanish is pah-DEL, and the club's
       // knowledge base explains that to anyone who asks, but this voice renders
       // the phonetic hint worse than the plain anglicised version. Judged by
@@ -428,6 +443,11 @@ async function main() {
       //
       // Real booleans: Bland's own docs show these as the STRINGS "false",
       // which the persona endpoint rejects outright with a 400.
+      // English only, deliberately, even now that Spanish calls are answered in
+      // Spanish. There is no per-language pronunciation guide, and "paddle" in
+      // the middle of a Spanish sentence would be worse than the anglicised
+      // version is in an English one. A Spanish speaker says pádel correctly
+      // without help.
       pronunciation_guide: [
         { word: "padel", pronunciation: "paddle", case_sensitive: false, spaced: false },
       ],
@@ -507,6 +527,11 @@ async function main() {
       //
       // Real booleans: Bland's own docs show these as the STRINGS "false",
       // which the persona endpoint rejects outright with a 400.
+      // English only, deliberately, even now that Spanish calls are answered in
+      // Spanish. There is no per-language pronunciation guide, and "paddle" in
+      // the middle of a Spanish sentence would be worse than the anglicised
+      // version is in an English one. A Spanish speaker says pádel correctly
+      // without help.
       pronunciation_guide: [
         { word: "padel", pronunciation: "paddle", case_sensitive: false, spaced: false },
       ],
@@ -523,7 +548,7 @@ async function main() {
       interruption_threshold: 400,
       temperature: 0.3,
       timezone: "America/Los_Angeles",
-      language: "ENG",
+      language: LANGUAGE,
       voice: VOICE,
     },
   });
