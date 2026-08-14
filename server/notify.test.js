@@ -333,3 +333,37 @@ describe("a phone number the voice agent mangled", () => {
     expect(normalizePhone("+447700900123")).toBe("+447700900123");
   });
 });
+
+describe("one call, one card, whoever reports it", () => {
+  it("edits rather than posts when both the webhook and the poller report a call", async () => {
+    // Bland's post-call webhook started firing after two days of silence, and
+    // the poller that had been covering for it kept running. Every call then
+    // produced two identical "Call finished" cards twenty seconds apart.
+    const fetchImpl = tsFetch("1723300000.000100");
+    const notifier = createNotifier({ ...BOT, fetchImpl });
+    const summary = {
+      ...RECORD,
+      reason: "Caller greeted the front desk in Spanish",
+      callSummary: true,
+    };
+    await notifier.notifyMessage(summary);
+    await notifier.notifyMessage({ ...summary, durationMin: 0.3 });
+
+    expect(fetchImpl.mock.calls[0][0]).toBe("https://slack.com/api/chat.postMessage");
+    expect(fetchImpl.mock.calls[1][0]).toBe("https://slack.com/api/chat.update");
+  });
+
+  it("does not print the same summary twice when it merges", async () => {
+    const fetchImpl = tsFetch("1723300000.000100");
+    const notifier = createNotifier({ ...BOT, fetchImpl });
+    const summary = { ...RECORD, reason: "Greeted in Spanish", callSummary: true };
+    await notifier.notifyMessage(summary);
+    await notifier.notifyMessage(summary);
+
+    // Once in the blocks, once in the notification banner, and no more: the
+    // merge must not stack a repeated report on top of itself.
+    const body = JSON.parse(fetchImpl.mock.calls[1][1].body);
+    const section = body.blocks.find((b) => b.text?.text?.includes("What they wanted"));
+    expect(section.text.text.split("Greeted in Spanish").length - 1).toBe(1);
+  });
+});

@@ -1099,6 +1099,15 @@ app.use(
   }),
 );
 
+// ONE notifier, shared by the tool endpoints and the call poller.
+//
+// It keeps a call_id -> Slack message map so a second report about the same
+// call edits the first card instead of posting another. Two instances meant
+// two maps, so neither could see the other's card. The moment Bland's post-call
+// webhook started working, every call produced two identical "Call finished"
+// cards twenty seconds apart, from the webhook and then the poller.
+const notifier = createNotifier();
+
 // Tool endpoints for the Bland inbound receptionist. Handed cache-only
 // accessors on purpose: these run mid-phone-call and must never block on
 // Playtomic. See server/voice.js for the trust boundary.
@@ -1108,7 +1117,7 @@ app.use(
     cachedEvents,
     ensureWarm,
     computeAvailability,
-    notifier: createNotifier(),
+    notifier,
     linkSender: createLinkSender(),
     playtomicTenantId: PLAYTOMIC_TENANT_ID,
     timezone: CLUB_TIMEZONE,
@@ -1214,7 +1223,7 @@ if (isEntrypoint) {
   createCallPoller({
     apiKey: process.env.BLAND_API_KEY,
     number: process.env.CLUB_PHONE_NUMBER || "+19715217887",
-    notifier: createNotifier(),
+    notifier,
     linkSender: createLinkSender(),
     cachedEvents,
     timezone: CLUB_TIMEZONE,

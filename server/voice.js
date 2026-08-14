@@ -896,7 +896,12 @@ export function createVoiceRouter({
       const body = req.body || {};
       const from = normalizePhone(body.from) || null;
       const summary = sanitize(body.summary, 600);
+      // Drop Bland's "auto-generated" turn. It is the dynamic_data briefing we
+      // injected, and without this filter the whole week's court grid was
+      // posted to Slack labelled "Caller:", as though someone had read it down
+      // the phone. The poller has always filtered it; this path never did.
       const lines = (body.transcripts || [])
+        .filter((t) => t.user !== "auto-generated")
         .map((t) => `${t.user === "assistant" ? "Agent" : "Caller"}: ${sanitize(t.text, 200)}`)
         .filter((l) => l.length > 8);
 
