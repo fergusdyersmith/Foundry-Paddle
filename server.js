@@ -1100,6 +1100,8 @@ app.use(
   }),
 );
 
+
+
 // ONE notifier, shared by the tool endpoints and the call poller.
 //
 // It keeps a call_id -> Slack message map so a second report about the same
@@ -1119,6 +1121,7 @@ app.use(
       .split(",")
       .map((n) => n.trim())
       .filter(Boolean),
+    notifier,
     publicUrl: process.env.SITE_BASE_URL || "https://www.foundrypadel.com",
   }),
 );

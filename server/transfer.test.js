@@ -16,10 +16,10 @@ function sign(url, params) {
   return crypto.createHmac("sha1", TOKEN).update(Buffer.from(data, "utf-8")).digest("base64");
 }
 
-async function boot({ ringTo = [JAKE, MONICA] } = {}) {
+async function boot({ ringTo = [JAKE, MONICA], notifier } = {}) {
   const app = express();
   app.use(express.json());
-  app.use(createTransferRouter({ authToken: TOKEN, ringTo, publicUrl: PUBLIC }));
+  app.use(createTransferRouter({ authToken: TOKEN, ringTo, notifier, publicUrl: PUBLIC }));
   const listener = app.listen(0);
   await new Promise((r) => listener.once("listening", r));
   return {
@@ -103,8 +103,14 @@ describe("both phones ring at once", () => {
     const xml = await (await post(ctx, "/api/voice/transfer", { CallSid: "CA1" })).text();
     expect(xml).toContain("/api/voice/transfer/whisper");
 
-    const whisper = await (await post(ctx, "/api/voice/transfer/whisper", { CallSid: "CA1" })).text();
-    expect(whisper).toContain("Foundry Padel front desk");
+    // The club line and an agent transfer are different situations, and the
+    // owner deserves to know which one is on the other end.
+    const direct = await (await post(ctx, "/api/voice/transfer/whisper", { CallSid: "CA1" })).text();
+    expect(direct).toContain("Foundry Padel club line");
+    const agent = await (
+      await post(ctx, "/api/voice/transfer/whisper?src=agent", { CallSid: "CA1" })
+    ).text();
+    expect(agent).toContain("Foundry Padel front desk");
     await ctx.close();
   });
 
@@ -119,13 +125,28 @@ describe("both phones ring at once", () => {
 });
 
 describe("when nobody picks up", () => {
-  it("answers as the club, not as somebody's personal voicemail", async () => {
+  it("does not ask an agent-transferred caller for a message twice", async () => {
+    // The receptionist took one before transferring. Asking again says nobody
+    // was listening the first time.
+    const ctx = await boot();
+    const xml = await (
+      await post(ctx, "/api/voice/transfer/after?src=agent", {
+        CallSid: "CA1",
+        DialCallStatus: "no-answer",
+      })
+    ).text();
+    expect(xml).toContain("We have your message");
+    expect(xml).not.toContain("<Record");
+    await ctx.close();
+  });
+
+  it("takes a voicemail when the club line rings out, since nobody took a message", async () => {
     const ctx = await boot();
     const xml = await (
       await post(ctx, "/api/voice/transfer/after", { CallSid: "CA1", DialCallStatus: "no-answer" })
     ).text();
-    expect(xml).toContain("nobody's free");
-    expect(xml).toContain("someone will get back to you");
+    expect(xml).toContain("<Record");
+    expect(xml).toContain("Sorry we missed you");
     await ctx.close();
   });
 
@@ -136,7 +157,7 @@ describe("when nobody picks up", () => {
       const xml = await (
         await post(ctx, "/api/voice/transfer/after", { CallSid: "CA1", DialCallStatus: status })
       ).text();
-      expect(xml).toContain("someone will get back to you");
+      expect(xml).toContain("<Record");
       await ctx.close();
     },
   );
@@ -150,6 +171,74 @@ describe("when nobody picks up", () => {
     ).text();
     expect(xml).toContain("<Hangup/>");
     expect(xml).not.toContain("<Say");
+    await ctx.close();
+  });
+});
+
+describe("a voicemail nobody listens to is a lost customer", () => {
+  function spyNotifier() {
+    const calls = [];
+    return {
+      calls,
+      configured: () => true,
+      notifyMessage: async (r) => {
+        calls.push(r);
+        return { delivered: true, channel: "slack" };
+      },
+    };
+  }
+
+  it("posts the recording to Slack the moment it exists, not when the transcript does", async () => {
+    // Twilio's transcript can be a minute behind. Waiting for it would leave a
+    // caller unanswered for that minute with nothing in the channel to show it.
+    const notifier = spyNotifier();
+    const ctx = await boot({ notifier });
+    await post(ctx, "/api/voice/transfer/voicemail", {
+      CallSid: "CA-vm",
+      From: "+15417770000",
+      RecordingUrl: "https://api.twilio.com/rec/RE123",
+      RecordingDuration: "18",
+    });
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(notifier.calls).toHaveLength(1);
+    expect(notifier.calls[0].recordingUrl).toBe("https://api.twilio.com/rec/RE123.mp3");
+    expect(notifier.calls[0].reason).toContain("Listen to the recording");
+    expect(notifier.calls[0].phone).toBe("+15417770000");
+    await ctx.close();
+  });
+
+  it("carries the same call id both times, so the transcript edits the card", async () => {
+    const notifier = spyNotifier();
+    const ctx = await boot({ notifier });
+    const body = { CallSid: "CA-vm", From: "+15417770000", RecordingUrl: "https://x/RE1" };
+    await post(ctx, "/api/voice/transfer/voicemail", body);
+    await post(ctx, "/api/voice/transfer/voicemail", {
+      ...body,
+      TranscriptionText: "Hi, it's Dana, wondering about court hire Saturday.",
+    });
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(notifier.calls.map((c) => c.callId)).toEqual(["CA-vm", "CA-vm"]);
+    expect(notifier.calls[1].reason).toContain("Dana");
+    await ctx.close();
+  });
+
+  it("hangs up straight away rather than making the caller wait on Slack", async () => {
+    const ctx = await boot({ notifier: spyNotifier() });
+    const xml = await (
+      await post(ctx, "/api/voice/transfer/voicemail", { CallSid: "CA-vm" })
+    ).text();
+    expect(xml).toContain("<Hangup/>");
+    await ctx.close();
+  });
+
+  it("still refuses an unsigned voicemail callback", async () => {
+    const notifier = spyNotifier();
+    const ctx = await boot({ notifier });
+    const res = await post(ctx, "/api/voice/transfer/voicemail", { CallSid: "CA-vm" }, { signed: false });
+    expect(res.status).toBe(403);
+    expect(notifier.calls).toHaveLength(0);
     await ctx.close();
   });
 });
