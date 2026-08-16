@@ -8,6 +8,7 @@ import { createVoiceRouter } from "./server/voice.js";
 import { createNotifier } from "./server/notify.js";
 import { createLinkSender } from "./server/smslink.js";
 import { createCallPoller } from "./server/callpoller.js";
+import { createTransferRouter } from "./server/transfer.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // SITE_DIST exists so the routing tests can point at a fixture tree instead of
@@ -1107,6 +1108,20 @@ app.use(
 // webhook started working, every call produced two identical "Call finished"
 // cards twenty seconds apart, from the webhook and then the poller.
 const notifier = createNotifier();
+
+// Where a transferred call rings. Twilio, not Bland: Bland can only hand off to
+// one number and cannot tell whether anyone answered.
+app.use(
+  createTransferRouter({
+    authToken: process.env.TWILIO_AUTH_TOKEN,
+    // Jake and Monica. Both ring together, first to answer takes the caller.
+    ringTo: (process.env.TRANSFER_RING_TO || "")
+      .split(",")
+      .map((n) => n.trim())
+      .filter(Boolean),
+    publicUrl: process.env.SITE_BASE_URL || "https://www.foundrypadel.com",
+  }),
+);
 
 // Tool endpoints for the Bland inbound receptionist. Handed cache-only
 // accessors on purpose: these run mid-phone-call and must never block on

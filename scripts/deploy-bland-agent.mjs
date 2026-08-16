@@ -26,9 +26,18 @@ const ENCRYPTED_KEY = process.env.BLAND_ENCRYPTED_KEY; // BYOT: our own Twilio n
 const PHONE_NUMBER = process.env.CLUB_PHONE_NUMBER || "+19715217887";
 const SITE = process.env.SITE_BASE_URL || "https://www.foundrypadel.com";
 
-// Testing only. Jake's and Monica's numbers go here once the agent has been
-// heard end to end.
-const TRANSFER_TO = process.env.TRANSFER_PHONE_NUMBER || "+15412704585";
+// Bland transfers here, and this is NOT a person. It is a Twilio number we own
+// whose voice webhook points at /api/voice/transfer, which rings Jake and
+// Monica together and answers as the club if neither picks up.
+//
+// Bland cannot do that itself: transfer_list routes by department rather than
+// falling back, there is no ring timeout, and a transfer never returns to the
+// agent. Handing off straight to a mobile drops an unanswered caller into one
+// owner's personal voicemail, which the other never sees.
+//
+// The owners' actual numbers live in TRANSFER_RING_TO on Railway, never here:
+// this file is public in the repo.
+const TRANSFER_TO = process.env.TRANSFER_PHONE_NUMBER || "+15035637442";
 
 const GREETING = "Thanks for calling Foundry Padel, this is the front desk. How can I help?";
 
