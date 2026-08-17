@@ -1130,6 +1130,8 @@ app.use(
     recentLog,
     // The club's own line, so both owners' phones can show it by name.
     callerId: process.env.CLUB_PHONE_NUMBER || "+19715217887",
+    // Unset this and missed calls go back to voicemail on the next deploy.
+    aiFallbackUrl: process.env.VOICE_AI_FALLBACK_URL || null,
     publicUrl: process.env.SITE_BASE_URL || "https://www.foundrypadel.com",
   }),
 );

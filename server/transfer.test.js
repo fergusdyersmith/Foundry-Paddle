@@ -16,10 +16,12 @@ function sign(url, params) {
   return crypto.createHmac("sha1", TOKEN).update(Buffer.from(data, "utf-8")).digest("base64");
 }
 
-async function boot({ ringTo = [JAKE, MONICA], notifier, callerId } = {}) {
+async function boot({ ringTo = [JAKE, MONICA], notifier, callerId, aiFallbackUrl } = {}) {
   const app = express();
   app.use(express.json());
-  app.use(createTransferRouter({ authToken: TOKEN, ringTo, notifier, callerId, publicUrl: PUBLIC }));
+  app.use(
+    createTransferRouter({ authToken: TOKEN, ringTo, notifier, callerId, aiFallbackUrl, publicUrl: PUBLIC }),
+  );
   const listener = app.listen(0);
   await new Promise((r) => listener.once("listening", r));
   return {
@@ -510,6 +512,76 @@ describe("what Jake actually hears when he answers", () => {
       await post(ctx, "/api/voice/transfer/accept?parent=CA-p", { CallSid: "L", Digits: "1" })
     ).text();
     expect(xml).toContain("Connecting you now");
+    await ctx.close();
+  });
+});
+
+describe("when nobody answers, the receptionist picks up", () => {
+  const BLAND = "https://server.aws.dc8.bland.ai/incoming?encrypted_key=k&user_id=u";
+
+  it("hands the live call over rather than dialling a second one", async () => {
+    // Redirect reuses the call that already exists: no second leg, no second
+    // number, no second per-minute charge, and the caller does not hear it ring
+    // again.
+    const ctx = await boot({ aiFallbackUrl: BLAND });
+    const xml = await (
+      await post(ctx, "/api/voice/transfer/after?parent=CA-ai1", {
+        CallSid: "CA1",
+        DialCallStatus: "no-answer",
+      })
+    ).text();
+    expect(xml).toContain("<Redirect");
+    expect(xml).toContain("encrypted_key=k");
+    expect(xml).not.toContain("<Dial");
+    expect(xml).not.toContain("<Record");
+    await ctx.close();
+  });
+
+  it("still hangs up quietly when a person took the call", async () => {
+    const ctx = await boot({ aiFallbackUrl: BLAND });
+    await post(ctx, "/api/voice/transfer/accept?parent=CA-live", { CallSid: "L", Digits: "1" });
+    const xml = await (
+      await post(ctx, "/api/voice/transfer/after?parent=CA-live", {
+        CallSid: "CA1",
+        DialCallStatus: "completed",
+      })
+    ).text();
+    expect(xml).toContain("<Hangup/>");
+    expect(xml).not.toContain("<Redirect");
+    await ctx.close();
+  });
+
+  it("does not post a missed-call card the agent is about to improve on", async () => {
+    // The agent's own summary says what the caller wanted. "Nobody answered"
+    // beside it is just a second row to work through.
+    const calls = [];
+    const notifier = {
+      configured: () => true,
+      notifyMessage: async (r) => {
+        calls.push(r);
+        return { delivered: true, channel: "slack" };
+      },
+    };
+    const ctx = await boot({ aiFallbackUrl: BLAND, notifier });
+    await post(ctx, "/api/voice/transfer/after?parent=CA-ai2", {
+      CallSid: "CA1",
+      From: "+15417770000",
+      DialCallStatus: "no-answer",
+    });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(calls).toHaveLength(0);
+    await ctx.close();
+  });
+
+  it("falls back to voicemail when no AI is configured", async () => {
+    const ctx = await boot();
+    const xml = await (
+      await post(ctx, "/api/voice/transfer/after?parent=CA-ai3", {
+        CallSid: "CA1",
+        DialCallStatus: "no-answer",
+      })
+    ).text();
+    expect(xml).toContain("<Record");
     await ctx.close();
   });
 });

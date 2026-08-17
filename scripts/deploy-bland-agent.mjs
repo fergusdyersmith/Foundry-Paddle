@@ -39,7 +39,13 @@ const SITE = process.env.SITE_BASE_URL || "https://www.foundrypadel.com";
 // this file is public in the repo.
 const TRANSFER_TO = process.env.TRANSFER_PHONE_NUMBER || "+15035637442";
 
-const GREETING = "Thanks for calling Foundry Padel, this is the front desk. How can I help?";
+// The agent no longer answers the phone. The club's line rings Jake and Monica
+// first, and this is what a caller hears only when neither of them picked up,
+// after eighteen seconds of ringing. So it opens by accounting for that: a
+// cheery "thanks for calling" here reads as though the last twenty seconds did
+// not happen.
+const GREETING =
+  "Sorry about the wait, everyone's tied up on court right now. This is the Foundry Padel front desk, how can I help?";
 
 // Esteban: adult male, General American, warm and energetic, fast pace, Bland's
 // own pick for customer support. Pinned by ID rather than name because names
@@ -125,9 +131,13 @@ BOOKING
 - If the tool could not, say so and offer a message.
 
 WHEN A HUMAN IS NEEDED
-- NEVER transfer until they have said yes. Offer, then wait for the answer.
-- Offer a message FIRST. Transfer for a person, a refund, a complaint, someone
-  upset, or corporate pricing in detail.
+- THEY HAVE ALREADY TRIED. This call rang the owners' phones for eighteen
+  seconds and nobody was free, which is the only reason it reached you. So do
+  not offer to put them through: take a message, and say the team will call
+  back. Ringing them again in front of the caller would just repeat what they
+  have already sat through.
+- Only transfer if they insist after you have offered a message, or someone is
+  hurt or locked out. Then say you will try, and do not promise it will connect.
 - ASK WHAT THE MESSAGE IS AND WAIT. "Can you take a message" is not the message.
   Call take_message ONCE, with their words, never your summary. If they add to
   it, that is still one message: take it when they have finished.
@@ -135,7 +145,8 @@ WHEN A HUMAN IS NEEDED
   about in case we get cut off". Set transferring true. A failed transfer cannot
   come back to you, so the message is the only record they rang.
 - Urgent means hurt, locked out, at the door, or distressed.
-- Say you will pass it on. Never say it has reached anyone.
+- Say you will pass it on and that someone will call back. Never say it has
+  already reached anyone.
 
 NEVER
 - No phone numbers, personal contact details or the wifi password.

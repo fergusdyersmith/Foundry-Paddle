@@ -119,6 +119,18 @@ export function createTransferRouter({
   // The same buffer /api/voice/_recent serves. Ring group calls belong there
   // too: without it, checking whether a call worked means reading Railway logs.
   recentLog = null,
+  // Bland's inbound webhook. When set, a call nobody answered is handed to the
+  // AI receptionist instead of a recording: it can often just answer the
+  // question, and when it cannot it takes a message in the caller's own words.
+  //
+  // Twilio's own transcription made this worth doing. Three voicemails
+  // produced "On This is a task voice mail" and "The.", so the text beside a
+  // recording was noise. Bland transcribes the whole conversation properly and
+  // in Spanish as well as English.
+  //
+  // Unset it and the voicemail comes back on the next deploy. That is the
+  // rollback.
+  aiFallbackUrl = null,
 }) {
   const router = express.Router();
 
@@ -301,7 +313,10 @@ export function createTransferRouter({
     // The caller's number no longer reaches the handsets, because caller ID now
     // shows the club line instead. So every call goes to Slack: without this,
     // an answered call would leave no record of who rang.
-    if (!fromAgent(req) && notifier?.configured()) {
+    // Skipped when the AI is about to take over: it posts what the caller
+    // actually wanted, which beats "nobody answered" by enough that two cards
+    // for one call would just be noise.
+    if (!fromAgent(req) && notifier?.configured() && !(aiFallbackUrl && !tookIt)) {
       notifier
         .notifyMessage({
           name: req.body?.From ? `Caller ${req.body.From}` : "Caller",
@@ -337,9 +352,25 @@ export function createTransferRouter({
         );
     }
 
-    // Nobody answered and nobody has taken a message, so this is the club's
-    // only chance to keep the call. Recording, rather than an owner's personal
-    // voicemail, because this one reaches both of them and lands in Slack.
+    // Nobody answered. Hand the caller to the receptionist rather than to a
+    // beep: most calls to a club are a question it can answer outright, and a
+    // caller who gets their answer at eight in the evening is worth more than a
+    // tidy voicemail nobody has heard yet.
+    //
+    // Redirect, not another Dial. It hands over the call that already exists,
+    // so there is no second leg, no second number, and no second per-minute
+    // charge, and the caller does not hear it ring again.
+    if (aiFallbackUrl) {
+      console.log("[transfer] handing to the AI receptionist %s", JSON.stringify({ callSid: req.body?.CallSid }));
+      observe("/transfer/after", { ...outcome, handedToAgent: true });
+      return res
+        .type("text/xml")
+        .send(`<Response><Redirect method="POST">${escapeXml(aiFallbackUrl)}</Redirect></Response>`);
+    }
+
+    // No AI configured, so this is the club's only chance to keep the call.
+    // Recording, rather than an owner's personal voicemail, because this one
+    // reaches both of them and lands in Slack.
     const done = `${publicUrl}/api/voice/transfer/voicemail`;
     res.type("text/xml").send(
       `<Response>` +
