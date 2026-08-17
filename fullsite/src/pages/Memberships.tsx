@@ -5,9 +5,12 @@ import BookCTA from "@/components/BookCTA";
 import StayInTouchForm from "@/components/StayInTouchForm";
 import Seo from "@/components/Seo";
 
+// The t-shirt lives here rather than in each tier's list: it was the same line repeated
+// three times, which is what this section is for.
 const sharedBenefits = [
-  "All-hours access to the upstairs lounge and observation deck",
-  "Special Members Only events",
+  "24 hour Elevation Lounge and gym access",
+  "Members Only events",
+  "Special Founding Member Foundry Padel t-shirt",
   "10% Discount on In-Store Merchandise",
   "Free Stuff: when we get free stuff, you get free stuff!",
 ];
@@ -51,11 +54,12 @@ const rateCard = [
 // membership and then never needs touching, which is the whole reason the
 // structure looks like this.
 //
-// Clinics, tournaments and events split by TIME, not by product:
+// Clinics, tournaments and events split by TIME, not by product. The off-peak side is
+// now the SAME on every tier (Jake, 2026-08-17): the ladder is the peak side only.
 //                    peak                          off-peak
-//   Student          standard price                25% off
-//   Regular          $25 credit                    25% off
-//   Padelhead        $50 credit                    50% off
+//   Student          standard price                tournaments 50% off,
+//   Regular          $25 credit                    clinics and lessons 25% off,
+//   Padelhead        $50 credit                    on all three tiers
 //
 // Playtomic can discount an activity, but only by hand-pricing each session, so every
 // off-peak clinic on the schedule is a recurring manual job for staff.
@@ -109,11 +113,11 @@ const tiers = [
       // Peak first, then off-peak, then the benefits that apply at any hour.
       "Peak courts, clinics and events at standard rates",
       "Unlimited free off-peak play (your spot on a court)",
-      "Off-peak clinics, tournaments and events at 25% off",
+      "Off-peak tournaments at 50% off",
+      "Off-peak clinics and lessons at 25% off",
       "7-day booking window",
       "1 free 'New Guest' pass/month (expires at month end)",
       "50% discount on padel rentals",
-      "Free Foundry Padel T-shirt",
     ],
     highlight: false,
   },
@@ -121,18 +125,18 @@ const tiers = [
     name: "REGULAR",
     price: "$150",
     period: "/mo",
-    desc: "Unlimited off-peak, and a quarter off every peak booking.",
+    desc: "Unlimited off-peak, and a quarter off your share of every peak booking.",
     offPeakPerWeek: 2, peakPerWeek: 2, peakDiscount: 0.25, creditMonthly: 25,
     playLine: "Playing 2 off-peak + 2 peak a week",
     features: [
-      "25% off every peak court booking",
+      "25% off your share of every peak court booking",
       "$25/month credit for peak clinics, tournaments and events",
       "Unlimited free off-peak play (your spot on a court)",
-      "Off-peak clinics, tournaments and events at 25% off",
+      "Off-peak tournaments at 50% off",
+      "Off-peak clinics and lessons at 25% off",
       "10-day booking window",
       "1 free 'New Guest' pass/month (expires at month end)",
       "50% discount on padel rentals",
-      "Free Foundry Padel T-shirt",
     ],
     highlight: false,
   },
@@ -140,18 +144,18 @@ const tiers = [
     name: "PADELHEAD",
     price: "$200",
     period: "/mo",
-    desc: "For players who live at peak times.",
+    desc: "For players playing 2 or more times per week.",
     offPeakPerWeek: 2, peakPerWeek: 3, peakDiscount: 0.5, creditMonthly: 50,
     playLine: "Playing 2 off-peak + 3 peak a week",
     features: [
-      "50% off every peak court booking",
+      "50% off your share of every peak court booking",
       "$50/month credit for peak clinics, tournaments and events",
       "Unlimited free off-peak play (your spot on a court)",
-      "Off-peak clinics, tournaments and events at 50% off",
+      "Off-peak tournaments at 50% off",
+      "Off-peak clinics and lessons at 25% off",
       "12-day booking window",
       "1 free 'New Guest' pass/month (expires at month end)",
       "50% discount on padel rentals",
-      "Free Foundry Padel T-shirt",
     ],
     highlight: true,
   },
@@ -203,10 +207,10 @@ const Memberships = () => {
             <h2 className="font-display text-2xl sm:text-3xl text-foreground">ALL MEMBERS RECEIVE</h2>
             <div className="h-px w-12 bg-primary" />
           </div>
-          {/* Deliberately 2x2, not 3-up. There are four benefits, so three columns left
-              one orphaned on its own row. Left-aligned inside the cells (the section is
-              centred) because four centred items of different lengths have no common
-              edge to read down. */}
+          {/* Two columns, not three: at this count three columns leave an orphan on its
+              own row. Left-aligned inside the cells (the section itself is centred)
+              because centred items of different lengths have no common edge to read
+              down. */}
           <div className="grid sm:grid-cols-2 gap-x-10 gap-y-4 max-w-2xl mx-auto text-left">
             {sharedBenefits.map((benefit) => (
               <div key={benefit} className="flex items-start gap-2">
@@ -342,9 +346,10 @@ const Memberships = () => {
             calendar month. Your club credit is different: it recharges on your own renewal
             date, set by the day you joined and not by the calendar, so if you join on the
             20th your credit arrives on the 20th. Credit is for clinics, tournaments and events at
-            PEAK times. Off-peak ones are discounted directly instead, 25% on Student and
-            Regular and 50% on Padelhead, and peak court time is covered by your tier's
-            court discount. Part
+            PEAK times. Off-peak ones are discounted directly instead, the same on every
+            tier: 50% off tournaments and 25% off clinics and lessons. Peak court time is
+            covered by your tier's court discount, which applies to your own share of the
+            court rather than the whole court. Part
             payment is not possible, so if something costs more than your balance, top your
             wallet up before you book.
           </p>
