@@ -60,8 +60,17 @@ export function createTransferRouter({
   notifier = null,
   publicUrl = "https://www.foundrypadel.com",
   ringSeconds = 25,
+  // The same buffer /api/voice/_recent serves. Ring group calls belong there
+  // too: without it, checking whether a call worked means reading Railway logs.
+  recentLog = null,
 }) {
   const router = express.Router();
+
+  function observe(path, body) {
+    if (!recentLog) return;
+    recentLog.unshift({ at: new Date().toISOString(), path, auth: "twilio", body });
+    recentLog.length = Math.min(recentLog.length, 20);
+  }
   // Twilio posts a form, and express.json() upstream will not touch it.
   const form = express.urlencoded({ extended: false });
 
@@ -85,15 +94,14 @@ export function createTransferRouter({
 
   router.post("/api/voice/transfer", form, (req, res) => {
     if (!authorize(req, res)) return;
-    console.log(
-      "[transfer] inbound %s",
-      JSON.stringify({
-        from: req.body?.From,
-        to: req.body?.To,
-        src: req.query?.src || "direct",
-        callSid: req.body?.CallSid,
-      }),
-    );
+    const inbound = {
+      from: req.body?.From,
+      to: req.body?.To,
+      src: req.query?.src || "direct",
+      callSid: req.body?.CallSid,
+    };
+    console.log("[transfer] inbound %s", JSON.stringify(inbound));
+    observe("/transfer", { ...inbound, ringing: ringTo.length });
 
     if (!ringTo.length) {
       // Never drop a caller in silence. In the agent's case they have just been
@@ -138,10 +146,11 @@ export function createTransferRouter({
   router.post("/api/voice/transfer/after", form, (req, res) => {
     if (!authorize(req, res)) return;
     const status = req.body?.DialCallStatus;
-    console.log(
-      "[transfer] outcome %s",
-      JSON.stringify({ status, src: req.query?.src || "direct", callSid: req.body?.CallSid }),
-    );
+    const outcome = { status, src: req.query?.src || "direct", callSid: req.body?.CallSid };
+    console.log("[transfer] outcome %s", JSON.stringify(outcome));
+    // "completed" means somebody answered. Anything else and the caller is
+    // about to be asked for a voicemail.
+    observe("/transfer/after", { ...outcome, answered: status === "completed" });
 
     // Someone answered and the conversation is over. Without this check Twilio
     // falls through and reads an apology at the caller after a perfectly good
@@ -187,15 +196,14 @@ export function createTransferRouter({
 
     const recording = req.body?.RecordingUrl;
     const text = req.body?.TranscriptionText;
-    console.log(
-      "[voicemail] %s",
-      JSON.stringify({
-        from: req.body?.From,
-        callSid: req.body?.CallSid,
-        seconds: req.body?.RecordingDuration,
-        transcribed: Boolean(text),
-      }),
-    );
+    const vm = {
+      from: req.body?.From,
+      callSid: req.body?.CallSid,
+      seconds: req.body?.RecordingDuration,
+      transcribed: Boolean(text),
+    };
+    console.log("[voicemail] %s", JSON.stringify(vm));
+    observe("/transfer/voicemail", vm);
 
     if (!notifier?.configured()) {
       console.error("[voicemail] NOT DELIVERED, no notifier configured");

@@ -242,3 +242,26 @@ describe("a voicemail nobody listens to is a lost customer", () => {
     await ctx.close();
   });
 });
+
+describe("checking whether a call worked should be one request", () => {
+  it("records ring group calls where /api/voice/_recent can see them", async () => {
+    // Two real calls landed and _recent showed nothing, because only the AI
+    // tool endpoints wrote to it. Confirming the ring group worked meant
+    // reading Railway logs, which is the detour _recent exists to remove.
+    const recentLog = [];
+    const app = express();
+    app.use(express.json());
+    app.use(createTransferRouter({ authToken: TOKEN, ringTo: [JAKE, MONICA], publicUrl: PUBLIC, recentLog }));
+    const listener = app.listen(0);
+    await new Promise((r) => listener.once("listening", r));
+    const ctx = { base: `http://127.0.0.1:${listener.address().port}` };
+
+    await post(ctx, "/api/voice/transfer", { CallSid: "CA1", From: "+15417770000" });
+    await post(ctx, "/api/voice/transfer/after", { CallSid: "CA1", DialCallStatus: "no-answer" });
+
+    expect(recentLog.map((r) => r.path)).toEqual(["/transfer/after", "/transfer"]);
+    expect(recentLog[0].body.answered).toBe(false);
+    expect(recentLog[1].body.from).toBe("+15417770000");
+    await new Promise((r) => listener.close(r));
+  });
+});

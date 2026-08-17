@@ -494,6 +494,8 @@ export function createVoiceRouter({
   notifier = null,
   linkSender = null,
   timezone = "America/Los_Angeles",
+  // Shared with the transfer router, so one place answers "what just happened".
+  recentLog = null,
 }) {
   const router = express.Router();
 
@@ -503,7 +505,11 @@ export function createVoiceRouter({
   // six test calls were spent inferring what Bland sends from call transcripts.
   // This answers it directly: whether the request arrives at all, whether the
   // bearer header survives Bland's tool layer, and which field carries what.
-  const recent = [];
+  //
+  // Shared with the transfer router when one is passed in. A ring group call
+  // used to leave nothing here, so checking "did it work" meant going to the
+  // Railway logs, which is the exact detour this endpoint exists to remove.
+  const recent = recentLog || [];
 
   router.get("/api/voice/_recent", (req, res) => {
     if (!authorized(req)) return res.status(401).json({ error: "Unauthorized." });

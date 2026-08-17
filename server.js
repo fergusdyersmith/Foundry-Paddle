@@ -1111,6 +1111,11 @@ app.use(
 // cards twenty seconds apart, from the webhook and then the poller.
 const notifier = createNotifier();
 
+// One observation buffer, served by /api/voice/_recent and written by both the
+// AI tool endpoints and the ring group. Checking "did that call work" should
+// be one request, not a decision about which log to read.
+const recentLog = [];
+
 // Where a transferred call rings. Twilio, not Bland: Bland can only hand off to
 // one number and cannot tell whether anyone answered.
 app.use(
@@ -1122,6 +1127,7 @@ app.use(
       .map((n) => n.trim())
       .filter(Boolean),
     notifier,
+    recentLog,
     publicUrl: process.env.SITE_BASE_URL || "https://www.foundrypadel.com",
   }),
 );
@@ -1138,6 +1144,7 @@ app.use(
     notifier,
     linkSender: createLinkSender(),
     playtomicTenantId: PLAYTOMIC_TENANT_ID,
+    recentLog,
     timezone: CLUB_TIMEZONE,
   }),
 );
