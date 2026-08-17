@@ -60,6 +60,19 @@ const VOICE = 'voice="Polly.Joanna"';
 // Bounded and short-lived: an entry only has to outlive the call it belongs to.
 const accepted = new Set();
 const MAX_TRACKED = 200;
+
+// Spoken words that mean "put them through".
+//
+// Deliberately a WORD LIST rather than "say anything". The thing being screened
+// out is a machine that talks: a voicemail greeting is speech, so accepting any
+// sound would let "hi, you've reached Jake, leave a message" answer for him,
+// which is the whole failure this exists to prevent. Greetings essentially
+// never say yes.
+const ACCEPT_WORDS = /\b(yes|yep|yeah|accept|connect|hello|hi|speaking|go ahead|put them through)\b/i;
+
+export function acceptedBySpeech(speech) {
+  return ACCEPT_WORDS.test(String(speech || ""));
+}
 function markAccepted(parentSid) {
   if (!parentSid) return;
   accepted.add(parentSid);
@@ -186,8 +199,12 @@ export function createTransferRouter({
     const accept = `${publicUrl}/api/voice/transfer/accept?parent=${encodeURIComponent(req.query?.parent || "")}`;
     res.type("text/xml").send(
       `<Response>` +
-        `<Gather numDigits="1" timeout="8" action="${escapeXml(accept)}" method="POST">` +
-        `<Say ${VOICE}>${what ? `${what} ` : ""}Press any key to connect.</Say>` +
+        // Both, because an owner may be driving or mid-rally with no hand free
+        // for the keypad. speechTimeout auto so a one word answer connects
+        // without waiting out a fixed pause.
+        `<Gather input="dtmf speech" numDigits="1" timeout="8" speechTimeout="auto"` +
+        ` hints="yes, yeah, accept, connect, speaking, go ahead" action="${escapeXml(accept)}" method="POST">` +
+        `<Say ${VOICE}>${what ? `${what} ` : ""}Say yes, or press any key, to connect.</Say>` +
         `</Gather>` +
         // No key: hang this leg up rather than bridging a caller to somebody's
         // voicemail greeting.
@@ -201,9 +218,27 @@ export function createTransferRouter({
   router.post("/api/voice/transfer/accept", form, (req, res) => {
     if (!authorize(req, res)) return;
     const parent = req.query?.parent || "";
+    const digits = req.body?.Digits || "";
+    const speech = req.body?.SpeechResult || "";
+    // A keypress is unambiguous. Speech has to be a word a person would say,
+    // because a voicemail greeting is also speech and would otherwise answer
+    // on their behalf.
+    const ok = Boolean(digits) || acceptedBySpeech(speech);
+
+    console.log(
+      "[transfer] screening %s",
+      JSON.stringify({ parent, leg: req.body?.CallSid, digits: Boolean(digits), speech, accepted: ok }),
+    );
+    observe("/transfer/accept", { parent, digits, speech, accepted: ok });
+
+    if (!ok) {
+      // Something answered and made a noise that was not an accept. Almost
+      // always a voicemail greeting, so drop this leg rather than bridge a
+      // caller into it.
+      return res.type("text/xml").send("<Response><Hangup/></Response>");
+    }
     markAccepted(parent);
-    console.log("[transfer] accepted by a person %s", JSON.stringify({ parent, leg: req.body?.CallSid }));
-    observe("/transfer/accept", { parent, digits: req.body?.Digits || "" });
+    // Empty TwiML ends the screening, and Twilio bridges the caller in.
     res.type("text/xml").send("<Response></Response>");
   });
 

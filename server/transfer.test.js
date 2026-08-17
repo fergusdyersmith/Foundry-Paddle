@@ -109,7 +109,7 @@ describe("both phones ring at once", () => {
     // agent transfer still says so, because that is the one thing the screen
     // cannot tell them: somebody has already spoken to this caller.
     const direct = await (await post(ctx, "/api/voice/transfer/whisper", { CallSid: "CA1" })).text();
-    expect(direct).toContain("Press any key");
+    expect(direct).toContain("press any key");
     expect(direct).not.toContain("Foundry");
     const agent = await (
       await post(ctx, "/api/voice/transfer/whisper?src=agent", { CallSid: "CA1" })
@@ -306,7 +306,7 @@ describe("voicemail must not be able to answer for a person", () => {
 
     expect(xml).toContain("parent=CA-p");
     expect(whisper).toContain("<Gather");
-    expect(whisper).toContain("Press any key");
+    expect(whisper).toContain("press any key");
     // No key, no bridge. Better a caller hears our voicemail than someone's
     // personal greeting.
     expect(whisper).toContain("<Hangup/>");
@@ -377,6 +377,55 @@ describe("what the owners' phones show", () => {
 
     expect(calls[0].phone).toBe("+15417770000");
     expect(calls[0].needsCallback).toBe(true);
+    await ctx.close();
+  });
+});
+
+describe("answering hands free", () => {
+  it("connects on a spoken yes as well as a keypress", async () => {
+    const ctx = await boot();
+    const spoken = await (
+      await post(ctx, "/api/voice/transfer/accept?parent=CA-s", { CallSid: "L", SpeechResult: "Yeah hello" })
+    ).text();
+    expect(spoken).toBe("<Response></Response>");
+
+    const xml = await (
+      await post(ctx, "/api/voice/transfer/after?parent=CA-s", { CallSid: "P", DialCallStatus: "completed" })
+    ).text();
+    expect(xml).toContain("<Hangup/>");
+    expect(xml).not.toContain("<Record");
+    await ctx.close();
+  });
+
+  it("is not fooled by a voicemail greeting, which is also speech", async () => {
+    // "Say anything to connect" would hand every call to whichever voicemail
+    // answered first, which is the exact bug the screening exists to stop.
+    const ctx = await boot();
+    const greeting = await (
+      await post(ctx, "/api/voice/transfer/accept?parent=CA-vm", {
+        CallSid: "L",
+        SpeechResult: "You have reached the voicemail of Jake. Please leave a message after the tone.",
+      })
+    ).text();
+    expect(greeting).toContain("<Hangup/>");
+
+    const xml = await (
+      await post(ctx, "/api/voice/transfer/after?parent=CA-vm", {
+        CallSid: "P",
+        DialCallStatus: "completed",
+      })
+    ).text();
+    expect(xml).toContain("<Record");
+    await ctx.close();
+  });
+
+  it("offers both routes in the prompt", async () => {
+    const ctx = await boot();
+    const xml = await (
+      await post(ctx, "/api/voice/transfer/whisper?parent=CA-p", { CallSid: "L" })
+    ).text();
+    expect(xml).toContain('input="dtmf speech"');
+    expect(xml).toContain("Say yes, or press any key");
     await ctx.close();
   });
 });
