@@ -206,21 +206,34 @@ export function createTransferRouter({
     // club again is telling them what is on their own screen. All that is left
     // is the one thing the screen cannot say: press a key so we know a person,
     // and not a voicemail, is on the line.
-    const what = fromAgent(req)
-      ? "Front desk transfer."
-      : "";
+    // Name the club again after all. Caller ID does say it, but by the time a
+    // synthesised voice is talking at them the useful question has changed from
+    // "who is calling" to "why is a robot talking to me", and an unexplained
+    // one sounds exactly like the spam they hang up on.
+    const what = fromAgent(req) ? "Foundry Padel front desk transfer." : "Foundry Padel call.";
     const accept = `${publicUrl}/api/voice/transfer/accept?parent=${encodeURIComponent(req.query?.parent || "")}`;
     res.type("text/xml").send(
       `<Response>` +
-        // Both, because an owner may be driving or mid-rally with no hand free
-        // for the keypad. speechTimeout auto so a one word answer connects
-        // without waiting out a fixed pause.
-        `<Gather input="dtmf speech" numDigits="1" timeout="8" speechTimeout="auto"` +
+        // Both dtmf and speech, because an owner may be driving or mid rally
+        // with no hand free for the keypad. speechTimeout auto so a one word
+        // answer connects without waiting out a fixed pause.
+        `<Gather input="dtmf speech" numDigits="1" timeout="6" speechTimeout="auto"` +
         ` hints="yes, yeah, accept, connect, speaking, go ahead" action="${escapeXml(accept)}" method="POST">` +
-        `<Say ${VOICE}>${what ? `${what} ` : ""}Say yes, or press any key, to connect.</Say>` +
+        `<Say ${VOICE}>${what} Say yes, or press any key, to connect.</Say>` +
         `</Gather>` +
-        // No key: hang this leg up rather than bridging a caller to somebody's
-        // voicemail greeting.
+        // A SECOND prompt, not a hangup.
+        //
+        // People say "hello" the instant they answer, which is before this
+        // prompt has finished and often before Twilio is listening. That
+        // reflexive hello is heard by nobody, the gather times out, and hanging
+        // up here would drop a caller while an owner stands there holding a
+        // silent phone wondering who it was.
+        `<Gather input="dtmf speech" numDigits="1" timeout="6" speechTimeout="auto"` +
+        ` hints="yes, yeah, accept, connect" action="${escapeXml(accept)}${escapeXml("&retry=1")}" method="POST">` +
+        `<Say ${VOICE}>Say yes, or press any key, to take the call.</Say>` +
+        `</Gather>` +
+        // Silence twice over. Nothing is there, so let the caller reach the
+        // club's voicemail rather than an open line nobody is on.
         `<Hangup/>` +
         `</Response>`,
     );
@@ -266,8 +279,11 @@ export function createTransferRouter({
       return res.type("text/xml").send("<Response><Hangup/></Response>");
     }
     markAccepted(parent);
-    // Empty TwiML ends the screening, and Twilio bridges the caller in.
-    res.type("text/xml").send("<Response></Response>");
+    // Say so. Ending the TwiML here bridges the caller in silently, so an owner
+    // who has just said "yes" into a robot has no idea whether the person is
+    // now listening or whether they should say hello again. One word fixes it,
+    // and the caller hears ringing until the bridge either way.
+    res.type("text/xml").send(`<Response><Say ${VOICE}>Connecting you now.</Say></Response>`);
   });
 
   router.post("/api/voice/transfer/after", form, (req, res) => {

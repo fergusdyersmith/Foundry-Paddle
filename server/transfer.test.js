@@ -110,11 +110,11 @@ describe("both phones ring at once", () => {
     // cannot tell them: somebody has already spoken to this caller.
     const direct = await (await post(ctx, "/api/voice/transfer/whisper", { CallSid: "CA1" })).text();
     expect(direct).toContain("press any key");
-    expect(direct).not.toContain("Foundry");
+    expect(direct).toContain("Foundry Padel call");
     const agent = await (
       await post(ctx, "/api/voice/transfer/whisper?src=agent", { CallSid: "CA1" })
     ).text();
-    expect(agent).toContain("Front desk transfer");
+    expect(agent).toContain("front desk transfer");
     await ctx.close();
   });
 
@@ -318,8 +318,8 @@ describe("voicemail must not be able to answer for a person", () => {
     const xml = await (
       await post(ctx, "/api/voice/transfer/accept?parent=CA-p", { CallSid: "CA-leg", Digits: "5" })
     ).text();
-    // Empty TwiML ends the screening, and Twilio connects the caller.
-    expect(xml).toBe("<Response></Response>");
+    // Tells the owner the caller is now on the line, then ends, which bridges.
+    expect(xml).toContain("Connecting you now");
     await ctx.close();
   });
 
@@ -387,7 +387,7 @@ describe("answering hands free", () => {
     const spoken = await (
       await post(ctx, "/api/voice/transfer/accept?parent=CA-s", { CallSid: "L", SpeechResult: "Yeah hello" })
     ).text();
-    expect(spoken).toBe("<Response></Response>");
+    expect(spoken).toContain("Connecting you now");
 
     const xml = await (
       await post(ctx, "/api/voice/transfer/after?parent=CA-s", { CallSid: "P", DialCallStatus: "completed" })
@@ -469,6 +469,41 @@ describe("answering hands free", () => {
     ).text();
     expect(xml).toContain('input="dtmf speech"');
     expect(xml).toContain("Say yes, or press any key");
+    await ctx.close();
+  });
+});
+
+describe("what Jake actually hears when he answers", () => {
+  it("prompts twice, because people say hello before the first prompt lands", async () => {
+    // The reflexive "hello" happens the instant they answer, before Twilio is
+    // listening. One gather plus a hangup would drop the caller while an owner
+    // stood there holding a silent phone.
+    const ctx = await boot();
+    const xml = await (
+      await post(ctx, "/api/voice/transfer/whisper?parent=CA-p", { CallSid: "L" })
+    ).text();
+    expect(xml.match(/<Gather/g)).toHaveLength(2);
+    expect(xml).toContain("retry=1");
+    // Only after both go unanswered.
+    expect(xml.indexOf("<Hangup/>")).toBeGreaterThan(xml.lastIndexOf("</Gather>"));
+    await ctx.close();
+  });
+
+  it("says who is calling, so a synthesised voice does not read as spam", async () => {
+    const ctx = await boot();
+    const xml = await (
+      await post(ctx, "/api/voice/transfer/whisper?parent=CA-p", { CallSid: "L" })
+    ).text();
+    expect(xml).toContain("Foundry Padel call");
+    await ctx.close();
+  });
+
+  it("tells them the caller is on the line rather than bridging in silence", async () => {
+    const ctx = await boot();
+    const xml = await (
+      await post(ctx, "/api/voice/transfer/accept?parent=CA-p", { CallSid: "L", Digits: "1" })
+    ).text();
+    expect(xml).toContain("Connecting you now");
     await ctx.close();
   });
 });
