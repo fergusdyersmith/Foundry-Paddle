@@ -19,7 +19,7 @@ const realFetch = globalThis.fetch;
 const ORIGIN = { Origin: "https://www.foundrypadel.com", "Content-Type": "application/json" };
 
 /** A fresh copy of the module with a fresh env, since config is read at import time. */
-async function boot(env = {}) {
+async function boot({ deps = {}, ...env } = {}) {
   vi.resetModules();
   for (const [k, v] of Object.entries({
     OPENAI_API_KEY: "sk-test",
@@ -37,8 +37,8 @@ async function boot(env = {}) {
   app.use(express.json());
   app.use(
     mod.createChatRouter({
-      getClasses: async () => ({ classes: [] }),
-      getEvents: async () => [],
+      getClasses: deps.getClasses || (async () => ({ classes: [] })),
+      getEvents: deps.getEvents || (async () => []),
     }),
   );
   const server = app.listen(0);
@@ -321,7 +321,7 @@ describe("logging back to Kumi", () => {
     const logs = calls.filter((c) => c.href.includes("web-chat-log"));
     expect(logs.length).toBe(2);
     expect(logs[0].init.headers["x-chat-token"]).toBe("shhh");
-    expect(logs.map((l) => l.body.role).sort()).toEqual(["assistant", "user"]);
+    expect(logs.map((l) => l.body.role)).toEqual(["user", "assistant"]);
   });
 
   it("stays silent when no secret is configured, rather than posting unauthenticated", async () => {
@@ -418,5 +418,95 @@ describe("site paths", () => {
       expect(allowed, `/${p} is offered to the model but the widget renders it as plain text`)
         .toContain(p);
     }
+  });
+});
+
+describe("playtomic event links (2026-08-12)", () => {
+  const openMatch = {
+    title: "Beginner Open Match",
+    date: "2026-08-20",
+    start_time: "16:00",
+    price: "$15",
+    capacity: 4,
+    signed_up: 2,
+    book_url: "https://app.playtomic.com/matches/abc123",
+  };
+
+  it("puts a feed-provided playtomic link in the prompt", async () => {
+    // A visitor asked for the links and was told "I can't provide direct Playtomic event
+    // links" -- true only because scheduleBlock threw book_url away one function earlier.
+    const calls = stubUpstream();
+    ctx = await boot({ deps: { getEvents: async () => [openMatch] } });
+    await ask(ctx.base, {});
+    const upstream = calls.find((c) => c.href.includes("openai"));
+    expect(JSON.stringify(upstream.body)).toContain("app.playtomic.com/matches/abc123");
+  });
+
+  it("permits quoting a schedule link but still forbids inventing one", async () => {
+    const calls = stubUpstream();
+    ctx = await boot({ deps: { getEvents: async () => [openMatch] } });
+    await ask(ctx.base, {});
+    const prompt = JSON.stringify(calls.find((c) => c.href.includes("openai")).body);
+    expect(prompt).toContain("copied character for character");
+    expect(prompt).toContain("never build a Playtomic link yourself");
+  });
+
+  it("drops a book_url that is not on app.playtomic.com", async () => {
+    // The feed is club data, but a link is the one field that could turn a poisoned row
+    // into a phishing click, so the host is checked here rather than trusted.
+    const calls = stubUpstream();
+    ctx = await boot({
+      deps: {
+        getEvents: async () => [
+          { ...openMatch, book_url: "https://evil.example.com/phish" },
+        ],
+      },
+    });
+    await ask(ctx.base, {});
+    const prompt = JSON.stringify(calls.find((c) => c.href.includes("openai")).body);
+    expect(prompt).not.toContain("evil.example.com");
+    expect(prompt).toContain("Beginner Open Match");
+  });
+});
+
+describe("chat log write order (2026-08-12)", () => {
+  it("waits for the question to be stored before sending the answer", async () => {
+    // Kumi stamps created_at ON ARRIVAL, so two fire-and-forget POSTs raced and the
+    // answer sometimes landed first: the Chat Logs tab, sorting by that timestamp under
+    // an "oldest first" heading, then rendered the conversation backwards (ids 49-52).
+    //
+    // Asserting the order the two fetches are STARTED in would prove nothing -- they were
+    // always started in order, and still are. What matters is that the second does not
+    // start until the first has finished, so this holds the question's request open and
+    // checks the answer's has not begun.
+    const seen = [];
+    let userDone = false;
+    vi.stubGlobal("fetch", async (url, init = {}) => {
+      const href = String(url);
+      if (href.startsWith("http://127.0.0.1")) return realFetch(url, init);
+      if (href.includes("public-knowledge")) {
+        return new Response(JSON.stringify({ entries: DEFAULT_KB }), { status: 200 });
+      }
+      if (href.includes("web-chat-log")) {
+        const role = JSON.parse(init.body).role;
+        seen.push({ role, userAlreadyDone: userDone });
+        if (role === "user") {
+          await new Promise((r) => setTimeout(r, 40));
+          userDone = true;
+        }
+        return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      }
+      return new Response(
+        JSON.stringify({ output: [{ type: "message", content: [{ text: "Sure." }] }] }),
+        { status: 200 },
+      );
+    });
+    ctx = await boot({ WEB_CHAT_LOG_SECRET: "shhh" });
+    await ask(ctx.base, {});
+    await new Promise((r) => setTimeout(r, 200));
+
+    expect(seen.map((s) => s.role)).toEqual(["user", "assistant"]);
+    const assistant = seen.find((s) => s.role === "assistant");
+    expect(assistant.userAlreadyDone).toBe(true);
   });
 });

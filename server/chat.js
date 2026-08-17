@@ -256,12 +256,23 @@ function scheduleBlock(classes, events) {
           ? `${e.capacity - e.signed_up} spots left`
           : "FULL"
         : "";
+    // book_url is the item's own Playtomic deep link, built server-side in
+    // bookingDeepLink() from the id Playtomic's own share links use. It was being dropped
+    // here, so a visitor who asked "can you send me the links for those?" got told "I
+    // can't provide direct Playtomic event links" (2026-08-12) -- true only because the
+    // link had been thrown away one function earlier. Only app.playtomic.com links are
+    // emitted, which is already an allowed domain, and only ones the club's own feed
+    // produced: the model is still forbidden from inventing a URL.
+    const link = /^https:\/\/app\.playtomic\.com\//.test(String(e.book_url || ""))
+      ? asData(e.book_url, 120)
+      : "";
     evs.push(
       [
         asData(e.title, 90),
         `${asData(e.date, 12)} ${asData(e.start_time, 6)}`,
         asData(e.price, 20),
         spots,
+        link,
       ]
         .filter(Boolean)
         .join(" | "),
@@ -307,7 +318,7 @@ HOW TO ANSWER
 - Two or three sentences. Warm and plain. Plain text only: no markdown links, no bold, no bullet lists. When you mention a page, write the path on its own, like /contact.
 - If the question is not about Foundry Padel or about padel itself, say that is not something you can help with here and offer to answer a question about the club. Do not write code, do essays, translate documents or act as a general assistant.
 - Never use an em dash. Use a comma, a period or parentheses instead.
-- You may link to these site pages: ${SITE_MAP}. Do not invent any other URL.
+- You may link to these site pages: ${SITE_MAP}. You may also give a visitor the exact app.playtomic.com link printed on a SCHEDULE line, copied character for character, when they ask how to book or join that specific thing. Do not invent, shorten or guess any other URL, and never build a Playtomic link yourself from an id or a name: if a schedule line has no link on it, say booking happens in the Playtomic app and point at /book.
 - Do not ask for or record personal details. If someone wants to be contacted, send them to /contact.
 - You have no ability to book, cancel, change or look up anything. Say so and point to /book or /contact.
 
@@ -360,10 +371,12 @@ function cleanReply(text) {
 // ---------------------------------------------------------------------------------------
 
 function logTurn({ conversationId, role, content, unanswered }) {
-  if (!WEB_CHAT_LOG_SECRET) return; // logging is optional; the bot still works without it
+  if (!WEB_CHAT_LOG_SECRET) return Promise.resolve(); // logging is optional
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), 5000);
-  fetch(KUMI_CHAT_LOG_URL, {
+  // Returns a promise that ALWAYS resolves (never rejects), so the caller can chain the
+  // two turns in order without a failed write stopping the next one.
+  return fetch(KUMI_CHAT_LOG_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-chat-token": WEB_CHAT_LOG_SECRET },
     body: JSON.stringify({
@@ -549,8 +562,14 @@ export function createChatRouter({ getClasses, getEvents }) {
     }
 
     const unanswered = UNANSWERED_RE.test(reply);
-    logTurn({ conversationId, role: "user", content: message, unanswered });
-    logTurn({ conversationId, role: "assistant", content: reply, unanswered });
+    // SEQUENTIAL, not two parallel fire-and-forgets. Kumi stamps created_at on arrival, so
+    // racing POSTs meant the answer sometimes landed before the question it answered: the
+    // admin Chat Logs tab, which sorts by that timestamp and is labelled "oldest first",
+    // then showed a conversation reading backwards (seen 2026-08-12, ids 49-52). Chaining
+    // costs the visitor nothing because the reply below is already on its way out.
+    logTurn({ conversationId, role: "user", content: message, unanswered }).then(() =>
+      logTurn({ conversationId, role: "assistant", content: reply, unanswered }),
+    );
 
     return res.json({ reply, unanswered });
   });
