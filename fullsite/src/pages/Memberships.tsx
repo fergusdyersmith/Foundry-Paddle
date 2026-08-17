@@ -18,8 +18,9 @@ const sharedBenefits = [
 // Peak / off-peak. Every tier above is priced against these windows, so they
 // are stated on the page rather than left to the booking system.
 const peakWindows = {
-  offPeak: ["Monday to Friday, 7am–4pm", "Saturday & Sunday, 4pm–10pm"],
-  peak: ["Monday to Friday, 4pm–10pm", "Saturday & Sunday, 7am–4pm"],
+  offPeak: ["Monday to Friday, 6am–4pm and 10pm–midnight",
+            "Saturday & Sunday, 4pm–midnight"],
+  peak: ["Monday to Friday, 4pm–10pm", "Saturday & Sunday, 6am–4pm"],
 };
 
 // Published pay-as-you-go rates. Members are measured against these, and a
@@ -404,7 +405,7 @@ const Memberships = () => {
             </div>
           </div>
           <p className="font-body text-xs text-muted-foreground text-center mt-4">
-            The club is open 7am to 10pm every day. Drop-in and guest pricing is the same at any
+            The club is open 6am to midnight every day. Drop-in and guest pricing is the same at any
             hour; peak and off-peak apply to member play only.
           </p>
         </motion.div>

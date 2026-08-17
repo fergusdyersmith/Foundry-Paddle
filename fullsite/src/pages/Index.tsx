@@ -19,7 +19,7 @@ const Index = () => {
     <main className="bg-background min-h-screen">
       <Seo
         title="Foundry Padel — Portland's First Indoor Padel Club | St. Johns"
-        description="Play padel in Portland at Foundry — 4 indoor glass courts in St. Johns, next to Cathedral Park. $15 per player, $60 per 90-min court. Racket rentals from $5, no partner needed. Open daily 7am–10pm."
+        description="Play padel in Portland at Foundry — 4 indoor glass courts in St. Johns, next to Cathedral Park. $15 per player, $60 per 90-min court. Racket rentals from $5, no partner needed. Open daily 6am–midnight."
         path="/"
       />
       {/* Hero */}

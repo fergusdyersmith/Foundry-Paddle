@@ -70,7 +70,7 @@ const FAQ = () => {
     <main className="bg-background min-h-screen pt-24">
       <Seo
         title="Padel FAQ — Beginners, Gear, Hours & Location | Foundry Padel"
-        description="Never played padel? A first-timer's guide: no partner needed, racket rentals from $5, hours (7am–10pm daily), pricing, and how to find us in St. Johns, Portland."
+        description="Never played padel? A first-timer's guide: no partner needed, racket rentals from $5, hours (6am–midnight daily), pricing, and how to find us in St. Johns, Portland."
         path="/faq"
       />
       <section className="py-20 px-6">
