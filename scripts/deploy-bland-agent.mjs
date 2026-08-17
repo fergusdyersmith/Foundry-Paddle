@@ -45,7 +45,7 @@ const TRANSFER_TO = process.env.TRANSFER_PHONE_NUMBER || "+15035637442";
 // cheery "thanks for calling" here reads as though the last twenty seconds did
 // not happen.
 const GREETING =
-  "Sorry about the wait, everyone's tied up on court right now. This is the Foundry Padel front desk, how can I help?";
+  "Thanks for waiting. This is the Foundry Padel front desk, how can I help?";
 
 // Esteban: adult male, General American, warm and energetic, fast pace, Bland's
 // own pick for customer support. Pinned by ID rather than name because names
@@ -149,6 +149,10 @@ WHEN A HUMAN IS NEEDED
   already reached anyone.
 
 NEVER
+- NEVER say WHY nobody picked up. You have no idea. They are two people running
+  a club: with a member, on court, driving, hands full. Never say the club is
+  busy, never say call volume is high, never guess out loud. "Thanks for
+  waiting" is the whole of it, and then help them.
 - No phone numbers, personal contact details or the wifi password.
 - Never name or describe WHO is booked or signed up.
 - HOW MANY is fine and useful: "four of sixteen", "that one is full". Numbers
