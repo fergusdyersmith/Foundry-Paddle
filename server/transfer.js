@@ -264,7 +264,9 @@ export function createTransferRouter({
         // missed you" has no idea whether they even dialled the right number,
         // and a club greeting is the whole reason for having a club line.
         `<Say ${VOICE}>Thanks for calling Foundry Padel in Saint Johns. Sorry we missed you.</Say>` +
-        `<Say ${VOICE}>Leave your name, number and what you're calling about, and we'll get back to you. You can also book a court any time in the Playtomic app.</Say>` +
+        // "dot com", spelled out, because Polly reads "foundrypadel.com" as a
+        // URL and a caller writing it down needs to hear the words.
+        `<Say ${VOICE}>Leave your name, number and what you're calling about, and we'll get back to you. Find our schedule and book a court at foundry padel dot com.</Say>` +
         // The beep runs straight into the end of the sentence before it without
         // this, and on the first real voicemail the caller never heard one and
         // did not know when to start.
