@@ -416,3 +416,43 @@ describe("editing a card needs the channel ID, not its name", () => {
     expect(body).toContain("Dana");
   });
 });
+
+describe("a late transcript must not become a card of its own", () => {
+  it("drops a transcript when the card it belongs to is gone", async () => {
+    // The map is in memory. A deploy landed between a voicemail recording and
+    // its transcript two minutes later, the restart lost the link, and Slack
+    // showed two cards for one voicemail, the second reading only "The."
+    const fetchImpl = tsFetch("1723300000.000100");
+    const notifier = createNotifier({ ...BOT, fetchImpl });
+    const res = await notifier.notifyMessage({
+      ...RECORD,
+      callId: "CA-gone",
+      reason: "The.",
+      updateOnly: true,
+    });
+    expect(res.delivered).toBe(false);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("still applies the transcript when the card is there", async () => {
+    const fetchImpl = tsFetch("1723300000.000100");
+    const notifier = createNotifier({ ...BOT, fetchImpl });
+    await notifier.notifyMessage({
+      ...RECORD,
+      callId: "CA-vm",
+      callSummary: true,
+      reason: "Voicemail, no transcript yet.",
+      recordingUrl: "https://api.twilio.com/rec/RE1.mp3",
+    });
+    await notifier.notifyMessage({
+      ...RECORD,
+      callId: "CA-vm",
+      callSummary: true,
+      reason: "Hi it's Dana about Saturday",
+      updateOnly: true,
+    });
+
+    expect(fetchImpl.mock.calls[1][0]).toBe("https://slack.com/api/chat.update");
+    expect(JSON.stringify(JSON.parse(fetchImpl.mock.calls[1][1].body))).toContain("Dana");
+  });
+});

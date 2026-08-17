@@ -388,6 +388,9 @@ export function createTransferRouter({
       return;
     }
     await notifier.notifyMessage({
+      // The transcript is an addition to the card the recording already made.
+      // On its own it is a fragment with no caller and no audio attached.
+      updateOnly: Boolean(text),
       name: req.body?.From ? `Caller ${req.body.From}` : "Caller",
       phone: req.body?.From || null,
       // Before the transcript arrives this is all anyone gets, so it has to say

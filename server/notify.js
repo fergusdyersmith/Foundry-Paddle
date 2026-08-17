@@ -324,6 +324,23 @@ export function createNotifier({
       );
 
       const prior = record.callId ? cardByCall.get(record.callId) : null;
+
+      // Some reports only make sense as an edit to a card that already exists.
+      // Twilio's voicemail transcript is one: it arrives a couple of minutes
+      // after the recording, and on its own it is a card saying "The." with no
+      // caller, no recording and no context.
+      //
+      // The map is in memory, so any restart in that window loses the link. A
+      // deploy landed in exactly that gap and Slack got two cards for one
+      // voicemail. Dropping a late transcript is the better failure: the
+      // recording is already on the first card, which is the thing anyone
+      // actually listens to.
+      if (record.updateOnly && !prior) {
+        console.warn("[message] no card to update, dropping late report", {
+          call_id: record.callId,
+        });
+        return { delivered: false, channel: null, reason: "no_card" };
+      }
       const toPost = prior ? mergeRecord(prior.record, record) : record;
       const result = await postToSlack(toPost, prior);
       const delivered = Boolean(result);
