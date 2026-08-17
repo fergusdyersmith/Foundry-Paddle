@@ -510,3 +510,30 @@ describe("chat log write order (2026-08-12)", () => {
     expect(assistant.userAlreadyDone).toBe(true);
   });
 });
+
+describe("finding players: /join and /community", () => {
+  it("offers both routes in the prompt, described distinctly", async () => {
+    // A visitor asking how to find people to play with wants one of two things, and the
+    // bot could previously only offer /community: /join was absent from SITE_MAP and no
+    // knowledge row mentioned it, so the Kumi on-ramp was unreachable from the website.
+    const calls = stubUpstream();
+    ctx = await boot();
+    await ask(ctx.base, {});
+    const prompt = JSON.stringify(calls.find((c) => c.href.includes("openai")).body);
+    expect(prompt).toContain("/join");
+    expect(prompt).toContain("/community");
+    // and told apart, so the model does not treat them as the same page
+    expect(prompt).toContain("texts you open matches");
+    expect(prompt).toContain("where players post matches");
+  });
+
+  it("tells the model to give both rather than choosing for them", async () => {
+    const calls = stubUpstream();
+    ctx = await boot();
+    await ask(ctx.base, {});
+    const prompt = JSON.stringify(calls.find((c) => c.href.includes("openai")).body);
+    expect(prompt).toContain("give BOTH routes");
+    expect(prompt).toContain("Do not send them to /contact for this");
+  });
+});
+

@@ -29,7 +29,7 @@ function newConversationId() {
  *  loose `/word` pattern turns "$40/hour" into a link to /hour. No lookbehind, because Safari
  *  older than 16.4 fails to parse it and would take the whole chunk down with it. */
 const LINKABLE =
-  /(https?:\/\/[^\s<>()[\]"']+|\/(?:book|schedule|coaching|memberships|contact|faq|new-to-padel|the-club|the-sport|survey|privacy|community)\b)/gi;
+  /(https?:\/\/[^\s<>()[\]"']+|\/(?:book|schedule|coaching|memberships|contact|faq|new-to-padel|the-club|the-sport|survey|privacy|community|join)\b)/gi;
 
 /** Renders a reply as text plus links, without dangerouslySetInnerHTML.
  *

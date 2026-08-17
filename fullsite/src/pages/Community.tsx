@@ -96,12 +96,16 @@ const Community = () => {
           >
             JOIN ON WHATSAPP
           </WhatsAppJoinLink>
+          {/* This used to read "Looking for club updates by text instead?", which is not
+              what /join does. /join signs you up with Kumi, which then messages you open
+              matches picked for your level and the times you actually play. Describing it
+              as a newsletter undersold the one thing most visitors on this page want. */}
           <p className="font-body text-xs text-muted-foreground mt-8">
-            Looking for club updates by text instead? Sign up at{" "}
+            Prefer matches sent straight to you? Sign up at{" "}
             <Link to="/join" className="text-primary underline underline-offset-2">
               foundrypadel.com/join
-            </Link>
-            .
+            </Link>{" "}
+            and Kumi will message you open matches at your level, at the times you play.
           </p>
         </motion.div>
       </section>

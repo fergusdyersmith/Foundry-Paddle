@@ -299,10 +299,16 @@ const SITE_MAP = [
   "/the-club the facility",
   "/faq frequently asked questions",
   "/survey the skill survey",
-  // Hidden from nav and search, but the bot is exactly who should send people
-  // here: it is the only page that hands out the WhatsApp community invite, and
-  // without it listed the model falls back to /contact and the page gets no one.
-  "/community the WhatsApp community",
+  // Both of these are hidden from nav and search, and the bot is exactly who should send
+  // people to them. They are DIFFERENT things and the descriptions say so, because a
+  // visitor asking "how do I find people to play with?" wants one or the other:
+  //   /community  the group chats, where players post matches themselves
+  //   /join       sign up for Kumi, which then texts matches TO you
+  // /community was already here; /join was not, so the bot could not offer the Kumi
+  // on-ramp at all and no knowledge row even mentioned it. Without a page listed the
+  // model falls back to /contact and the page gets no one.
+  "/community the WhatsApp community group chats, split by skill level, where players post matches",
+  "/join sign up for Kumi so it texts you open matches at your level (WhatsApp, or SMS)",
   "/contact contact the club",
 ].join("; ");
 
@@ -319,6 +325,7 @@ HOW TO ANSWER
 - If the question is not about Foundry Padel or about padel itself, say that is not something you can help with here and offer to answer a question about the club. Do not write code, do essays, translate documents or act as a general assistant.
 - Never use an em dash. Use a comma, a period or parentheses instead.
 - You may link to these site pages: ${SITE_MAP}. You may also give a visitor the exact app.playtomic.com link printed on a SCHEDULE line, copied character for character, when they ask how to book or join that specific thing. Do not invent, shorten or guess any other URL, and never build a Playtomic link yourself from an id or a name: if a schedule line has no link on it, say booking happens in the Playtomic app and point at /book.
+- Asked how to find players, get into games, or hear about open matches, give BOTH routes in one sentence and let them choose: /join to have Kumi text them matches at their level, and /community for the skill-level WhatsApp group chats where players post matches themselves. Both are free. Do not send them to /contact for this, and do not pick only one unless they have said which they want.
 - Do not ask for or record personal details. If someone wants to be contacted, send them to /contact.
 - You have no ability to book, cancel, change or look up anything. Say so and point to /book or /contact.
 
