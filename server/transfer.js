@@ -206,11 +206,11 @@ export function createTransferRouter({
     // club again is telling them what is on their own screen. All that is left
     // is the one thing the screen cannot say: press a key so we know a person,
     // and not a voicemail, is on the line.
-    // Name the club again after all. Caller ID does say it, but by the time a
-    // synthesised voice is talking at them the useful question has changed from
-    // "who is calling" to "why is a robot talking to me", and an unexplained
-    // one sounds exactly like the spam they hang up on.
-    const what = fromAgent(req) ? "Foundry Padel front desk transfer." : "Foundry Padel call.";
+    // Short. Caller ID already names the club, and the owners would rather get
+    // to the caller than listen to a robot explain itself. An agent transfer
+    // still says so, because the screen cannot: somebody has already spoken to
+    // this caller and taken their details.
+    const what = fromAgent(req) ? "Front desk transfer. " : "";
     const accept = `${publicUrl}/api/voice/transfer/accept?parent=${encodeURIComponent(req.query?.parent || "")}`;
     res.type("text/xml").send(
       `<Response>` +
@@ -219,7 +219,7 @@ export function createTransferRouter({
         // answer connects without waiting out a fixed pause.
         `<Gather input="dtmf speech" numDigits="1" timeout="6" speechTimeout="auto"` +
         ` hints="yes, yeah, accept, connect, speaking, go ahead" action="${escapeXml(accept)}" method="POST">` +
-        `<Say ${VOICE}>${what} Say yes, or press any key, to connect.</Say>` +
+        `<Say ${VOICE}>${what}Say yes to connect the call.</Say>` +
         `</Gather>` +
         // A SECOND prompt, not a hangup.
         //
@@ -230,7 +230,7 @@ export function createTransferRouter({
         // silent phone wondering who it was.
         `<Gather input="dtmf speech" numDigits="1" timeout="6" speechTimeout="auto"` +
         ` hints="yes, yeah, accept, connect" action="${escapeXml(accept)}${escapeXml("&retry=1")}" method="POST">` +
-        `<Say ${VOICE}>Say yes, or press any key, to take the call.</Say>` +
+        `<Say ${VOICE}>Say yes, or press any key, to connect.</Say>` +
         `</Gather>` +
         // Silence twice over. Nothing is there, so let the caller reach the
         // club's voicemail rather than an open line nobody is on.

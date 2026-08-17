@@ -109,12 +109,13 @@ describe("both phones ring at once", () => {
     // agent transfer still says so, because that is the one thing the screen
     // cannot tell them: somebody has already spoken to this caller.
     const direct = await (await post(ctx, "/api/voice/transfer/whisper", { CallSid: "CA1" })).text();
-    expect(direct).toContain("press any key");
-    expect(direct).toContain("Foundry Padel call");
+    // Caller ID already names the club, so the first prompt is one short line.
+    expect(direct).toContain("Say yes to connect the call");
+    expect(direct).not.toContain("Foundry Padel call");
     const agent = await (
       await post(ctx, "/api/voice/transfer/whisper?src=agent", { CallSid: "CA1" })
     ).text();
-    expect(agent).toContain("front desk transfer");
+    expect(agent).toContain("Front desk transfer");
     await ctx.close();
   });
 
@@ -306,7 +307,7 @@ describe("voicemail must not be able to answer for a person", () => {
 
     expect(xml).toContain("parent=CA-p");
     expect(whisper).toContain("<Gather");
-    expect(whisper).toContain("press any key");
+    expect(whisper).toContain("Say yes to connect");
     // No key, no bridge. Better a caller hears our voicemail than someone's
     // personal greeting.
     expect(whisper).toContain("<Hangup/>");
@@ -468,7 +469,10 @@ describe("answering hands free", () => {
       await post(ctx, "/api/voice/transfer/whisper?parent=CA-p", { CallSid: "L" })
     ).text();
     expect(xml).toContain('input="dtmf speech"');
-    expect(xml).toContain("Say yes, or press any key");
+    // A keypress still works; the second prompt is where it gets mentioned,
+    // because by then speech has already failed once.
+    expect(xml).toContain("Say yes to connect the call");
+    expect(xml).toContain("press any key");
     await ctx.close();
   });
 });
@@ -489,12 +493,14 @@ describe("what Jake actually hears when he answers", () => {
     await ctx.close();
   });
 
-  it("says who is calling, so a synthesised voice does not read as spam", async () => {
+  it("keeps the first prompt to one line, since caller ID names the club", async () => {
     const ctx = await boot();
     const xml = await (
       await post(ctx, "/api/voice/transfer/whisper?parent=CA-p", { CallSid: "L" })
     ).text();
-    expect(xml).toContain("Foundry Padel call");
+    const first = xml.slice(xml.indexOf("<Say"), xml.indexOf("</Say>"));
+    expect(first).toContain("Say yes to connect the call");
+    expect(first.length).toBeLessThan(70);
     await ctx.close();
   });
 
