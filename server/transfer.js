@@ -46,6 +46,26 @@ function escapeXml(text) {
 
 const VOICE = 'voice="Polly.Joanna"';
 
+// Which calls a human actually accepted, keyed by the parent call sid.
+//
+// Twilio cannot tell a person from a carrier voicemail: both "answer". On the
+// first real test Jake did not pick up, his voicemail did, Twilio bridged to it
+// and cancelled Monica's leg, and the caller left a message on Jake's personal
+// phone that nobody else can see. That is precisely the failure the ring group
+// exists to prevent.
+//
+// So whoever answers has to press a key. Voicemail never does. Nothing is
+// treated as answered until a keypress lands here.
+//
+// Bounded and short-lived: an entry only has to outlive the call it belongs to.
+const accepted = new Set();
+const MAX_TRACKED = 200;
+function markAccepted(parentSid) {
+  if (!parentSid) return;
+  accepted.add(parentSid);
+  while (accepted.size > MAX_TRACKED) accepted.delete(accepted.values().next().value);
+}
+
 /**
  * @param {object} deps
  * @param {string}   deps.authToken   Twilio auth token, for signature checks
@@ -59,7 +79,17 @@ export function createTransferRouter({
   ringTo = [],
   notifier = null,
   publicUrl = "https://www.foundrypadel.com",
-  ringSeconds = 25,
+  // What the owners' phones show. Set to the club's own line so a call is
+  // identifiable on the lock screen: saved once as a contact, every club call
+  // then arrives as "Foundry Padel" rather than an unknown number.
+  //
+  // The cost is real and deliberate: the caller's own number no longer reaches
+  // the handset, so every call is posted to Slack with it instead.
+  callerId = null,
+  // Under a carrier's voicemail pickup, which is usually 20 to 25 seconds. The
+  // keypress already stops voicemail swallowing a call; this stops it competing
+  // for one in the first place.
+  ringSeconds = 18,
   // The same buffer /api/voice/_recent serves. Ring group calls belong there
   // too: without it, checking whether a call worked means reading Railway logs.
   recentLog = null,
@@ -120,42 +150,97 @@ export function createTransferRouter({
     // The whisper matters more than it looks. Without it an owner sees an
     // unknown Portland number, and at the moment they decide whether to answer
     // the call is indistinguishable from a robocall.
-    const whisper = `${publicUrl}/api/voice/transfer/whisper${fromAgent(req) ? "?src=agent" : ""}`;
+    const parent = req.body?.CallSid || "";
+    accepted.delete(parent);
+    // The parent sid travels in the URL rather than being read off the screening
+    // request, which is a different call with its own sid.
+    const q = `?parent=${encodeURIComponent(parent)}${fromAgent(req) ? "&src=agent" : ""}`;
+    const whisper = `${publicUrl}/api/voice/transfer/whisper${q}`;
     const numbers = ringTo
       .map((n) => `<Number url="${escapeXml(whisper)}">${escapeXml(n)}</Number>`)
       .join("");
-    const after = `${publicUrl}/api/voice/transfer/after${fromAgent(req) ? "?src=agent" : ""}`;
+    const after = `${publicUrl}/api/voice/transfer/after${q}`;
 
     res
       .type("text/xml")
       .send(
-        `<Response><Dial timeout="${ringSeconds}" answerOnBridge="true" action="${escapeXml(after)}" method="POST">${numbers}</Dial></Response>`,
+        `<Response><Dial timeout="${ringSeconds}" answerOnBridge="true"${callerId ? ` callerId="${escapeXml(callerId)}"` : ""} action="${escapeXml(after)}" method="POST">${numbers}</Dial></Response>`,
       );
   });
 
   // Played to whoever picks up, before the caller is bridged in. The caller
-  // hears none of it.
+  // hears ringing throughout and none of this.
+  //
+  // The keypress is the whole point. Answering is not enough, because a carrier
+  // voicemail answers too, and until a key is pressed this call has not reached
+  // a person.
   router.post("/api/voice/transfer/whisper", form, (req, res) => {
     if (!authorize(req, res)) return;
     const what = fromAgent(req)
       ? "Call from the Foundry Padel front desk."
       : "Call to the Foundry Padel club line.";
-    res.type("text/xml").send(`<Response><Say ${VOICE}>${what}</Say></Response>`);
+    const accept = `${publicUrl}/api/voice/transfer/accept?parent=${encodeURIComponent(req.query?.parent || "")}`;
+    res.type("text/xml").send(
+      `<Response>` +
+        `<Gather numDigits="1" timeout="8" action="${escapeXml(accept)}" method="POST">` +
+        `<Say ${VOICE}>${what} Press any key to take it.</Say>` +
+        `</Gather>` +
+        // No key: hang this leg up rather than bridging a caller to somebody's
+        // voicemail greeting.
+        `<Hangup/>` +
+        `</Response>`,
+    );
+  });
+
+  // A key was pressed, so a person is on the line. Returning TwiML with nothing
+  // in it lets the screening finish, and Twilio bridges the caller straight in.
+  router.post("/api/voice/transfer/accept", form, (req, res) => {
+    if (!authorize(req, res)) return;
+    const parent = req.query?.parent || "";
+    markAccepted(parent);
+    console.log("[transfer] accepted by a person %s", JSON.stringify({ parent, leg: req.body?.CallSid }));
+    observe("/transfer/accept", { parent, digits: req.body?.Digits || "" });
+    res.type("text/xml").send("<Response></Response>");
   });
 
   router.post("/api/voice/transfer/after", form, (req, res) => {
     if (!authorize(req, res)) return;
     const status = req.body?.DialCallStatus;
-    const outcome = { status, src: req.query?.src || "direct", callSid: req.body?.CallSid };
+    const tookIt = accepted.has(req.query?.parent || "");
+    const outcome = {
+      status,
+      answeredByPerson: tookIt,
+      src: req.query?.src || "direct",
+      callSid: req.body?.CallSid,
+    };
     console.log("[transfer] outcome %s", JSON.stringify(outcome));
-    // "completed" means somebody answered. Anything else and the caller is
-    // about to be asked for a voicemail.
-    observe("/transfer/after", { ...outcome, answered: status === "completed" });
 
-    // Someone answered and the conversation is over. Without this check Twilio
-    // falls through and reads an apology at the caller after a perfectly good
-    // call.
-    if (status === "completed") {
+    // The caller's number no longer reaches the handsets, because caller ID now
+    // shows the club line instead. So every call goes to Slack: without this,
+    // an answered call would leave no record of who rang.
+    if (!fromAgent(req) && notifier?.configured()) {
+      notifier
+        .notifyMessage({
+          name: req.body?.From ? `Caller ${req.body.From}` : "Caller",
+          phone: req.body?.From || null,
+          reason: tookIt
+            ? "Answered on the club line."
+            : "Nobody answered. The caller is being asked to leave a message.",
+          needsCallback: !tookIt,
+          callSummary: true,
+          callId: req.query?.parent || req.body?.CallSid || "",
+          receivedAt: new Date().toISOString(),
+        })
+        .catch((e) => console.error("[transfer] Slack card failed:", e.message));
+    }
+    observe("/transfer/after", outcome);
+
+    // A PERSON took it, and the conversation is over. Deliberately not
+    // DialCallStatus: a voicemail that swallowed the call also reports
+    // "completed", and trusting that is what sent the first real caller to
+    // Jake's personal voicemail. Only a keypress counts.
+    if (accepted.has(req.query?.parent || "")) {
+      accepted.delete(req.query?.parent || "");
       return res.type("text/xml").send("<Response><Hangup/></Response>");
     }
 

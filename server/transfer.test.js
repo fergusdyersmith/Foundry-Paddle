@@ -16,10 +16,10 @@ function sign(url, params) {
   return crypto.createHmac("sha1", TOKEN).update(Buffer.from(data, "utf-8")).digest("base64");
 }
 
-async function boot({ ringTo = [JAKE, MONICA], notifier } = {}) {
+async function boot({ ringTo = [JAKE, MONICA], notifier, callerId } = {}) {
   const app = express();
   app.use(express.json());
-  app.use(createTransferRouter({ authToken: TOKEN, ringTo, notifier, publicUrl: PUBLIC }));
+  app.use(createTransferRouter({ authToken: TOKEN, ringTo, notifier, callerId, publicUrl: PUBLIC }));
   const listener = app.listen(0);
   await new Promise((r) => listener.once("listening", r));
   return {
@@ -162,15 +162,35 @@ describe("when nobody picks up", () => {
     },
   );
 
-  it("stays quiet after a call that actually happened", async () => {
-    // Without this the apology plays at the caller the moment a real, finished
-    // conversation ends.
+  it("sends a completed call to voicemail when no PERSON took it", async () => {
+    // The bug that lost a real caller. Jake did not answer, his carrier
+    // voicemail did, and Twilio reported "completed" because it cannot tell the
+    // two apart. Trusting that status hung up on the caller and left the
+    // message on one owner's personal phone.
     const ctx = await boot();
     const xml = await (
-      await post(ctx, "/api/voice/transfer/after", { CallSid: "CA1", DialCallStatus: "completed" })
+      await post(ctx, "/api/voice/transfer/after?parent=CA-vm", {
+        CallSid: "CA1",
+        DialCallStatus: "completed",
+      })
+    ).text();
+    expect(xml).toContain("<Record");
+    await ctx.close();
+  });
+
+  it("stays quiet after a call a person actually accepted", async () => {
+    // Otherwise the apology plays at the caller the moment a real conversation
+    // ends.
+    const ctx = await boot();
+    await post(ctx, "/api/voice/transfer/accept?parent=CA-live", { CallSid: "CA-leg", Digits: "1" });
+    const xml = await (
+      await post(ctx, "/api/voice/transfer/after?parent=CA-live", {
+        CallSid: "CA1",
+        DialCallStatus: "completed",
+      })
     ).text();
     expect(xml).toContain("<Hangup/>");
-    expect(xml).not.toContain("<Say");
+    expect(xml).not.toContain("<Record");
     await ctx.close();
   });
 });
@@ -260,8 +280,93 @@ describe("checking whether a call worked should be one request", () => {
     await post(ctx, "/api/voice/transfer/after", { CallSid: "CA1", DialCallStatus: "no-answer" });
 
     expect(recentLog.map((r) => r.path)).toEqual(["/transfer/after", "/transfer"]);
-    expect(recentLog[0].body.answered).toBe(false);
+    expect(recentLog[0].body.answeredByPerson).toBe(false);
     expect(recentLog[1].body.from).toBe("+15417770000");
     await new Promise((r) => listener.close(r));
+  });
+});
+
+describe("voicemail must not be able to answer for a person", () => {
+  it("asks whoever picks up to press a key, since voicemail never will", async () => {
+    const ctx = await boot();
+    const xml = await (await post(ctx, "/api/voice/transfer", { CallSid: "CA-p" })).text();
+    const whisper = await (
+      await post(ctx, "/api/voice/transfer/whisper?parent=CA-p", { CallSid: "CA-leg" })
+    ).text();
+
+    expect(xml).toContain("parent=CA-p");
+    expect(whisper).toContain("<Gather");
+    expect(whisper).toContain("Press any key");
+    // No key, no bridge. Better a caller hears our voicemail than someone's
+    // personal greeting.
+    expect(whisper).toContain("<Hangup/>");
+    await ctx.close();
+  });
+
+  it("bridges as soon as a key is pressed", async () => {
+    const ctx = await boot();
+    const xml = await (
+      await post(ctx, "/api/voice/transfer/accept?parent=CA-p", { CallSid: "CA-leg", Digits: "5" })
+    ).text();
+    // Empty TwiML ends the screening, and Twilio connects the caller.
+    expect(xml).toBe("<Response></Response>");
+    await ctx.close();
+  });
+
+  it("does not carry an acceptance over into the next call", async () => {
+    const ctx = await boot();
+    await post(ctx, "/api/voice/transfer/accept?parent=CA-first", { CallSid: "L1", Digits: "1" });
+    // A second call on the same parent id would otherwise inherit it and skip
+    // voicemail for a call nobody picked up.
+    await post(ctx, "/api/voice/transfer", { CallSid: "CA-first" });
+    const xml = await (
+      await post(ctx, "/api/voice/transfer/after?parent=CA-first", {
+        CallSid: "L2",
+        DialCallStatus: "completed",
+      })
+    ).text();
+    expect(xml).toContain("<Record");
+    await ctx.close();
+  });
+
+  it("rings for less time than a carrier waits before answering", async () => {
+    // Carrier voicemail picks up around twenty to twenty five seconds. The
+    // keypress stops it swallowing a call; this stops it competing for one.
+    const ctx = await boot();
+    const xml = await (await post(ctx, "/api/voice/transfer", { CallSid: "CA-p" })).text();
+    const timeout = Number(xml.match(/timeout="(\d+)"/)[1]);
+    expect(timeout).toBeLessThan(20);
+    await ctx.close();
+  });
+});
+
+describe("what the owners' phones show", () => {
+  it("shows the club line, so it can be saved as a contact and named", async () => {
+    const ctx = await boot({ callerId: "+19715217887" });
+    const xml = await (await post(ctx, "/api/voice/transfer", { CallSid: "CA-p" })).text();
+    expect(xml).toContain('callerId="+19715217887"');
+    await ctx.close();
+  });
+
+  it("posts every club call to Slack, since the caller's number no longer reaches the handset", async () => {
+    const calls = [];
+    const notifier = {
+      configured: () => true,
+      notifyMessage: async (r) => {
+        calls.push(r);
+        return { delivered: true, channel: "slack" };
+      },
+    };
+    const ctx = await boot({ notifier, callerId: "+19715217887" });
+    await post(ctx, "/api/voice/transfer/after?parent=CA-p", {
+      CallSid: "CA1",
+      From: "+15417770000",
+      DialCallStatus: "no-answer",
+    });
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(calls[0].phone).toBe("+15417770000");
+    expect(calls[0].needsCallback).toBe(true);
+    await ctx.close();
   });
 });
