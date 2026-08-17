@@ -176,14 +176,18 @@ export function createTransferRouter({
   // a person.
   router.post("/api/voice/transfer/whisper", form, (req, res) => {
     if (!authorize(req, res)) return;
+    // Short on purpose. Caller ID already shows the club's line, so naming the
+    // club again is telling them what is on their own screen. All that is left
+    // is the one thing the screen cannot say: press a key so we know a person,
+    // and not a voicemail, is on the line.
     const what = fromAgent(req)
-      ? "Call from the Foundry Padel front desk."
-      : "Call to the Foundry Padel club line.";
+      ? "Front desk transfer."
+      : "";
     const accept = `${publicUrl}/api/voice/transfer/accept?parent=${encodeURIComponent(req.query?.parent || "")}`;
     res.type("text/xml").send(
       `<Response>` +
         `<Gather numDigits="1" timeout="8" action="${escapeXml(accept)}" method="POST">` +
-        `<Say ${VOICE}>${what} Press any key to take it.</Say>` +
+        `<Say ${VOICE}>${what ? `${what} ` : ""}Press any key to connect.</Say>` +
         `</Gather>` +
         // No key: hang this leg up rather than bridging a caller to somebody's
         // voicemail greeting.

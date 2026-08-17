@@ -105,12 +105,16 @@ describe("both phones ring at once", () => {
 
     // The club line and an agent transfer are different situations, and the
     // owner deserves to know which one is on the other end.
+    // Caller ID already names the club, so the whisper does not repeat it. An
+    // agent transfer still says so, because that is the one thing the screen
+    // cannot tell them: somebody has already spoken to this caller.
     const direct = await (await post(ctx, "/api/voice/transfer/whisper", { CallSid: "CA1" })).text();
-    expect(direct).toContain("Foundry Padel club line");
+    expect(direct).toContain("Press any key");
+    expect(direct).not.toContain("Foundry");
     const agent = await (
       await post(ctx, "/api/voice/transfer/whisper?src=agent", { CallSid: "CA1" })
     ).text();
-    expect(agent).toContain("Foundry Padel front desk");
+    expect(agent).toContain("Front desk transfer");
     await ctx.close();
   });
 
