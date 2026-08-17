@@ -626,6 +626,51 @@ async function main() {
   }
   console.log("[agent] verified: knowledge base and tools are live on the number");
 
+  // Give the number back.
+  //
+  // Attaching a number to a persona rewrites its Twilio voice webhook, so
+  // deploying a prompt change quietly took the club line off the ring group and
+  // put the AI in front of callers who should have been ringing the owners'
+  // phones. Nothing failed and nothing said so: the deploy printed "verified"
+  // and the next caller got Esteban instead of Jake.
+  //
+  // The agent is still fully deployed either way. This only decides who the
+  // number reaches first.
+  if (config.club_line_mode === "ring") {
+    const sid = process.env.TWILIO_ACCOUNT_SID;
+    const token = process.env.TWILIO_AUTH_TOKEN;
+    if (!sid || !token) {
+      console.error("[agent] WARNING: club line should be on the ring group, but");
+      console.error("[agent] TWILIO_* is unset so it is still pointed at the AI.");
+      console.error("[agent] Fix with: node scripts/club-line.mjs ring");
+    } else {
+      const found = await fetch(
+        `https://api.twilio.com/2010-04-01/Accounts/${sid}/IncomingPhoneNumbers.json?PhoneNumber=${encodeURIComponent(PHONE_NUMBER)}`,
+        { headers: { authorization: `Basic ${Buffer.from(`${sid}:${token}`).toString("base64")}` } },
+      ).then((r) => r.json());
+      const number = found.incoming_phone_numbers?.[0];
+      if (number) {
+        await fetch(
+          `https://api.twilio.com/2010-04-01/Accounts/${sid}/IncomingPhoneNumbers/${number.sid}.json`,
+          {
+            method: "POST",
+            headers: {
+              authorization: `Basic ${Buffer.from(`${sid}:${token}`).toString("base64")}`,
+              "content-type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams({
+              VoiceUrl: `${SITE}/api/voice/transfer`,
+              VoiceMethod: "POST",
+              VoiceFallbackUrl: "",
+              StatusCallback: "",
+            }).toString(),
+          },
+        );
+        console.log(`[agent] club line handed back to the ring group (${PHONE_NUMBER})`);
+      }
+    }
+  }
+
   writeConfig({
     ...config,
     tool_ids: toolIds,

@@ -84,9 +84,14 @@ if (mode === "ring") {
   // meant to preserve, and "put it back to AI" would put it back to itself.
   if (!config.twilio_ai_routing && (number.voice_url || "").includes("bland.ai")) {
     config.twilio_ai_routing = Object.fromEntries(FIELDS.map((f) => [f, number[f] || ""]));
-    writeConfig(config);
     console.log("[club-line] saved Bland's routing to bland/config.json");
   }
+  // Recorded so the agent deploy knows not to take the number back. Attaching a
+  // number to a persona rewrites its Twilio webhook, so deploying a prompt
+  // change silently put the AI in front of callers who should have been ringing
+  // the owners' phones.
+  config.club_line_mode = "ring";
+  writeConfig(config);
   const updated = await twilio(`${api}/${number.sid}.json`, {
     VoiceUrl: `${SITE}/api/voice/transfer`,
     VoiceMethod: "POST",
@@ -102,6 +107,8 @@ if (mode === "ring") {
     console.error("No saved Bland routing in bland/config.json. Re-run scripts/deploy-bland-agent.mjs, which reattaches the number.");
     process.exit(1);
   }
+  config.club_line_mode = "ai";
+  writeConfig(config);
   const updated = await twilio(`${api}/${number.sid}.json`, {
     VoiceUrl: saved.voice_url,
     VoiceMethod: saved.voice_method || "POST",

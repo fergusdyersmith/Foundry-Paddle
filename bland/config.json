@@ -16,5 +16,6 @@
     "voice_method": "POST",
     "voice_fallback_url": "https://api.bland.ai/incoming?encrypted_key=4e903157-f604-480c-bd70-6fafedc03f06&user_id=b0c61acd-a197-41f5-b853-0521ebdfef79&placement_group=blandshared&region=dc8",
     "status_callback": "https://server.aws.dc8.bland.ai/twilio_callback"
-  }
+  },
+  "club_line_mode": "ring"
 }
