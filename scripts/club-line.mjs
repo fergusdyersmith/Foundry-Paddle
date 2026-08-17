@@ -98,7 +98,12 @@ if (mode === "ring") {
     // Blanked deliberately. Left pointing at Bland, a momentary blip on our
     // side would silently hand a caller to an AI the owners have not launched.
     VoiceFallbackUrl: "",
-    StatusCallback: "",
+    // KEPT, unlike the fallback. This is how Bland learns a call ended, and
+    // blanking it meant every call handed to the agent stayed open forever on
+    // their side: completed false, call_length null, no post-call webhook, and
+    // nothing in Slack. Bland is part of the call flow now, so it needs to hear
+    // the end of the calls it handles.
+    StatusCallback: config.twilio_ai_routing?.status_callback || "",
   });
   console.log(`[club-line] ${NUMBER} now rings both owners\n`, JSON.stringify(describe(updated), null, 1));
 } else if (mode === "ai") {

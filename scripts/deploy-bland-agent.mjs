@@ -666,7 +666,9 @@ async function main() {
               VoiceUrl: `${SITE}/api/voice/transfer`,
               VoiceMethod: "POST",
               VoiceFallbackUrl: "",
-              StatusCallback: "",
+              // How Bland learns a call ended. Without it a call handed to the
+              // agent never completes on their side and never reaches Slack.
+              StatusCallback: config.twilio_ai_routing?.status_callback || "",
             }).toString(),
           },
         );

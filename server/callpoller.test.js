@@ -207,3 +207,82 @@ describe("urgency, since the agent's flag never arrives", () => {
     expect(notifier.notifyMessage.mock.calls[0][0].needsCallback).toBe(true);
   });
 });
+
+describe("a call Bland never marks finished", () => {
+  it("still reaches Slack once it is too old to still be running", async () => {
+    // Calls handed to the agent by Redirect stayed completed:false forever,
+    // so the filter dropped them and the club saw nothing. A flag somebody
+    // else sets should not be the only thing between a caller and a callback.
+    const posted = [];
+    const stale = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    // Nothing on the priming pass, so the stuck call arrives afterwards, which
+    // is the real sequence: the poller starts, then a call comes in and Bland
+    // never closes it.
+    let polls = 0;
+    const fetchImpl = vi.fn(async (url) => {
+      if (url.includes("/v1/calls?")) {
+        polls += 1;
+        return {
+          ok: true,
+          json: async () => ({
+            calls:
+              polls === 1
+                ? []
+                : [{ call_id: "c-stuck", to: "+19715217887", completed: false, created_at: stale }],
+          }),
+        };
+      }
+      return {
+        ok: true,
+        json: async () => ({
+          call_id: "c-stuck",
+          from: "+15417770000",
+          summary: "Asked what is on tomorrow",
+          transcripts: [{ user: "user", text: "what is on tomorrow" }],
+        }),
+      };
+    });
+
+    const poller = createCallPoller({
+      apiKey: "k",
+      number: "+19715217887",
+      notifier: {
+        configured: () => true,
+        notifyMessage: async (r) => {
+          posted.push(r);
+          return { delivered: true, channel: "slack" };
+        },
+      },
+      cachedEvents: () => null,
+      fetchImpl,
+    });
+
+    await poller.poll();
+    await poller.poll();
+    expect(posted.map((p) => p.callId)).toEqual(["c-stuck"]);
+  });
+
+  it("leaves a call that could still be in progress alone", async () => {
+    const posted = [];
+    const fresh = new Date().toISOString();
+    const fetchImpl = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        calls: [{ call_id: "c-live", to: "+19715217887", completed: false, created_at: fresh }],
+      }),
+    }));
+    const poller = createCallPoller({
+      apiKey: "k",
+      number: "+19715217887",
+      notifier: {
+        configured: () => true,
+        notifyMessage: async (r) => posted.push(r),
+      },
+      cachedEvents: () => null,
+      fetchImpl,
+    });
+    await poller.poll();
+    await poller.poll();
+    expect(posted).toHaveLength(0);
+  });
+});

@@ -122,9 +122,28 @@ export function createCallPoller({
 
   async function poll() {
     const data = await bland(`/v1/calls?limit=${LOOKBACK}`);
-    const calls = (data.calls || data.data || []).filter(
-      (c) => c.to === number && (c.completed || c.status === "completed"),
-    );
+    // A call is reportable once Bland says it finished, OR once it is older
+    // than any call could possibly be.
+    //
+    // The second clause exists because the first one silently stopped being
+    // true. Calls handed to the agent by Redirect never got marked complete,
+    // since blanking Twilio's status callback took away how Bland learns a call
+    // ended, so completed stayed false and call_length null forever and the
+    // club saw nothing in Slack for them. That is fixed at the source, but a
+    // filter that drops records on a flag somebody else sets should not be the
+    // only thing standing between a caller and being called back.
+    //
+    // max_duration is 15 minutes, so anything older cannot still be running.
+    const tooOldToBeRunning = 20 * 60 * 1000;
+    const now = Date.now();
+    const calls = (data.calls || data.data || []).filter((c) => {
+      if (c.to !== number) return false;
+      if (c.completed || c.status === "completed") return true;
+      const started = Date.parse(c.created_at || "");
+      if (!started || now - started < tooOldToBeRunning) return false;
+      console.warn("[calls] %s never completed on Bland's side, reporting anyway", c.call_id);
+      return true;
+    });
 
     // First pass after a restart: remember them, report none.
     if (!primed) {
