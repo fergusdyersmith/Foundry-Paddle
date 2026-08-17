@@ -2,7 +2,7 @@
 import { describe, it, expect } from "vitest";
 import express from "express";
 import crypto from "node:crypto";
-import { createTransferRouter, validSignature } from "./transfer.js";
+import { createTransferRouter, validSignature, acceptedBySpeech } from "./transfer.js";
 
 const TOKEN = "twilio-auth-token-for-tests";
 const PUBLIC = "https://www.foundrypadel.com";
@@ -397,6 +397,48 @@ describe("answering hands free", () => {
     await ctx.close();
   });
 
+  it.each([
+    ["Hi, this is Jake, leave a message after the tone"],
+    ["Hello, you have reached Monica"],
+    ["Hi this is Jake I cant take your call right now"],
+    ["Please leave your message after the beep"],
+    ["Hi its Monica from Foundry Padel please leave a message"],
+  ])("does not treat %s as a person answering", (greeting) => {
+    // The trap: the most natural way to answer a phone is "hello", and the most
+    // common way to open a voicemail greeting is also "hello". A word list
+    // alone waves "Hi, this is Jake" straight through.
+    expect(acceptedBySpeech(greeting)).toBe(false);
+  });
+
+  it.each([["yes"], ["Hello"], ["hi"], ["yeah hello"], ["speaking"], ["go ahead"]])(
+    "treats %s as a person answering",
+    (said) => {
+      expect(acceptedBySpeech(said)).toBe(true);
+    },
+  );
+
+  it("asks again before hanging up on something it could not classify", async () => {
+    // Strict costs an owner who answered oddly their call; lenient hands the
+    // caller to a voicemail. A second prompt tells them apart: a person answers
+    // it, a greeting talks straight past it.
+    const ctx = await boot();
+    const first = await (
+      await post(ctx, "/api/voice/transfer/accept?parent=CA-x", { CallSid: "L", SpeechResult: "uh" })
+    ).text();
+    expect(first).toContain("<Gather");
+    expect(first).toContain("Sorry");
+
+    const second = await (
+      await post(ctx, "/api/voice/transfer/accept?parent=CA-x&retry=1", {
+        CallSid: "L",
+        SpeechResult: "uh",
+      })
+    ).text();
+    expect(second).toContain("<Hangup/>");
+    expect(second).not.toContain("<Gather");
+    await ctx.close();
+  });
+
   it("is not fooled by a voicemail greeting, which is also speech", async () => {
     // "Say anything to connect" would hand every call to whichever voicemail
     // answered first, which is the exact bug the screening exists to stop.
@@ -407,7 +449,8 @@ describe("answering hands free", () => {
         SpeechResult: "You have reached the voicemail of Jake. Please leave a message after the tone.",
       })
     ).text();
-    expect(greeting).toContain("<Hangup/>");
+    // First response is a re-prompt; the greeting will not answer it either.
+    expect(greeting).toContain("<Gather");
 
     const xml = await (
       await post(ctx, "/api/voice/transfer/after?parent=CA-vm", {

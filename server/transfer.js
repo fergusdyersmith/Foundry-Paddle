@@ -61,17 +61,30 @@ const VOICE = 'voice="Polly.Joanna"';
 const accepted = new Set();
 const MAX_TRACKED = 200;
 
-// Spoken words that mean "put them through".
+// Deciding whether the thing that answered is a person.
 //
-// Deliberately a WORD LIST rather than "say anything". The thing being screened
-// out is a machine that talks: a voicemail greeting is speech, so accepting any
-// sound would let "hi, you've reached Jake, leave a message" answer for him,
-// which is the whole failure this exists to prevent. Greetings essentially
-// never say yes.
-const ACCEPT_WORDS = /\b(yes|yep|yeah|accept|connect|hello|hi|speaking|go ahead|put them through)\b/i;
+// "Say anything" cannot work: the machine being screened out talks. Nor can a
+// bare word list, because the most natural way to answer a phone is "hello",
+// and the most common way to start a voicemail greeting is also "hello". A real
+// greeting is "Hi, this is Jake, leave a message after the tone", which any
+// list containing "hi" would wave straight through.
+//
+// So three signals, and a greeting has to beat all of them:
+//   1. It says something a person answering would say.
+//   2. It does NOT say the things only a greeting says.
+//   3. It is SHORT. People answer in a word or two; greetings are sentences.
+const ACCEPT_WORDS = /\b(yes|yep|yeah|sure|accept|connect|speaking|hello|hi|hey|go ahead|put them through)\b/i;
+const GREETING_MARKERS =
+  /\b(you'?ve reached|you have reached|leave (a|your) message|after the (tone|beep)|at the tone|not available|unavailable|can'?t take your call|call you back|voicemail|mailbox|record your message|press \d)\b/i;
+const MAX_ACCEPT_WORDS = 5;
 
+/** Did a PERSON say this, or did a voicemail greeting? */
 export function acceptedBySpeech(speech) {
-  return ACCEPT_WORDS.test(String(speech || ""));
+  const said = String(speech || "").trim();
+  if (!said) return false;
+  if (GREETING_MARKERS.test(said)) return false;
+  if (said.split(/\s+/).length > MAX_ACCEPT_WORDS) return false;
+  return ACCEPT_WORDS.test(said);
 }
 function markAccepted(parentSid) {
   if (!parentSid) return;
@@ -232,9 +245,24 @@ export function createTransferRouter({
     observe("/transfer/accept", { parent, digits, speech, accepted: ok });
 
     if (!ok) {
-      // Something answered and made a noise that was not an accept. Almost
-      // always a voicemail greeting, so drop this leg rather than bridge a
-      // caller into it.
+      // Ask once more before giving up. Getting this wrong in the strict
+      // direction hangs up on an owner who answered oddly, and in the lenient
+      // direction hands the caller to a voicemail. A second prompt separates
+      // them: a person answers it, a greeting talks straight past it.
+      if (req.query?.retry !== "1") {
+        const again = `${publicUrl}/api/voice/transfer/accept?parent=${encodeURIComponent(parent)}&retry=1`;
+        return res.type("text/xml").send(
+          `<Response>` +
+            `<Gather input="dtmf speech" numDigits="1" timeout="6" speechTimeout="auto"` +
+            ` hints="yes, yeah, accept, connect" action="${escapeXml(again)}" method="POST">` +
+            `<Say ${VOICE}>Sorry. Say yes, or press any key, to take the call.</Say>` +
+            `</Gather>` +
+            `<Hangup/>` +
+            `</Response>`,
+        );
+      }
+      // Twice now. Treat it as a machine and drop the leg rather than bridge a
+      // caller into somebody's greeting.
       return res.type("text/xml").send("<Response><Hangup/></Response>");
     }
     markAccepted(parent);
