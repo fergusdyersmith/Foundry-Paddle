@@ -58,7 +58,8 @@ const VOICE = 'voice="Polly.Joanna"';
 // treated as answered until a keypress lands here.
 //
 // Bounded and short-lived: an entry only has to outlive the call it belongs to.
-const accepted = new Set();
+// The value is the number that answered, so Slack can say which owner took it.
+const accepted = new Map();
 const MAX_TRACKED = 200;
 
 // Deciding whether the thing that answered is a person.
@@ -86,10 +87,10 @@ export function acceptedBySpeech(speech) {
   if (said.split(/\s+/).length > MAX_ACCEPT_WORDS) return false;
   return ACCEPT_WORDS.test(said);
 }
-function markAccepted(parentSid) {
+function markAccepted(parentSid, answeredBy) {
   if (!parentSid) return;
-  accepted.add(parentSid);
-  while (accepted.size > MAX_TRACKED) accepted.delete(accepted.values().next().value);
+  accepted.set(parentSid, answeredBy || "");
+  while (accepted.size > MAX_TRACKED) accepted.delete(accepted.keys().next().value);
 }
 
 /**
@@ -132,6 +133,20 @@ export function createTransferRouter({
   // rollback.
   aiFallbackUrl = null,
 }) {
+  // Entries may be labelled, "Jake:+19715550100", or a bare number. The label
+  // never reaches a caller: it is only used to say who took the call in Slack.
+  const ring = ringTo.map((entry) => {
+    const raw = String(entry).trim();
+    const at = raw.lastIndexOf(":");
+    return at > 0
+      ? { label: raw.slice(0, at).trim(), number: raw.slice(at + 1).trim() }
+      : { label: "", number: raw };
+  });
+  const labelFor = (number) => {
+    const digits = String(number || "").replace(/\D/g, "").slice(-10);
+    return ring.find((r) => r.number.replace(/\D/g, "").slice(-10) === digits)?.label || "";
+  };
+
   const router = express.Router();
 
   function observe(path, body) {
@@ -169,9 +184,9 @@ export function createTransferRouter({
       callSid: req.body?.CallSid,
     };
     console.log("[transfer] inbound %s", JSON.stringify(inbound));
-    observe("/transfer", { ...inbound, ringing: ringTo.length });
+    observe("/transfer", { ...inbound, ringing: ring.length });
 
-    if (!ringTo.length) {
+    if (!ring.length) {
       // Never drop a caller in silence. In the agent's case they have just been
       // told they are being put through.
       console.error("[transfer] no numbers configured, nobody will ring");
@@ -194,8 +209,8 @@ export function createTransferRouter({
     // request, which is a different call with its own sid.
     const q = `?parent=${encodeURIComponent(parent)}${fromAgent(req) ? "&src=agent" : ""}`;
     const whisper = `${publicUrl}/api/voice/transfer/whisper${q}`;
-    const numbers = ringTo
-      .map((n) => `<Number url="${escapeXml(whisper)}">${escapeXml(n)}</Number>`)
+    const numbers = ring
+      .map((r) => `<Number url="${escapeXml(whisper)}">${escapeXml(r.number)}</Number>`)
       .join("");
     const after = `${publicUrl}/api/voice/transfer/after${q}`;
 
@@ -265,9 +280,22 @@ export function createTransferRouter({
 
     console.log(
       "[transfer] screening %s",
-      JSON.stringify({ parent, leg: req.body?.CallSid, digits: Boolean(digits), speech, accepted: ok }),
+      JSON.stringify({
+        parent,
+        leg: req.body?.CallSid,
+        digits: Boolean(digits),
+        speech,
+        accepted: ok,
+        answeredBy: req.body?.To || req.body?.Called || "",
+      }),
     );
-    observe("/transfer/accept", { parent, digits, speech, accepted: ok });
+    observe("/transfer/accept", {
+      parent,
+      digits,
+      speech,
+      accepted: ok,
+      answeredBy: labelFor(req.body?.To || req.body?.Called) || req.body?.To || "",
+    });
 
     if (!ok) {
       // Ask once more before giving up. Getting this wrong in the strict
@@ -290,7 +318,10 @@ export function createTransferRouter({
       // caller into somebody's greeting.
       return res.type("text/xml").send("<Response><Hangup/></Response>");
     }
-    markAccepted(parent);
+    // On the answering leg, To is the number that answered, so this is the one
+    // moment we can tell Jake's phone from Monica's.
+    const answeredBy = req.body?.To || req.body?.Called || "";
+    markAccepted(parent, answeredBy);
     // Say so. Ending the TwiML here bridges the caller in silently, so an owner
     // who has just said "yes" into a robot has no idea whether the person is
     // now listening or whether they should say hello again. One word fixes it,
@@ -301,10 +332,13 @@ export function createTransferRouter({
   router.post("/api/voice/transfer/after", form, (req, res) => {
     if (!authorize(req, res)) return;
     const status = req.body?.DialCallStatus;
-    const tookIt = accepted.has(req.query?.parent || "");
+    const parentSid = req.query?.parent || "";
+    const tookIt = accepted.has(parentSid);
+    const who = tookIt ? labelFor(accepted.get(parentSid)) : "";
     const outcome = {
       status,
       answeredByPerson: tookIt,
+      answeredBy: who || undefined,
       src: req.query?.src || "direct",
       callSid: req.body?.CallSid,
     };
@@ -322,7 +356,7 @@ export function createTransferRouter({
           name: req.body?.From ? `Caller ${req.body.From}` : "Caller",
           phone: req.body?.From || null,
           reason: tookIt
-            ? "Answered on the club line."
+            ? `${who || "Someone"} answered on the club line.`
             : "Nobody answered. The caller is being asked to leave a message.",
           needsCallback: !tookIt,
           callSummary: true,
@@ -337,8 +371,8 @@ export function createTransferRouter({
     // DialCallStatus: a voicemail that swallowed the call also reports
     // "completed", and trusting that is what sent the first real caller to
     // Jake's personal voicemail. Only a keypress counts.
-    if (accepted.has(req.query?.parent || "")) {
-      accepted.delete(req.query?.parent || "");
+    if (tookIt) {
+      accepted.delete(parentSid);
       return res.type("text/xml").send("<Response><Hangup/></Response>");
     }
 

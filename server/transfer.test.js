@@ -585,3 +585,67 @@ describe("when nobody answers, the receptionist picks up", () => {
     await ctx.close();
   });
 });
+
+describe("who answered", () => {
+  it("names the owner who took the call, not just the club line", async () => {
+    // "Answered on the club line" leaves the other owner wondering whether to
+    // call back. "Jake answered" closes the card.
+    const calls = [];
+    const notifier = {
+      configured: () => true,
+      notifyMessage: async (r) => {
+        calls.push(r);
+        return { delivered: true, channel: "slack" };
+      },
+    };
+    const ctx = await boot({ ringTo: ["Jake:+15035550101", "Monica:+15035550202"], notifier });
+
+    await post(ctx, "/api/voice/transfer/accept?parent=CA-who", {
+      CallSid: "leg",
+      Digits: "1",
+      // On the answering leg this is the number that picked up.
+      To: "+15035550202",
+    });
+    await post(ctx, "/api/voice/transfer/after?parent=CA-who", {
+      CallSid: "CA-who",
+      From: "+15417770000",
+      DialCallStatus: "completed",
+    });
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(calls[0].reason).toContain("Monica");
+    await ctx.close();
+  });
+
+  it("dials a labelled number without the label reaching the caller", async () => {
+    const ctx = await boot({ ringTo: ["Jake:+15035550101"] });
+    const xml = await (await post(ctx, "/api/voice/transfer", { CallSid: "CA-lbl" })).text();
+    expect(xml).toContain("+15035550101");
+    expect(xml).not.toContain("Jake");
+    await ctx.close();
+  });
+
+  it("still works for a bare number with no label", async () => {
+    const calls = [];
+    const notifier = {
+      configured: () => true,
+      notifyMessage: async (r) => {
+        calls.push(r);
+        return { delivered: true, channel: "slack" };
+      },
+    };
+    const ctx = await boot({ ringTo: ["+15035550101"], notifier });
+    await post(ctx, "/api/voice/transfer/accept?parent=CA-bare", {
+      CallSid: "leg",
+      Digits: "1",
+      To: "+15035550101",
+    });
+    await post(ctx, "/api/voice/transfer/after?parent=CA-bare", {
+      CallSid: "CA-bare",
+      DialCallStatus: "completed",
+    });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(calls[0].reason).toContain("Someone answered");
+    await ctx.close();
+  });
+});
