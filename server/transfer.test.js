@@ -146,7 +146,13 @@ describe("when nobody picks up", () => {
       await post(ctx, "/api/voice/transfer/after", { CallSid: "CA1", DialCallStatus: "no-answer" })
     ).text();
     expect(xml).toContain("<Record");
-    expect(xml).toContain("Sorry we missed you");
+    // Say who they reached. A generic apology leaves a caller unsure they even
+    // dialled the right club.
+    expect(xml).toContain("Foundry Padel");
+    // A beep the caller can actually hear, not one clipped by the sentence
+    // before it.
+    expect(xml).toContain('playBeep="true"');
+    expect(xml).toContain("<Pause");
     await ctx.close();
   });
 

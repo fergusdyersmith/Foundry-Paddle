@@ -367,3 +367,52 @@ describe("one call, one card, whoever reports it", () => {
     expect(section.text.text.split("Greeted in Spanish").length - 1).toBe(1);
   });
 });
+
+describe("editing a card needs the channel ID, not its name", () => {
+  it("addresses an edit with the ID Slack returned, not #front-desk", async () => {
+    // chat.postMessage accepts a channel NAME. chat.update does not: it answers
+    // channel_not_found. Every edit failed that way, silently, and a real
+    // voicemail recording and its transcript were both rejected while the
+    // original card sat in the channel looking perfectly healthy.
+    const fetchImpl = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ ok: true, ts: "1723300000.000100", channel: "C0LIVE123" }),
+    }));
+    const notifier = createNotifier({ ...BOT, fetchImpl });
+    await notifier.notifyMessage({ ...RECORD, reason: "first" });
+    await notifier.notifyMessage({ ...RECORD, reason: "second" });
+
+    expect(JSON.parse(fetchImpl.mock.calls[0][1].body).channel).toBe("#front-desk");
+    expect(fetchImpl.mock.calls[1][0]).toBe("https://slack.com/api/chat.update");
+    expect(JSON.parse(fetchImpl.mock.calls[1][1].body).channel).toBe("C0LIVE123");
+  });
+
+  it("keeps the recording when the transcript arrives without one", async () => {
+    // Twilio's transcript callback carries no recording fields, so a plain
+    // spread blanked the link to the audio at the moment the card was most
+    // useful.
+    const fetchImpl = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ ok: true, ts: "1723300000.000100", channel: "C0LIVE123" }),
+    }));
+    const notifier = createNotifier({ ...BOT, fetchImpl });
+    await notifier.notifyMessage({
+      ...RECORD,
+      callSummary: true,
+      reason: "Voicemail, no transcript yet.",
+      recordingUrl: "https://api.twilio.com/rec/RE9.mp3",
+      durationMin: 0.25,
+    });
+    await notifier.notifyMessage({
+      ...RECORD,
+      callSummary: true,
+      reason: "Hi, it's Dana about Saturday.",
+    });
+
+    const body = JSON.stringify(JSON.parse(fetchImpl.mock.calls[1][1].body));
+    expect(body).toContain("RE9.mp3");
+    expect(body).toContain("Dana");
+  });
+});

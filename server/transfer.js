@@ -260,10 +260,18 @@ export function createTransferRouter({
     const done = `${publicUrl}/api/voice/transfer/voicemail`;
     res.type("text/xml").send(
       `<Response>` +
-        `<Say ${VOICE}>Sorry we missed you. Leave your name, number and a message after the tone, and we'll get back to you.</Say>` +
-        `<Record maxLength="120" playBeep="true" trim="trim-silence" timeout="4"` +
+        // Say who they have reached. A caller who hears a generic "sorry we
+        // missed you" has no idea whether they even dialled the right number,
+        // and a club greeting is the whole reason for having a club line.
+        `<Say ${VOICE}>Thanks for calling Foundry Padel in Saint Johns. Sorry we missed you.</Say>` +
+        `<Say ${VOICE}>Leave your name, number and what you're calling about, and we'll get back to you. You can also book a court any time in the Playtomic app.</Say>` +
+        // The beep runs straight into the end of the sentence before it without
+        // this, and on the first real voicemail the caller never heard one and
+        // did not know when to start.
+        `<Pause length="1"/>` +
+        `<Record maxLength="120" playBeep="true" trim="do-not-trim" timeout="5"` +
         ` transcribe="true" transcribeCallback="${escapeXml(done)}" action="${escapeXml(done)}" method="POST"/>` +
-        `<Say ${VOICE}>We didn't catch that. Please call again or message us. Goodbye.</Say>` +
+        `<Say ${VOICE}>We didn't catch that. Please call again, or book online at foundry padel dot com. Goodbye.</Say>` +
         `</Response>`,
     );
   });

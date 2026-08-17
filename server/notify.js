@@ -180,7 +180,8 @@ export function createNotifier({
     }
   }
 
-  async function postViaApi(record, updateTs = null) {
+  async function postViaApi(record, prior = null) {
+    const updateTs = prior?.ts || null;
     const message = buildSlackMessage(record);
     const res = await withTimeout((signal) =>
       fetchImpl(`https://slack.com/api/${updateTs ? "chat.update" : "chat.postMessage"}`, {
@@ -190,7 +191,9 @@ export function createNotifier({
           "content-type": "application/json; charset=utf-8",
         },
         body: JSON.stringify({
-          channel,
+          // The ID Slack gave us when it accepted the original, because an edit
+          // cannot be addressed by channel name.
+          channel: prior?.channel || channel,
           ...(updateTs ? { ts: updateTs } : {}),
           ...message,
           // @channel only for genuinely urgent calls. It is the one thing that
@@ -215,7 +218,11 @@ export function createNotifier({
       });
       return false;
     }
-    return body.ts || updateTs || true;
+    // chat.postMessage takes a channel NAME. chat.update does NOT: it needs the
+    // channel ID, and answers channel_not_found for "#front-desk". Every edit
+    // failed that way, silently, so a voicemail recording and its transcript
+    // were both rejected while the original card sat there looking fine.
+    return { ts: body.ts || updateTs, channel: body.channel || channel };
   }
 
   async function postViaWebhook(record) {
@@ -234,10 +241,10 @@ export function createNotifier({
     return true;
   }
 
-  async function postToSlack(record, updateTs = null) {
+  async function postToSlack(record, prior = null) {
     if (!useBotToken && !webhookUrl) return false;
     try {
-      return useBotToken ? await postViaApi(record, updateTs) : await postViaWebhook(record);
+      return useBotToken ? await postViaApi(record, prior) : await postViaWebhook(record);
     } catch (error) {
       console.error("[notify] Slack delivery failed:", error.message);
       return false;
@@ -256,12 +263,12 @@ export function createNotifier({
   // the real fix. This is the backstop: the second take edits the first card
   // and appends, so nothing is invented and nothing is lost. Bot token only;
   // an incoming webhook cannot edit what it posted.
-  const cardByCall = new Map(); // call_id -> { ts, record }
+  const cardByCall = new Map(); // call_id -> { ts, channel, record }
   const MAX_TRACKED_CALLS = 200;
 
-  function remember(callId, ts, record) {
+  function remember(callId, ts, channelId, record) {
     if (!callId || typeof ts !== "string") return;
-    cardByCall.set(callId, { ts, record });
+    cardByCall.set(callId, { ts, channel: channelId, record });
     // Bounded, and a call is only ever revisited within its own few minutes.
     while (cardByCall.size > MAX_TRACKED_CALLS) {
       cardByCall.delete(cardByCall.keys().next().value);
@@ -280,6 +287,11 @@ export function createNotifier({
       // Urgent is sticky: a later, calmer take must not downgrade a card that
       // already pinged the channel.
       urgent: Boolean(prior.urgent || next.urgent),
+      // Twilio's transcript callback arrives without the recording fields, so a
+      // plain spread would blank the link to the audio at the exact moment the
+      // card became most useful.
+      recordingUrl: next.recordingUrl || prior.recordingUrl || null,
+      durationMin: next.durationMin || prior.durationMin || null,
       // The post-call summary lands on this same card a minute later. Without
       // this the heading would flip to a plain "Call finished" and the fact
       // that somebody is waiting on a callback would stop being the first
@@ -313,14 +325,14 @@ export function createNotifier({
 
       const prior = record.callId ? cardByCall.get(record.callId) : null;
       const toPost = prior ? mergeRecord(prior.record, record) : record;
-      const result = await postToSlack(toPost, prior?.ts || null);
+      const result = await postToSlack(toPost, prior);
       const delivered = Boolean(result);
       if (!delivered) {
         console.error("[message] NOT DELIVERED to any notifier", {
           call_id: record.callId,
         });
       } else {
-        remember(record.callId, prior?.ts || result, toPost);
+        remember(record.callId, prior?.ts || result?.ts, result?.channel || channel, toPost);
       }
       return { delivered, channel: delivered ? "slack" : null };
     },
