@@ -132,6 +132,18 @@ export function createTransferRouter({
   // Unset it and the voicemail comes back on the next deploy. That is the
   // rollback.
   aiFallbackUrl = null,
+  // A SECOND number, registered with Bland, that the agent answers directly.
+  //
+  // Preferred over aiFallbackUrl when set, because a call handed over by
+  // Redirect reaches the agent without its tools. Bland applies the number's
+  // own config to a handover, the prompt, the greeting and dynamic_data all
+  // arrive, but not the persona behind it, so the skills that let it text a
+  // link or file a message are simply absent. It then does what it did before
+  // skills existed: says it sent a text and sends nothing.
+  //
+  // Dialling a Bland number instead makes a real inbound call, which is the
+  // shape that carries the persona. Costs one extra leg.
+  aiDialNumber = null,
 }) {
   // Entries may be labelled, "Jake:+19715550100", or a bare number. The label
   // never reaches a caller: it is only used to say who took the call in Slack.
@@ -350,7 +362,7 @@ export function createTransferRouter({
     // Skipped when the AI is about to take over: it posts what the caller
     // actually wanted, which beats "nobody answered" by enough that two cards
     // for one call would just be noise.
-    if (!fromAgent(req) && notifier?.configured() && !(aiFallbackUrl && !tookIt)) {
+    if (!fromAgent(req) && notifier?.configured() && !((aiFallbackUrl || aiDialNumber) && !tookIt)) {
       notifier
         .notifyMessage({
           name: req.body?.From ? `Caller ${req.body.From}` : "Caller",
@@ -394,6 +406,22 @@ export function createTransferRouter({
     // Redirect, not another Dial. It hands over the call that already exists,
     // so there is no second leg, no second number, and no second per-minute
     // charge, and the caller does not hear it ring again.
+    // Dial the agent's own number, so it arrives as a real inbound call and
+    // keeps its tools. callerId is the ORIGINAL caller, not the club, because
+    // the agent texts links to whoever it thinks it is talking to: hand it the
+    // club's number and it would text the club.
+    if (aiDialNumber) {
+      console.log("[transfer] dialling the AI line %s", JSON.stringify({ callSid: req.body?.CallSid }));
+      observe("/transfer/after", { ...outcome, dialledAgent: true });
+      const from = req.body?.From || "";
+      return res
+        .type("text/xml")
+        .send(
+          `<Response><Dial timeout="30" answerOnBridge="true"${from ? ` callerId="${escapeXml(from)}"` : ""}>` +
+            `<Number>${escapeXml(aiDialNumber)}</Number></Dial></Response>`,
+        );
+    }
+
     if (aiFallbackUrl) {
       console.log("[transfer] handing to the AI receptionist %s", JSON.stringify({ callSid: req.body?.CallSid }));
       observe("/transfer/after", { ...outcome, handedToAgent: true });

@@ -1132,6 +1132,9 @@ app.use(
     callerId: process.env.CLUB_PHONE_NUMBER || "+19715217887",
     // Unset this and missed calls go back to voicemail on the next deploy.
     aiFallbackUrl: process.env.VOICE_AI_FALLBACK_URL || null,
+    // Set once a second number is imported into Bland: it keeps the agent's
+    // tools, which a Redirect does not.
+    aiDialNumber: process.env.VOICE_AI_DIAL_NUMBER || null,
     publicUrl: process.env.SITE_BASE_URL || "https://www.foundrypadel.com",
   }),
 );

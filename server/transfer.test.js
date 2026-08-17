@@ -16,11 +16,13 @@ function sign(url, params) {
   return crypto.createHmac("sha1", TOKEN).update(Buffer.from(data, "utf-8")).digest("base64");
 }
 
-async function boot({ ringTo = [JAKE, MONICA], notifier, callerId, aiFallbackUrl } = {}) {
+async function boot({ ringTo = [JAKE, MONICA], notifier, callerId, aiFallbackUrl, aiDialNumber } = {}) {
   const app = express();
   app.use(express.json());
   app.use(
-    createTransferRouter({ authToken: TOKEN, ringTo, notifier, callerId, aiFallbackUrl, publicUrl: PUBLIC }),
+    createTransferRouter({
+      authToken: TOKEN, ringTo, notifier, callerId, aiFallbackUrl, aiDialNumber, publicUrl: PUBLIC,
+    }),
   );
   const listener = app.listen(0);
   await new Promise((r) => listener.once("listening", r));
@@ -646,6 +648,55 @@ describe("who answered", () => {
     });
     await new Promise((r) => setTimeout(r, 20));
     expect(calls[0].reason).toContain("Someone answered");
+    await ctx.close();
+  });
+});
+
+describe("reaching the agent so it keeps its tools", () => {
+  const BLAND_URL = "https://server.aws.dc8.bland.ai/incoming?encrypted_key=k";
+
+  it("dials the agent's own number in preference to handing the call over", async () => {
+    // A Redirect reaches the agent without its persona, so no tool fires and it
+    // starts claiming to send texts it cannot send. A real inbound call to a
+    // Bland number carries the persona.
+    const ctx = await boot({ aiFallbackUrl: BLAND_URL, aiDialNumber: "+15035637442" });
+    const xml = await (
+      await post(ctx, "/api/voice/transfer/after?parent=CA-d1", {
+        CallSid: "CA1",
+        From: "+15417770000",
+        DialCallStatus: "no-answer",
+      })
+    ).text();
+    expect(xml).toContain("<Dial");
+    expect(xml).toContain("+15035637442");
+    expect(xml).not.toContain("<Redirect");
+    await ctx.close();
+  });
+
+  it("passes the ORIGINAL caller as caller ID, not the club", async () => {
+    // The agent texts links to whoever it thinks it is talking to. Hand it the
+    // club's number and it would text the club.
+    const ctx = await boot({ aiDialNumber: "+15035637442", callerId: "+19715217887" });
+    const xml = await (
+      await post(ctx, "/api/voice/transfer/after?parent=CA-d2", {
+        CallSid: "CA1",
+        From: "+15417770000",
+        DialCallStatus: "no-answer",
+      })
+    ).text();
+    expect(xml).toContain('callerId="+15417770000"');
+    await ctx.close();
+  });
+
+  it("falls back to the handover when no agent number is configured", async () => {
+    const ctx = await boot({ aiFallbackUrl: BLAND_URL });
+    const xml = await (
+      await post(ctx, "/api/voice/transfer/after?parent=CA-d3", {
+        CallSid: "CA1",
+        DialCallStatus: "no-answer",
+      })
+    ).text();
+    expect(xml).toContain("<Redirect");
     await ctx.close();
   });
 });
