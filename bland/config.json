@@ -8,9 +8,9 @@
     "take_message": "TL-6323f014-b6f3-4a7b-83bc-97443f434016"
   },
   "persona_id": "d524f7a1-f79c-4362-a3f3-6f7f069ebe9f",
-  "phone_number": "+19715217887",
+  "phone_number": "+19715217399",
   "transfer_to": "+15035637442",
-  "deployed_at": "2026-08-17",
+  "deployed_at": "2026-08-18",
   "twilio_ai_routing": {
     "voice_url": "https://server.aws.dc8.bland.ai/incoming?encrypted_key=4e903157-f604-480c-bd70-6fafedc03f06&user_id=b0c61acd-a197-41f5-b853-0521ebdfef79&placement_group=blandshared&region=dc8",
     "voice_method": "POST",
