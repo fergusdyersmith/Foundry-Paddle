@@ -23,7 +23,18 @@ const CONFIG_PATH = path.join(__dirname, "..", "bland", "config.json");
 const BLAND_API_KEY = process.env.BLAND_API_KEY;
 const VOICE_TOOL_SECRET = process.env.VOICE_TOOL_SECRET;
 const ENCRYPTED_KEY = process.env.BLAND_ENCRYPTED_KEY; // BYOT: our own Twilio number
-const PHONE_NUMBER = process.env.CLUB_PHONE_NUMBER || "+19715217887";
+// The number BLAND answers, which is not the number the club publishes.
+//
+// +1 971 521-7887 is the club line and belongs to the ring group: it rings Jake
+// and Monica first. The agent gets its own unpublished number, and the ring
+// group dials it when nobody picks up, because a call DIALLED to a Bland number
+// arrives with the persona and its tools, and a call handed over by Redirect
+// does not.
+//
+// Falls back to the club number so this still works before the agent's own
+// number is imported into Bland.
+const PHONE_NUMBER =
+  process.env.BLAND_PHONE_NUMBER || process.env.CLUB_PHONE_NUMBER || "+19715217887";
 const SITE = process.env.SITE_BASE_URL || "https://www.foundrypadel.com";
 
 // Bland transfers here, and this is NOT a person. It is a Twilio number we own
@@ -646,7 +657,7 @@ async function main() {
   //
   // The agent is still fully deployed either way. This only decides who the
   // number reaches first.
-  if (config.club_line_mode === "ring") {
+  if (config.club_line_mode === "ring" && PHONE_NUMBER === (process.env.CLUB_PHONE_NUMBER || "+19715217887")) {
     const sid = process.env.TWILIO_ACCOUNT_SID;
     const token = process.env.TWILIO_AUTH_TOKEN;
     if (!sid || !token) {
