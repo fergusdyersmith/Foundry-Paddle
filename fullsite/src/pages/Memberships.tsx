@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Check, Star } from "lucide-react";
 import BookCTA from "@/components/BookCTA";
+import { PLAYTOMIC_MEMBERSHIP_URLS } from "@/constants/booking";
 import StayInTouchForm from "@/components/StayInTouchForm";
 import Seo from "@/components/Seo";
 
@@ -104,6 +105,7 @@ function monthlyValue(t: {
 const tiers = [
   {
     name: "STUDENT / LONGEVITY",
+    buyUrl: PLAYTOMIC_MEMBERSHIP_URLS.student,
     price: "$100",
     period: "/mo",
     desc: "Play as much as you like, weekday daytime and weekend evenings.",
@@ -124,6 +126,7 @@ const tiers = [
   },
   {
     name: "REGULAR",
+    buyUrl: PLAYTOMIC_MEMBERSHIP_URLS.regular,
     price: "$150",
     period: "/mo",
     desc: "Unlimited off-peak, and a quarter off your share of every peak booking.",
@@ -143,6 +146,7 @@ const tiers = [
   },
   {
     name: "PADELHEAD",
+    buyUrl: PLAYTOMIC_MEMBERSHIP_URLS.padelhead,
     price: "$200",
     period: "/mo",
     desc: "For players playing 2 or more times per week.",
@@ -304,6 +308,21 @@ const Memberships = () => {
                   </li>
                 ))}
               </ul>
+              {/* Sits after the flex-1 list, so it is pinned to the bottom of the card
+                  and the three buttons line up however unevenly the bullets fall.
+                  aria-label names the tier: three buttons all reading "JOIN" are the
+                  same button to anyone using a screen reader.
+                  Opens Playtomic in a new tab rather than navigating away, because a
+                  half-finished sign-up should still have the page behind it. */}
+              <a
+                href={tier.buyUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`Join the ${tier.name} membership on Playtomic`}
+                className="mt-8 block w-full bg-primary px-6 py-3 text-center font-display text-lg tracking-widest text-primary-foreground transition-all hover:brightness-110"
+              >
+                JOIN
+              </a>
             </motion.div>
           ))}
         </div>
