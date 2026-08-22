@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Check, Star } from "lucide-react";
 import BookCTA from "@/components/BookCTA";
+import FoundingMemberBar from "@/components/FoundingMemberBar";
 import { PLAYTOMIC_MEMBERSHIP_URLS } from "@/constants/booking";
 import StayInTouchForm from "@/components/StayInTouchForm";
 import Seo from "@/components/Seo";
@@ -194,6 +195,10 @@ const Memberships = () => {
             <p className="font-body text-sm tracking-[0.15em] uppercase text-primary mt-6">
               Limited to 100 founding memberships
             </p>
+            {/* The line above has always been a claim with nothing behind it. The bar is
+                the live count from the club's own roster, so the scarcity is checkable
+                and goes stale on its own if sales stop. */}
+            <FoundingMemberBar />
           </motion.div>
         </div>
       </section>

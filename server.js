@@ -1072,6 +1072,54 @@ async function fetchKumiOpenMatches() {
   return data;
 }
 
+// Founding memberships sold, for the progress bar on /memberships. Playtomic cannot cap
+// a membership and publishes no count, so the roster Kumi syncs out of it (every four
+// hours) is the only place this number exists. The page has always said "limited to 100
+// founding memberships"; this is what lets it say how many are actually left.
+const KUMI_MEMBERSHIPS_URL =
+  process.env.KUMI_MEMBERSHIPS_URL ||
+  "https://padelmaps.org/api/coaching/memberships?slug=foundry-padel";
+let kumiMembershipsCache = { data: null, fetchedAt: 0 };
+
+/** Reduce the upstream payload to the two numbers the bar is drawn from, or null.
+ *
+ *  Null rather than a guess: the page hides the whole section when this fails, which is
+ *  the only honest option. A missing figure rendered anyway is "NaN of 100 claimed", and
+ *  a count past the cap is a bar drawn past its own end — both worse than saying nothing.
+ *  An oversold count is clamped instead, since "101 of 100" is a back-office problem and
+ *  not something to publish. */
+function normalizeMembershipCount(raw) {
+  const cap = Math.round(Number(raw?.cap));
+  const sold = Math.round(Number(raw?.sold));
+  if (!Number.isFinite(cap) || cap <= 0) return null;
+  if (!Number.isFinite(sold) || sold < 0) return null;
+  const claimed = Math.min(sold, cap);
+  return { sold: claimed, cap, remaining: cap - claimed };
+}
+
+async function fetchKumiMemberships() {
+  if (kumiMembershipsCache.data && Date.now() - kumiMembershipsCache.fetchedAt < COACH_CLASSES_TTL) {
+    return kumiMembershipsCache.data;
+  }
+  const upstream = await fetch(KUMI_MEMBERSHIPS_URL, { headers: { Accept: "application/json" } });
+  if (!upstream.ok) throw new Error(`Kumi memberships fetch failed (${upstream.status})`);
+  const data = normalizeMembershipCount(await upstream.json());
+  if (!data) throw new Error("Kumi memberships payload missing cap/sold");
+  kumiMembershipsCache = { data, fetchedAt: Date.now() };
+  return data;
+}
+
+app.get("/api/memberships", async (req, res) => {
+  try {
+    return res.json(await fetchKumiMemberships());
+  } catch (error) {
+    console.error("[memberships] count proxy failed:", error.message);
+    // A slightly stale count beats no bar at all; it moves a few times a week.
+    if (kumiMembershipsCache.data) return res.json(kumiMembershipsCache.data);
+    return res.status(502).json({ error: "Couldn't load membership count." });
+  }
+});
+
 app.get("/api/coaching/classes", async (req, res) => {
   try {
     return res.json(await fetchKumiClasses());
@@ -1268,6 +1316,7 @@ export { app };
 // what the public schedule shows, but were previously unreachable from a test.
 export const __testables = {
   effectiveBookingType,
+  normalizeMembershipCount,
   applyKumiClassInfo,
   applyKumiOpenMatchLevels,
   openMatchId,
