@@ -1,9 +1,9 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import heroImage from "@/assets/hero-padel-blue.jpg";
 import BookCTA from "@/components/BookCTA";
 import StayInTouchForm from "@/components/StayInTouchForm";
 import { PartnerLogoBand } from "@/components/PartnerLogoBand";
+import Photo from "@/components/Photo";
 import Seo from "@/components/Seo";
 import { BOOK_PAGE_PATH } from "@/constants/booking";
 import { GOOGLE_MAPS_URL } from "@/constants/location";
@@ -25,7 +25,12 @@ const Index = () => {
       {/* Hero */}
       <section className="relative h-screen w-full overflow-hidden">
         <div className="absolute inset-0">
-          <img src={heroImage} alt="Indoor padel court with dramatic lighting" className="h-full w-full object-cover" />
+          <Photo
+            name="hero-home"
+            alt="A player serves under the steel trusses of Foundry Padel's warehouse courts in Portland"
+            className="h-full w-full object-cover"
+            priority
+          />
           <div className="hero-gradient absolute inset-0" />
         </div>
         <div className="absolute inset-0 flex justify-between px-[20%] pointer-events-none">
@@ -169,15 +174,20 @@ const Index = () => {
       <section className="py-20 px-6">
         <div className="mx-auto max-w-5xl grid md:grid-cols-3 gap-6">
           {[
-            { title: "THE SPORT", desc: "New to padel? Learn the basics and why it's taking the world by storm.", link: "/the-sport" },
-            { title: "THE CLUB", desc: "Four courts, a social bar, and a space designed for the culture.", link: "/the-club" },
-            { title: "MEMBERSHIPS", desc: "From drop-in to unlimited, find the tier that fits your game.", link: "/memberships" },
+            { title: "THE SPORT", desc: "New to padel? Learn the basics and why it's taking the world by storm.", link: "/the-sport", photo: "card-the-sport", alt: "A player stretches wide for a forehand on court at Foundry Padel" },
+            { title: "THE CLUB", desc: "Four courts, a social bar, and a space designed for the culture.", link: "/the-club", photo: "card-the-club", alt: "Players on adjacent courts inside Foundry Padel's converted warehouse" },
+            { title: "MEMBERSHIPS", desc: "From drop-in to unlimited, find the tier that fits your game.", link: "/memberships", photo: "card-memberships", alt: "Two members in Foundry Padel gear fist-bump between courts" },
           ].map((item) => (
             <motion.div key={item.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
-              <Link to={item.link} className="block border border-border p-8 transition-all hover:border-primary group">
+              <Link to={item.link} className="block border border-border transition-all hover:border-primary group">
+                <div className="aspect-[3/2] overflow-hidden bg-secondary">
+                  <Photo name={item.photo} alt={item.alt} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                </div>
+                <div className="p-8">
                 <h3 className="font-display text-2xl text-foreground group-hover:text-primary transition-colors mb-3">{item.title}</h3>
                 <p className="font-body text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
                 <span className="inline-block mt-4 font-body text-xs tracking-[0.2em] uppercase text-primary">Explore →</span>
+                </div>
               </Link>
             </motion.div>
           ))}

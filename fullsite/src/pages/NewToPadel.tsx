@@ -1,8 +1,8 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ArrowRight, Footprints, CalendarCheck, Handshake, Timer } from "lucide-react";
-import heroImage from "@/assets/hero-padel.jpg";
 import { BOOK_PAGE_PATH } from "@/constants/booking";
+import Photo from "@/components/Photo";
 import Seo from "@/components/Seo";
 
 /** Conversion landing page for the two paid-acquisition segments: total
@@ -67,10 +67,11 @@ const NewToPadel = () => {
       {/* Hero */}
       <section className="relative flex min-h-[85vh] w-full items-center overflow-hidden">
         <div className="absolute inset-0">
-          <img
-            src={heroImage}
-            alt="Indoor padel court at Foundry Padel in Portland"
+          <Photo
+            name="hero-new-to-padel"
+            alt="Four players tap paddles across the net after a friendly doubles match at Foundry Padel"
             className="h-full w-full object-cover"
+            priority
           />
           <div className="hero-gradient absolute inset-0" />
         </div>

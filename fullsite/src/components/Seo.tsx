@@ -1,7 +1,8 @@
 import { Head } from "vite-react-ssg";
 
 const SITE_URL = "https://www.foundrypadel.com";
-const OG_IMAGE = `${SITE_URL}/og-image.png`;
+// Real photo of the club, cropped to 1200x630 from photos/site/og-image-photo.jpg.
+const OG_IMAGE = `${SITE_URL}/photos/site/og-image.jpg`;
 
 type SeoProps = {
   /** Full <title> for the page. */

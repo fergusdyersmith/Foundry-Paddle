@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import BookCTA from "@/components/BookCTA";
+import Photo from "@/components/Photo";
 import Seo from "@/components/Seo";
 
 const spaces = [
@@ -7,29 +8,29 @@ const spaces = [
     title: "THE COURTS",
     desc: "Four panoramic glass courts built to World Padel Tour specifications. LED-lit, heated through the winter, and designed for serious play. Whether you're rallying with friends or competing in a league, the courts are the heart of Foundry.",
     detail: "WPT-spec · LED lighting · Heated in winter",
-    image: "c948355b4e525fd8e6d3f81de38e0a9dcffb5ffa-3984x2490.avif",
-    imageAlt: "Indoor padel court with a player ready to strike the ball",
+    image: "club-courts",
+    imageAlt: "Foundry Padel's glass courts seen from above, with play underway on both",
   },
   {
     title: "THE BAR",
     desc: "Post-match beer or a glass of wine. The bar is the club's gathering point — a place to debrief, strategize, or just hang.",
     detail: "Local beer · Wine · Air conditioned",
-    image: "cafe.png",
-    imageAlt: "Members gathered around a communal table at the club bar",
+    image: "club-bar",
+    imageAlt: "Padel shoes tucked under a lounge table between matches at Foundry Padel",
   },
   {
     title: "SOCIAL SPACES",
     desc: "Spectator viewing, lounge seating, and a community table designed for connection. Watch matches from the mezzanine, meet your next doubles partner, or co-work between sessions.",
     detail: "Mezzanine viewing · Lounge · Co-working",
-    image: "social.png",
-    imageAlt: "Group of members laughing together at an outdoor social table by the courts",
+    image: "club-social",
+    imageAlt: "Four players high-five over the net at the end of a match at Foundry Padel",
   },
   {
     title: "PRO SHOP",
     desc: "Curated gear from the brands shaping padel. Racquets, grips, shoes, and apparel — tested by our coaching team and stocked for every level.",
     detail: "Racquets · Apparel · Accessories",
-    image: "images.jpeg",
-    imageAlt: "Padel play on court",
+    image: "club-proshop",
+    imageAlt: "Padel racquets laid out on the pro shop counter at Foundry Padel",
   },
 ];
 
@@ -80,13 +81,7 @@ const TheClub = () => {
               <div
                 className={`aspect-[4/3] overflow-hidden bg-secondary border border-border ${i % 2 === 1 ? "md:order-1" : ""}`}
               >
-                <img
-                  src={`${import.meta.env.BASE_URL}${encodeURI(space.image)}`}
-                  alt={space.imageAlt}
-                  className="h-full w-full object-cover"
-                  loading="lazy"
-                  decoding="async"
-                />
+                <Photo name={space.image} alt={space.imageAlt} className="h-full w-full object-cover" />
               </div>
             </motion.div>
           ))}
@@ -108,6 +103,19 @@ const TheClub = () => {
               Evening leagues under low light. Weekend tournaments with spectators on the mezzanine. 
               Tuesday morning coaching, post-match beers at the bar. This is padel culture, built from the ground up.
             </p>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, delay: 0.15 }}
+            className="mt-12 aspect-[3/2] overflow-hidden border border-border bg-secondary"
+          >
+            <Photo
+              name="club-vibe"
+              alt="Amber light, exposed steel and concrete over the blue courts at Foundry Padel in St. Johns, Portland"
+              className="h-full w-full object-cover"
+            />
           </motion.div>
           <div className="section-divider mt-16" />
         </div>

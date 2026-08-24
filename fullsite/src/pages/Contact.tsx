@@ -4,6 +4,7 @@ import { GOOGLE_MAPS_EMBED_SRC, GOOGLE_MAPS_URL } from "@/constants/location";
 import StayInTouchForm from "@/components/StayInTouchForm";
 import WhatsAppJoinLink from "@/components/WhatsAppJoinLink";
 import WhatsAppIcon from "@/components/WhatsAppIcon";
+import Photo from "@/components/Photo";
 import Seo from "@/components/Seo";
 
 const TikTokIcon = ({ size = 20 }: { size?: number }) => (
@@ -39,7 +40,14 @@ const Contact = () => {
           <div className="grid md:grid-cols-2 gap-16">
             {/* Info */}
             <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}>
-              <h2 className="font-display text-3xl text-foreground mb-8">FIND US</h2>
+              <h2 className="font-display text-3xl text-foreground mb-6">FIND US</h2>
+              <div className="mb-8 aspect-[3/2] overflow-hidden border border-border bg-secondary">
+                <Photo
+                  name="contact-interior"
+                  alt="Daylight through the open rollup door at Foundry Padel's St. Johns entrance"
+                  className="h-full w-full object-cover"
+                />
+              </div>
               <div className="space-y-6">
                 <div className="flex items-start gap-4">
                   <MapPin size={18} className="text-primary mt-1 shrink-0" />

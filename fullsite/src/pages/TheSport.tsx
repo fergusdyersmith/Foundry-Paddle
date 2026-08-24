@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import BookCTA from "@/components/BookCTA";
 import WistiaVideo from "@/components/WistiaVideo";
+import Photo from "@/components/Photo";
 import Seo from "@/components/Seo";
 
 const comparisons = [
@@ -10,10 +11,32 @@ const comparisons = [
 ];
 
 const rules = [
-  { title: "DOUBLES ONLY", desc: "Padel is played in doubles on a 10m x 20m enclosed court with glass walls and metallic mesh." },
-  { title: "UNDERARM SERVE", desc: "The serve must be underarm, hit at or below waist height. Easier to learn, still tactical." },
-  { title: "WALLS IN PLAY", desc: "Like squash, the ball can bounce off the glass walls. This creates unique angles and rallies." },
-  { title: "SCORING", desc: "Same scoring as tennis — 15, 30, 40, deuce, advantage. Best of 3 sets wins the match." },
+  {
+    title: "DOUBLES ONLY",
+    desc: "Padel is played in doubles on a 10m x 20m enclosed court with glass walls and metallic mesh.",
+    photo: "sport-rule-doubles",
+    alt: "Two pairs rally across the net on a glass-walled doubles court at Foundry Padel",
+  },
+  {
+    title: "UNDERARM SERVE",
+    desc: "The serve must be underarm, hit at or below waist height. Easier to learn, still tactical.",
+    photo: "sport-rule-serve",
+    alt: "A player drops low for an underarm serve at Foundry Padel",
+    // The only portrait frame in the set; the fixed-ratio box crops it.
+    portrait: true,
+  },
+  {
+    title: "WALLS IN PLAY",
+    desc: "Like squash, the ball can bounce off the glass walls. This creates unique angles and rallies.",
+    photo: "sport-rule-walls",
+    alt: "Players deep in the court by the glass back wall at Foundry Padel",
+  },
+  {
+    title: "SCORING",
+    desc: "Same scoring as tennis — 15, 30, 40, deuce, advantage. Best of 3 sets wins the match.",
+    photo: "sport-rule-scoring",
+    alt: "A padel ball resting against the net on Foundry Padel's blue court",
+  },
 ];
 
 const TheSport = () => {
@@ -36,6 +59,23 @@ const TheSport = () => {
             </div>
           </motion.div>
         </div>
+      </section>
+
+      {/* One photograph of a real court, before any of the explaining starts. */}
+      <section className="px-6">
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          className="mx-auto max-w-5xl aspect-[16/9] overflow-hidden border border-border bg-secondary"
+        >
+          <Photo
+            name="sport-what-is-padel"
+            alt="A player reaches for a high ball against the glass back wall on a Foundry Padel court"
+            className="h-full w-full object-cover"
+          />
+        </motion.div>
       </section>
 
       {/* What is Padel */}
@@ -73,11 +113,22 @@ const TheSport = () => {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: i * 0.1 }}
-                  className="border border-border p-6"
+                  className="border border-border"
                 >
-                  <span className="font-display text-5xl text-primary/30">{String(i + 1).padStart(2, "0")}</span>
-                  <h3 className="font-display text-xl text-foreground mt-2 mb-2">{rule.title}</h3>
-                  <p className="font-body text-sm text-muted-foreground leading-relaxed">{rule.desc}</p>
+                  <div className="aspect-[3/2] overflow-hidden bg-secondary">
+                    <Photo
+                      name={rule.photo}
+                      alt={rule.alt}
+                      width={rule.portrait ? 1067 : 1600}
+                      height={rule.portrait ? 1600 : 1067}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <div className="p-6">
+                    <span className="font-display text-5xl text-primary/30">{String(i + 1).padStart(2, "0")}</span>
+                    <h3 className="font-display text-xl text-foreground mt-2 mb-2">{rule.title}</h3>
+                    <p className="font-body text-sm text-muted-foreground leading-relaxed">{rule.desc}</p>
+                  </div>
                 </motion.div>
               ))}
             </div>

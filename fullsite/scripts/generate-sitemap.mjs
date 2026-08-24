@@ -13,6 +13,7 @@ const ROUTES = [
   "/memberships",
   "/the-sport",
   "/the-club",
+  "/gallery",
   "/faq",
   "/contact",
   "/survey",

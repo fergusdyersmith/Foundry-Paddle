@@ -12,6 +12,7 @@ import NewToPadel from "./pages/NewToPadel";
 import SkillSurvey from "./pages/SkillSurvey";
 import Coaching from "./pages/Coaching";
 import Community from "./pages/Community";
+import Gallery from "./pages/Gallery";
 import TvScreen from "./pages/TvScreen";
 import Privacy from "./pages/Privacy";
 import SmsTerms from "./pages/SmsTerms";
@@ -46,6 +47,8 @@ export const routes: RouteRecord[] = [
       { path: "survey", element: <SkillSurvey /> },
       // Preview (rebrand branch): coaching roster + live sessions per coach.
       { path: "coaching", element: <Coaching /> },
+      // The tournament-shoot photo set (footer nav + sitemap).
+      { path: "gallery", element: <Gallery /> },
       // Hidden (no nav link, noindex, absent from the sitemap): the one place we
       // send people for the WhatsApp community, so the invite URL itself never
       // has to appear in the chatbot, on Instagram or at the front desk.

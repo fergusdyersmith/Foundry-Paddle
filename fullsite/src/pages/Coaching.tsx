@@ -6,6 +6,7 @@ import { Award, ExternalLink, Globe, Loader2, Mail, Target } from "lucide-react"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { type CoachProfile, coachMatchesName, TEAM_COACHES } from "@/constants/coaches";
 import { PLAYTOMIC_TENANT_URL } from "@/constants/booking";
+import Photo from "@/components/Photo";
 import Seo from "@/components/Seo";
 
 /** A coach-led class from Kumi's public discovery endpoint (Playtomic data,
@@ -114,6 +115,25 @@ const Coaching = () => {
             </p>
           </motion.div>
         </div>
+      </section>
+
+      {/* A coach at work, before the roster. */}
+      <section className="px-6">
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          className="mx-auto max-w-4xl aspect-[16/9] overflow-hidden border border-border bg-secondary"
+        >
+          <Photo
+            name="coaching-hero"
+            alt="A coach works through a low volley with a player on court at Foundry Padel"
+            width={1067}
+            height={1600}
+            className="h-full w-full object-cover object-top"
+          />
+        </motion.div>
       </section>
 
       {/* Team grid — order rotates every page load */}
