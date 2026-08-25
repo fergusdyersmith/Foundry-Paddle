@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import BookCTA from "@/components/BookCTA";
 import Photo from "@/components/Photo";
 import Seo from "@/components/Seo";
@@ -117,6 +118,15 @@ const TheClub = () => {
               className="h-full w-full object-cover"
             />
           </motion.div>
+          {/* The gallery is deliberately not in the top nav (see the nav
+              consolidation note in Header.tsx); this is the page that earns the
+              click. */}
+          <Link
+            to="/gallery"
+            className="mt-8 inline-block border border-border px-7 py-3 font-body text-xs tracking-[0.2em] uppercase text-secondary-foreground transition-colors hover:border-primary hover:text-primary"
+          >
+            See the gallery — 47 photos →
+          </Link>
           <div className="section-divider mt-16" />
         </div>
       </section>
