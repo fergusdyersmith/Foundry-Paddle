@@ -12,46 +12,71 @@ const comparisons = [
   { sport: "Pickleball", padel: "Full racquet sport with wall strategy", other: "Paddle sport, no walls, smaller court" },
 ];
 
-// Frames for the band under the page heading. Every one of these is used
-// nowhere else on the site: the four site/ photos that would have fit here are
-// all spoken for (card-the-sport on the homepage, club-courts and club-vibe on
-// /the-club, og-image-photo is the social card and the same frame as the
-// homepage gallery tile), so the rotation pulls from the gallery instead.
+// Frames for the band under the page heading. Every one appears nowhere else
+// on the site: matching the two photo sets by image content shows 15 of the 19
+// site/ photos are gallery frames under another name, and all 19 are spoken
+// for, so the rotation pulls from the gallery.
+//
+// Ordered to alternate rather than running the wide shots and then the close
+// ones, or all the men and then all the women.
 //
 // Gallery frames are 800px until the full/ set lands — see GALLERY_IMAGE_DIR,
 // which upgrades these and the lightbox together in one edit.
+const GALLERY_LANDSCAPE = { dir: GALLERY_IMAGE_DIR, w: 800, h: 534 } as const;
+// A portrait frame gives up ~60% of its height to the 16:9 box, so these say
+// where the subject actually is.
+const GALLERY_PORTRAIT = { dir: GALLERY_IMAGE_DIR, w: 533, h: 800 } as const;
+
 const heroFrames: CycleFrame[] = [
   {
     name: "sport-what-is-padel",
     alt: "A player reaches for a high ball against the glass back wall on a Foundry Padel court",
   },
   {
+    ...GALLERY_LANDSCAPE,
+    name: "overhead-backhand",
+    alt: "A player lunges for a low backhand at Foundry Padel, seen from above",
+  },
+  {
+    ...GALLERY_LANDSCAPE,
     name: "over-the-net-rally",
     alt: "A rally seen from behind the net on a glass-walled court at Foundry Padel",
-    dir: GALLERY_IMAGE_DIR,
-    w: 800,
-    h: 534,
   },
   {
+    ...GALLERY_PORTRAIT,
+    name: "celebration-arms-up",
+    alt: "A player throws her arms up after winning the point at Foundry Padel",
+    position: "object-top",
+  },
+  {
+    ...GALLERY_LANDSCAPE,
     name: "daylight-court-wide",
     alt: "Daylight streams across the courts during an afternoon session at Foundry Padel",
-    dir: GALLERY_IMAGE_DIR,
-    w: 800,
-    h: 534,
   },
   {
+    ...GALLERY_LANDSCAPE,
+    name: "womens-doubles",
+    alt: "A player waits to return serve in a doubles match at Foundry Padel",
+  },
+  {
+    ...GALLERY_LANDSCAPE,
     name: "forehand-contact",
     alt: "A player makes contact on a forehand, the ball frozen at the paddle",
-    dir: GALLERY_IMAGE_DIR,
-    w: 800,
-    h: 534,
   },
   {
+    ...GALLERY_PORTRAIT,
+    name: "mixed-doubles-net",
+    alt: "Two teammates work a ball at the net during a mixed doubles match at Foundry Padel",
+  },
+  {
+    ...GALLERY_LANDSCAPE,
     name: "evening-lights-rally",
     alt: "Court lights come on over an evening rally at Foundry Padel",
-    dir: GALLERY_IMAGE_DIR,
-    w: 800,
-    h: 534,
+  },
+  {
+    ...GALLERY_PORTRAIT,
+    name: "running-down-the-ball",
+    alt: "A player chases the ball down mid-rally at Foundry Padel",
   },
 ];
 

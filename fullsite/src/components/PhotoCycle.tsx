@@ -10,6 +10,12 @@ export type CycleFrame = {
   /** Source dimensions, when they differ from the 3:2 landscape default. */
   w?: number;
   h?: number;
+  /**
+   * object-position utility for frames whose subject is not in the middle.
+   * A portrait frame loses ~60% of its height to a 16:9 box, so a centred crop
+   * on one can land on a torso; "object-top" keeps the head and hands.
+   */
+  position?: string;
 };
 
 type PhotoCycleProps = {
@@ -116,7 +122,7 @@ const PhotoCycle = ({ frames, holdMs = 4000, className }: PhotoCycleProps) => {
               // Only the visible frame describes itself; the rest are decorative
               // duplicates as far as a screen reader is concerned.
               alt={isCurrent ? frame.alt : ""}
-              className="h-full w-full object-cover"
+              className={`h-full w-full object-cover ${frame.position ?? ""}`}
               priority={i === 0}
               eager={i > 0}
             />

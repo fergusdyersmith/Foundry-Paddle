@@ -5,7 +5,6 @@ import BookCTA from "@/components/BookCTA";
 import FoundingMemberBar from "@/components/FoundingMemberBar";
 import { PLAYTOMIC_MEMBERSHIP_URLS } from "@/constants/booking";
 import StayInTouchForm from "@/components/StayInTouchForm";
-import Photo from "@/components/Photo";
 import Seo from "@/components/Seo";
 
 // The t-shirt lives here rather than in each tier's list: it was the same line repeated
@@ -541,13 +540,6 @@ const Memberships = () => {
           transition={{ duration: 0.6 }}
           className="mx-auto max-w-3xl text-center"
         >
-          <div className="mb-8 aspect-[3/2] overflow-hidden border border-border bg-secondary">
-            <Photo
-              name="memberships-founding"
-              alt="Players high-five at the net after a league match at Foundry Padel"
-              className="h-full w-full object-cover"
-            />
-          </div>
           <h2 className="font-display text-3xl sm:text-4xl text-foreground mb-4">FOUNDING MEMBERSHIPS</h2>
           <p className="font-body text-base text-secondary-foreground max-w-lg mx-auto mb-4">
             We are opening <span className="text-foreground font-semibold">100 memberships</span>{" "}
