@@ -23,8 +23,8 @@ const comparisons = [
 // Gallery frames are 800px until the full/ set lands — see GALLERY_IMAGE_DIR,
 // which upgrades these and the lightbox together in one edit.
 const GALLERY_LANDSCAPE = { dir: GALLERY_IMAGE_DIR, w: 800, h: 534 } as const;
-// A portrait frame gives up ~60% of its height to the 16:9 box, so these say
-// where the subject actually is.
+// Portrait sources. They do not fill a 3:2 slot, so PhotoCycle puts a blurred
+// copy behind them rather than cropping into them.
 const GALLERY_PORTRAIT = { dir: GALLERY_IMAGE_DIR, w: 533, h: 800 } as const;
 
 const heroFrames: CycleFrame[] = [
@@ -46,7 +46,6 @@ const heroFrames: CycleFrame[] = [
     ...GALLERY_PORTRAIT,
     name: "celebration-arms-up",
     alt: "A player throws her arms up after winning the point at Foundry Padel",
-    position: "object-top",
   },
   {
     ...GALLERY_LANDSCAPE,
@@ -143,7 +142,7 @@ const TheSport = () => {
         >
           <PhotoCycle
             frames={heroFrames}
-            className="aspect-[16/9] overflow-hidden border border-border bg-secondary"
+            className="aspect-[3/2] overflow-hidden border border-border bg-secondary"
           />
         </motion.div>
       </section>

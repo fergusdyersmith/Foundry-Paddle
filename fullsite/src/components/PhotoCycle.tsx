@@ -10,16 +10,12 @@ export type CycleFrame = {
   /** Source dimensions, when they differ from the 3:2 landscape default. */
   w?: number;
   h?: number;
-  /**
-   * object-position utility for frames whose subject is not in the middle.
-   * A portrait frame loses ~60% of its height to a 16:9 box, so a centred crop
-   * on one can land on a torso; "object-top" keeps the head and hands.
-   */
-  position?: string;
 };
 
 type PhotoCycleProps = {
   frames: CycleFrame[];
+  /** Aspect ratio of the slot, as width / height. Frames matching it fill it exactly. */
+  ratio?: number;
   /** Milliseconds each frame holds before the crossfade starts. */
   holdMs?: number;
   className?: string;
@@ -27,8 +23,19 @@ type PhotoCycleProps = {
 
 const FADE_MS = 1200;
 
+/** Does this frame cover the slot on its own, or does it need something behind it? */
+const fillsSlot = (frame: CycleFrame, ratio: number) =>
+  !frame.w || !frame.h || Math.abs(frame.w / frame.h - ratio) < 0.02;
+
 /**
  * A single photo slot that crossfades between several frames on a timer.
+ *
+ * Every frame is shown WHOLE — object-contain, not object-cover. The set mixes
+ * 3:2 and 2:3 sources, and a 2:3 portrait in a wide box loses about 60% of its
+ * height, which reads as an arbitrary zoom onto someone's midriff rather than
+ * as a photograph. A frame matching the slot's ratio fills it edge to edge; one
+ * that does not gets a blurred, dimmed copy of itself behind it, so the slot is
+ * still full without anything being cut off.
  *
  * Four things it deliberately does NOT do:
  *
@@ -48,7 +55,7 @@ const FADE_MS = 1200;
  * The first frame renders as normal markup, so it is present in the prerendered
  * HTML and carries the alt text before any JavaScript runs.
  */
-const PhotoCycle = ({ frames, holdMs = 4000, className }: PhotoCycleProps) => {
+const PhotoCycle = ({ frames, holdMs = 4000, ratio = 3 / 2, className }: PhotoCycleProps) => {
   const [index, setIndex] = useState(0);
   // High-water mark: how far the cycle has advanced. Frames past this + 1 are
   // not in the DOM yet, so their files are never requested.
@@ -111,9 +118,24 @@ const PhotoCycle = ({ frames, holdMs = 4000, className }: PhotoCycleProps) => {
           <div
             key={frame.name}
             aria-hidden={isCurrent ? undefined : true}
-            className="absolute inset-0 transition-opacity ease-in-out motion-reduce:transition-none"
+            className="absolute inset-0 overflow-hidden transition-opacity ease-in-out motion-reduce:transition-none"
             style={{ opacity: isCurrent ? 1 : 0, transitionDuration: `${FADE_MS}ms` }}
           >
+            {/* Only pay for the second decode when there is actually a gap to
+                fill; the 3:2 frames cover the slot on their own. */}
+            {!fillsSlot(frame, ratio) && (
+              <Photo
+                name={frame.name}
+                dir={frame.dir}
+                width={frame.w}
+                height={frame.h}
+                // alt="" is already what marks this decorative; the visible
+                // copy below carries the description.
+                alt=""
+                className="absolute inset-0 h-full w-full scale-110 object-cover opacity-50 blur-2xl"
+                eager={i > 0}
+              />
+            )}
             <Photo
               name={frame.name}
               dir={frame.dir}
@@ -122,7 +144,7 @@ const PhotoCycle = ({ frames, holdMs = 4000, className }: PhotoCycleProps) => {
               // Only the visible frame describes itself; the rest are decorative
               // duplicates as far as a screen reader is concerned.
               alt={isCurrent ? frame.alt : ""}
-              className={`h-full w-full object-cover ${frame.position ?? ""}`}
+              className="relative h-full w-full object-contain"
               priority={i === 0}
               eager={i > 0}
             />
