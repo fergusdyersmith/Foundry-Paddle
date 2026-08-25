@@ -62,7 +62,11 @@ const Index = () => {
             >
               BOOK YOUR FIRST PLAY — $15
             </Link>
-            <Link to="/the-sport" className="border border-border px-7 py-3 font-display text-sm tracking-widest text-muted-foreground transition-all hover:border-foreground hover:text-foreground">
+            {/* Sits on a photograph, so it carries its own ground rather than
+                relying on the hero gradient: muted-foreground on the background
+                is 3.85:1, under the 4.5:1 AA needs at this size, and the
+                default border is 1.42:1 against it — all but invisible. */}
+            <Link to="/the-sport" className="border border-foreground/40 bg-background/60 px-7 py-3 font-display text-sm tracking-widest text-foreground backdrop-blur-sm transition-all hover:border-foreground hover:bg-background/80">
               NEW TO PADEL? START HERE
             </Link>
           </motion.div>
