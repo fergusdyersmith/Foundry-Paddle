@@ -2,12 +2,38 @@ import { motion } from "framer-motion";
 import BookCTA from "@/components/BookCTA";
 import WistiaVideo from "@/components/WistiaVideo";
 import Photo from "@/components/Photo";
+import PhotoCycle, { type CycleFrame } from "@/components/PhotoCycle";
 import Seo from "@/components/Seo";
 
 const comparisons = [
   { sport: "Tennis", padel: "Enclosed glass walls — balls stay in play", other: "Open court — balls go out" },
   { sport: "Squash", padel: "Outdoor feel, doubles format, social game", other: "Indoor, typically singles, intense" },
   { sport: "Pickleball", padel: "Full racquet sport with wall strategy", other: "Paddle sport, no walls, smaller court" },
+];
+
+// Frames for the band under the page heading: the sport in motion, the room it
+// happens in, and the light. None are reused by the rule cards further down.
+const heroFrames: CycleFrame[] = [
+  {
+    name: "sport-what-is-padel",
+    alt: "A player reaches for a high ball against the glass back wall on a Foundry Padel court",
+  },
+  {
+    name: "card-the-sport",
+    alt: "A player stretches wide for a forehand on court at Foundry Padel",
+  },
+  {
+    name: "og-image-photo",
+    alt: "A player serves under the steel trusses of Foundry Padel's warehouse courts",
+  },
+  {
+    name: "club-courts",
+    alt: "Foundry Padel's glass courts seen from above, with play underway on both",
+  },
+  {
+    name: "club-vibe",
+    alt: "Amber light, exposed steel and concrete over the blue courts at Foundry Padel",
+  },
 ];
 
 const rules = [
@@ -61,19 +87,19 @@ const TheSport = () => {
         </div>
       </section>
 
-      {/* One photograph of a real court, before any of the explaining starts. */}
+      {/* Real courts, before any of the explaining starts. The frames rotate so
+          the page does not open on the same single player every visit. */}
       <section className="px-6">
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="mx-auto max-w-5xl aspect-[16/9] overflow-hidden border border-border bg-secondary"
+          className="mx-auto max-w-5xl"
         >
-          <Photo
-            name="sport-what-is-padel"
-            alt="A player reaches for a high ball against the glass back wall on a Foundry Padel court"
-            className="h-full w-full object-cover"
+          <PhotoCycle
+            frames={heroFrames}
+            className="aspect-[16/9] overflow-hidden border border-border bg-secondary"
           />
         </motion.div>
       </section>

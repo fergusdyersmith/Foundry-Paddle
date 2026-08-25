@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import BookCTA from "@/components/BookCTA";
 import StayInTouchForm from "@/components/StayInTouchForm";
 import { PartnerLogoBand } from "@/components/PartnerLogoBand";
+import GalleryTeaser from "@/components/GalleryTeaser";
 import Photo from "@/components/Photo";
 import Seo from "@/components/Seo";
 import { BOOK_PAGE_PATH } from "@/constants/booking";
@@ -193,6 +194,8 @@ const Index = () => {
           ))}
         </div>
       </section>
+
+      <GalleryTeaser />
 
       {/* Partners */}
       <section id="partners" className="py-20 px-6">
