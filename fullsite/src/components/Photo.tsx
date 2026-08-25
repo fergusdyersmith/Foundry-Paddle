@@ -16,6 +16,13 @@ type PhotoProps = {
   height?: number;
   /** Set on above-the-fold heroes only: eager load, high fetch priority. */
   priority?: boolean;
+  /** Load immediately without claiming high priority — for a frame needed in seconds. */
+  eager?: boolean;
+  /**
+   * Directory under /photos/ holding the pair. Defaults to the site set; pass
+   * GALLERY_IMAGE_DIR to pull a frame from the gallery instead.
+   */
+  dir?: string;
 };
 
 const Photo = ({
@@ -25,16 +32,18 @@ const Photo = ({
   width = 1600,
   height = 1067,
   priority = false,
+  eager = false,
+  dir = "site",
 }: PhotoProps) => (
   <picture>
-    <source type="image/webp" srcSet={`/photos/site/${name}.webp`} />
+    <source type="image/webp" srcSet={`/photos/${dir}/${name}.webp`} />
     <img
-      src={`/photos/site/${name}.jpg`}
+      src={`/photos/${dir}/${name}.jpg`}
       alt={alt}
       width={width}
       height={height}
       className={className}
-      loading={priority ? "eager" : "lazy"}
+      loading={priority || eager ? "eager" : "lazy"}
       decoding={priority ? "sync" : "async"}
       // React 18 does not know the camelCase `fetchPriority` prop and drops it
       // with a warning; the lowercase DOM attribute passes through untouched.

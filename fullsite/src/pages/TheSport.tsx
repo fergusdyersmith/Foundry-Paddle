@@ -3,6 +3,7 @@ import BookCTA from "@/components/BookCTA";
 import WistiaVideo from "@/components/WistiaVideo";
 import Photo from "@/components/Photo";
 import PhotoCycle, { type CycleFrame } from "@/components/PhotoCycle";
+import { GALLERY_IMAGE_DIR } from "@/data/gallery";
 import Seo from "@/components/Seo";
 
 const comparisons = [
@@ -11,28 +12,46 @@ const comparisons = [
   { sport: "Pickleball", padel: "Full racquet sport with wall strategy", other: "Paddle sport, no walls, smaller court" },
 ];
 
-// Frames for the band under the page heading: the sport in motion, the room it
-// happens in, and the light. None are reused by the rule cards further down.
+// Frames for the band under the page heading. Every one of these is used
+// nowhere else on the site: the four site/ photos that would have fit here are
+// all spoken for (card-the-sport on the homepage, club-courts and club-vibe on
+// /the-club, og-image-photo is the social card and the same frame as the
+// homepage gallery tile), so the rotation pulls from the gallery instead.
+//
+// Gallery frames are 800px until the full/ set lands — see GALLERY_IMAGE_DIR,
+// which upgrades these and the lightbox together in one edit.
 const heroFrames: CycleFrame[] = [
   {
     name: "sport-what-is-padel",
     alt: "A player reaches for a high ball against the glass back wall on a Foundry Padel court",
   },
   {
-    name: "card-the-sport",
-    alt: "A player stretches wide for a forehand on court at Foundry Padel",
+    name: "over-the-net-rally",
+    alt: "A rally seen from behind the net on a glass-walled court at Foundry Padel",
+    dir: GALLERY_IMAGE_DIR,
+    w: 800,
+    h: 534,
   },
   {
-    name: "og-image-photo",
-    alt: "A player serves under the steel trusses of Foundry Padel's warehouse courts",
+    name: "daylight-court-wide",
+    alt: "Daylight streams across the courts during an afternoon session at Foundry Padel",
+    dir: GALLERY_IMAGE_DIR,
+    w: 800,
+    h: 534,
   },
   {
-    name: "club-courts",
-    alt: "Foundry Padel's glass courts seen from above, with play underway on both",
+    name: "forehand-contact",
+    alt: "A player makes contact on a forehand, the ball frozen at the paddle",
+    dir: GALLERY_IMAGE_DIR,
+    w: 800,
+    h: 534,
   },
   {
-    name: "club-vibe",
-    alt: "Amber light, exposed steel and concrete over the blue courts at Foundry Padel",
+    name: "evening-lights-rally",
+    alt: "Court lights come on over an evening rally at Foundry Padel",
+    dir: GALLERY_IMAGE_DIR,
+    w: 800,
+    h: 534,
   },
 ];
 
@@ -95,7 +114,7 @@ const TheSport = () => {
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="mx-auto max-w-5xl"
+          className="mx-auto max-w-4xl"
         >
           <PhotoCycle
             frames={heroFrames}

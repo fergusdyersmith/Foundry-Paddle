@@ -1,10 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Photo from "@/components/Photo";
 
 export type CycleFrame = {
-  /** Basename inside /photos/site, without extension. */
+  /** Basename, without directory or extension. */
   name: string;
   alt: string;
+  /** Directory under /photos/. Defaults to the site set. */
+  dir?: string;
+  /** Source dimensions, when they differ from the 3:2 landscape default. */
+  w?: number;
+  h?: number;
 };
 
 type PhotoCycleProps = {
@@ -19,13 +24,18 @@ const FADE_MS = 1200;
 /**
  * A single photo slot that crossfades between several frames on a timer.
  *
- * Three things it deliberately does NOT do:
+ * Four things it deliberately does NOT do:
  *
  * - It never loads the whole set up front. Only the current frame and the one
  *   after it are mounted, so a visitor who scrolls straight past downloads one
  *   photo, not five.
- * - It stops while the tab is hidden. Otherwise the timer keeps advancing in a
- *   background tab and pulls down frames nobody is looking at.
+ * - It does not advance while it is off screen, or while the tab is hidden.
+ *   Besides being wasted work, a cycle that ran on unseen would arrive at a
+ *   frame nothing had fetched, and the first thing the visitor saw on scrolling
+ *   down would be an empty box.
+ * - It does not lazy-load the frame it is about to need. Anything mounted past
+ *   the first is due within one hold, so it is fetched now rather than on an
+ *   intersection that has already happened.
  * - It does not move for anyone who asked the OS to reduce motion; they get the
  *   first frame, held.
  *
@@ -37,15 +47,27 @@ const PhotoCycle = ({ frames, holdMs = 4000, className }: PhotoCycleProps) => {
   // High-water mark: how far the cycle has advanced. Frames past this + 1 are
   // not in the DOM yet, so their files are never requested.
   const [reached, setReached] = useState(0);
+  const boxRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (frames.length < 2) return;
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
 
+    const box = boxRef.current;
+    if (!box) return;
+
+    let onScreen = false;
     let timer: ReturnType<typeof setInterval> | undefined;
-    const start = () => {
-      // Guard against a second "visible" without an intervening "hidden", which
-      // would otherwise leave two intervals advancing the same cycle.
+
+    const stop = () => {
+      if (timer) clearInterval(timer);
+      timer = undefined;
+    };
+
+    // Single source of truth for "should the timer be running", so neither the
+    // observer nor the visibility listener can leave a second interval behind.
+    const sync = () => {
+      if (!onScreen || document.hidden) return stop();
       if (timer) return;
       timer = setInterval(() => {
         setIndex((i) => {
@@ -55,22 +77,26 @@ const PhotoCycle = ({ frames, holdMs = 4000, className }: PhotoCycleProps) => {
         });
       }, holdMs + FADE_MS);
     };
-    const stop = () => {
-      if (timer) clearInterval(timer);
-      timer = undefined;
-    };
 
-    const onVisibility = () => (document.hidden ? stop() : start());
-    if (!document.hidden) start();
-    document.addEventListener("visibilitychange", onVisibility);
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        onScreen = entry.isIntersecting;
+        sync();
+      },
+      { threshold: 0.25 },
+    );
+    observer.observe(box);
+    document.addEventListener("visibilitychange", sync);
+
     return () => {
       stop();
-      document.removeEventListener("visibilitychange", onVisibility);
+      observer.disconnect();
+      document.removeEventListener("visibilitychange", sync);
     };
   }, [frames.length, holdMs]);
 
   return (
-    <div className={`relative ${className ?? ""}`}>
+    <div ref={boxRef} className={`relative ${className ?? ""}`}>
       {frames.map((frame, i) => {
         // One frame ahead stays mounted so the crossfade never lands on a blank.
         if (i > reached + 1) return null;
@@ -84,11 +110,15 @@ const PhotoCycle = ({ frames, holdMs = 4000, className }: PhotoCycleProps) => {
           >
             <Photo
               name={frame.name}
+              dir={frame.dir}
+              width={frame.w}
+              height={frame.h}
               // Only the visible frame describes itself; the rest are decorative
               // duplicates as far as a screen reader is concerned.
               alt={isCurrent ? frame.alt : ""}
               className="h-full w-full object-cover"
               priority={i === 0}
+              eager={i > 0}
             />
           </div>
         );

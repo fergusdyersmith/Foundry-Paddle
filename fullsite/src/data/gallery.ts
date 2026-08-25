@@ -28,6 +28,13 @@ export const PHOTO_BASE = "/photos/gallery";
  */
 export const LIGHTBOX_DIR = "thumb";
 
+/**
+ * Directory to pass as <Photo dir> for a gallery frame used outside /gallery.
+ * Rides the same seam as the lightbox, so dropping in the full set upgrades
+ * both at once.
+ */
+export const GALLERY_IMAGE_DIR = `gallery/${LIGHTBOX_DIR}`;
+
 export const CATEGORIES = ["All", "The Club", "Match Play", "The Community", "Details"] as const;
 
 export type FilterCategory = (typeof CATEGORIES)[number];
