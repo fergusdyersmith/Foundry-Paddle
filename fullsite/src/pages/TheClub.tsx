@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import BookCTA from "@/components/BookCTA";
 import Photo from "@/components/Photo";
 import Seo from "@/components/Seo";
+import { PHOTOS } from "@/data/gallery";
 
 const spaces = [
   {
@@ -125,7 +126,7 @@ const TheClub = () => {
             to="/gallery"
             className="mt-8 inline-block border border-border px-7 py-3 font-body text-xs tracking-[0.2em] uppercase text-secondary-foreground transition-colors hover:border-primary hover:text-primary"
           >
-            See the gallery — 47 photos →
+            See the gallery — {PHOTOS.length} photos →
           </Link>
           <div className="section-divider mt-16" />
         </div>
