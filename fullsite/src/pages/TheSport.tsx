@@ -3,7 +3,7 @@ import BookCTA from "@/components/BookCTA";
 import WistiaVideo from "@/components/WistiaVideo";
 import Photo from "@/components/Photo";
 import PhotoCycle, { type CycleFrame } from "@/components/PhotoCycle";
-import { GALLERY_IMAGE_DIR } from "@/data/gallery";
+import { GALLERY_IMAGE_DIR, PHOTOS } from "@/data/gallery";
 import Seo from "@/components/Seo";
 
 const comparisons = [
@@ -12,72 +12,82 @@ const comparisons = [
   { sport: "Pickleball", padel: "Full racquet sport with wall strategy", other: "Paddle sport, no walls, smaller court" },
 ];
 
-// Frames for the band under the page heading. Every one appears nowhere else
-// on the site: matching the two photo sets by image content shows 15 of the 19
-// site/ photos are gallery frames under another name, and all 19 are spoken
-// for, so the rotation pulls from the gallery.
+// The band under the page heading rotates through sixteen frames. Every one
+// appears nowhere else on the site: matching the two photo sets by image
+// content shows 15 of the 19 site/ photos are gallery frames under another
+// name, and all 19 are spoken for, so the rotation pulls from the gallery.
 //
-// Ordered to alternate rather than running the wide shots and then the close
-// ones, or all the men and then all the women.
+// ORDER IS A CONSTRAINT, NOT A PREFERENCE. Two frames that read the same way
+// must not land next to each other, or the band looks like it is repeating
+// itself: no two "greeting" frames (a high five, a paddle tap, a huddle at the
+// net) in a row, and no two frames with women in them in a row. The list is
+// cyclic, so the last frame is adjacent to the first — assertRotation below
+// checks the wrap too, and runs in dev.
 //
-// Gallery frames are 800px until the full/ set lands — see GALLERY_IMAGE_DIR,
-// which upgrades these and the lightbox together in one edit.
-const GALLERY_LANDSCAPE = { dir: GALLERY_IMAGE_DIR, w: 800, h: 534 } as const;
-// Portrait sources. They do not fill a 3:2 slot, so PhotoCycle puts a blurred
-// copy behind them rather than cropping into them.
-const GALLERY_PORTRAIT = { dir: GALLERY_IMAGE_DIR, w: 533, h: 800 } as const;
+// A frame carrying both lenses can only sit between unlensed frames.
+type Lens = "greeting" | "women";
 
-const heroFrames: CycleFrame[] = [
-  {
-    name: "sport-what-is-padel",
-    alt: "A player reaches for a high ball against the glass back wall on a Foundry Padel court",
-  },
-  {
-    ...GALLERY_LANDSCAPE,
-    name: "overhead-backhand",
-    alt: "A player lunges for a low backhand at Foundry Padel, seen from above",
-  },
-  {
-    ...GALLERY_LANDSCAPE,
-    name: "over-the-net-rally",
-    alt: "A rally seen from behind the net on a glass-walled court at Foundry Padel",
-  },
-  {
-    ...GALLERY_PORTRAIT,
-    name: "celebration-arms-up",
-    alt: "A player throws her arms up after winning the point at Foundry Padel",
-  },
-  {
-    ...GALLERY_LANDSCAPE,
-    name: "daylight-court-wide",
-    alt: "Daylight streams across the courts during an afternoon session at Foundry Padel",
-  },
-  {
-    ...GALLERY_LANDSCAPE,
-    name: "womens-doubles",
-    alt: "A player waits to return serve in a doubles match at Foundry Padel",
-  },
-  {
-    ...GALLERY_LANDSCAPE,
-    name: "forehand-contact",
-    alt: "A player makes contact on a forehand, the ball frozen at the paddle",
-  },
-  {
-    ...GALLERY_PORTRAIT,
-    name: "mixed-doubles-net",
-    alt: "Two teammates work a ball at the net during a mixed doubles match at Foundry Padel",
-  },
-  {
-    ...GALLERY_LANDSCAPE,
-    name: "evening-lights-rally",
-    alt: "Court lights come on over an evening rally at Foundry Padel",
-  },
-  {
-    ...GALLERY_PORTRAIT,
-    name: "running-down-the-ball",
-    alt: "A player chases the ball down mid-rally at Foundry Padel",
-  },
+const ROTATION: { file: string; lens?: Lens[] }[] = [
+  { file: "sport-what-is-padel" },
+  { file: "overhead-backhand", lens: ["women"] },
+  { file: "talking-it-over-at-the-net", lens: ["greeting"] },
+  { file: "womens-doubles", lens: ["women"] },
+  { file: "over-the-net-rally" },
+  { file: "celebration-arms-up", lens: ["greeting", "women"] },
+  { file: "daylight-court-wide" },
+  { file: "mixed-doubles-net", lens: ["women"] },
+  { file: "headband-high-five", lens: ["greeting"] },
+  { file: "running-down-the-ball", lens: ["women"] },
+  { file: "forehand-contact" },
+  { file: "paddle-tap-after-the-match", lens: ["greeting"] },
+  { file: "evening-lights-rally" },
+  { file: "talking-through-the-drill", lens: ["women"] },
+  { file: "court-from-the-back-glass" },
+  { file: "open-door-daylight" },
 ];
+
+function assertRotation(rotation: typeof ROTATION) {
+  for (let i = 0; i < rotation.length; i++) {
+    const a = rotation[i];
+    const b = rotation[(i + 1) % rotation.length];
+    const shared = (a.lens ?? []).filter((l) => (b.lens ?? []).includes(l));
+    if (shared.length) {
+      console.warn(
+        `[TheSport] ${a.file} and ${b.file} are adjacent in the rotation and ` +
+          `both read as "${shared.join('", "')}". Reorder ROTATION.`,
+      );
+    }
+  }
+}
+if (import.meta.env.DEV) assertRotation(ROTATION);
+
+// Thumbnails are 800px on the long edge; the gallery data records the SOURCE
+// size, so scale it down to describe the file actually served.
+const THUMB_EDGE = 800;
+
+// Frame one is the site copy, which is 1600px and is the one that lands in the
+// prerendered HTML. The rest read their alt text straight out of the gallery
+// rather than repeating it here, so a caption fixed in one place is fixed in
+// both.
+const heroFrames: CycleFrame[] = ROTATION.map(({ file }, i) => {
+  if (i === 0) {
+    const p = PHOTOS.find((x) => x.file === "reach-to-the-glass");
+    return {
+      name: "sport-what-is-padel",
+      alt: p?.alt ?? "A player reaches for a high ball against the glass back wall at Foundry Padel",
+    };
+  }
+  const photo = PHOTOS.find((x) => x.file === file);
+  if (!photo) throw new Error(`TheSport: no gallery photo named "${file}"`);
+  const scale = THUMB_EDGE / Math.max(photo.w, photo.h);
+  return {
+    name: photo.file,
+    alt: photo.alt,
+    dir: GALLERY_IMAGE_DIR,
+    w: Math.round(photo.w * scale),
+    h: Math.round(photo.h * scale),
+  };
+});
 
 const rules = [
   {

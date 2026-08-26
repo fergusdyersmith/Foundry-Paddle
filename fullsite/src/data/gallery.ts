@@ -428,7 +428,7 @@ export const PHOTOS: GalleryPhoto[] = [
   {
     file: "headband-high-five",
     category: "The Community",
-    alt: "Two pairs meet at the net to shake hands after a tournament match",
+    alt: "Two pairs meet at the net with hands raised after a tournament match at Foundry Padel",
     w: 1600,
     h: 1067,
   },
@@ -529,6 +529,20 @@ export const PHOTOS: GalleryPhoto[] = [
     alt: "A player walks back to the baseline between points at Foundry Padel",
     w: 1067,
     h: 1600,
+  },
+  {
+    file: "talking-through-the-drill",
+    category: "The Community",
+    alt: "Two players talk through the next drill beside the ball cart at Foundry Padel",
+    w: 1600,
+    h: 1067,
+  },
+  {
+    file: "paddle-tap-after-the-match",
+    category: "The Community",
+    alt: "Four players meet at the net to tap paddles after a match at Foundry Padel",
+    w: 1600,
+    h: 1067,
   },
   {
     file: "ball-at-the-net",
