@@ -26,10 +26,16 @@ const Index = () => {
       {/* Hero */}
       <section className="relative h-screen w-full overflow-hidden">
         <div className="absolute inset-0">
+          {/* A phone in portrait sees barely a third of this frame's width, and
+              the server stands at 62-88% across — a centred crop leaves him a
+              sliver at the edge. 85% puts him and the raised paddle in the
+              middle of a tall crop. It is a no-op on any viewport wider than
+              3:2, where the image already fills the width and only the height
+              is cropped. */}
           <Photo
             name="hero-home"
             alt="A player serves under the steel trusses of Foundry Padel's warehouse courts in Portland"
-            className="h-full w-full object-cover"
+            className="h-full w-full object-cover object-[85%_center]"
             priority
           />
           <div className="hero-gradient absolute inset-0" />
