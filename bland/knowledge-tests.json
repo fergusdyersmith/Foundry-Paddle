@@ -21,22 +21,23 @@
     {
       "q": "What time do you open?",
       "expect": [
-        "7am",
-        "7 am"
+        "6am",
+        "6 am"
       ]
     },
     {
       "q": "Are you open on Sunday?",
       "expect": [
         "every day",
-        "7am"
+        "6am"
       ]
     },
     {
       "q": "What time do you close?",
       "expect": [
-        "10pm",
-        "10 pm"
+        "midnight",
+        "12am",
+        "12 am"
       ]
     },
     {

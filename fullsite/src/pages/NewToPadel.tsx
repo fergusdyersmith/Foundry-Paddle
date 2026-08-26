@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ArrowRight, Footprints, CalendarCheck, Handshake, Timer } from "lucide-react";
 import { BOOK_PAGE_PATH } from "@/constants/booking";
+import { HOURS_SHORT } from "@/constants/hours";
 import Photo from "@/components/Photo";
 import Seo from "@/components/Seo";
 
@@ -51,7 +52,7 @@ const firstVisitSteps = [
 const quickFacts = [
   { stat: "$15", label: "First play, per player" },
   { stat: "$5", label: "Racket rental" },
-  { stat: "7AM–10PM", label: "Open daily" },
+  { stat: HOURS_SHORT, label: "Open daily" },
   { stat: "0", label: "Experience needed" },
 ];
 

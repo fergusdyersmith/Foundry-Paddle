@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import BookCTA from "@/components/BookCTA";
+import { HOURS_SENTENCE } from "@/constants/hours";
 import Seo from "@/components/Seo";
 import WhatsAppJoinLink from "@/components/WhatsAppJoinLink";
 
@@ -61,7 +62,7 @@ const faqs: Faq[] = [
   },
   {
     q: "What are your hours?",
-    a: "We're open! All four courts are available every day from 7:00 AM to 10:00 PM. Book a court online or through the Playtomic app, and check the Schedule page for clinics, open play, lessons, and tournaments.",
+    a: `We're open! All four courts are available ${HOURS_SENTENCE}. Book a court online or through the Playtomic app, and check the Schedule page for clinics, open play, lessons, and tournaments.`,
   },
 ];
 

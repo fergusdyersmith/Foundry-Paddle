@@ -7,6 +7,7 @@ import GalleryTeaser from "@/components/GalleryTeaser";
 import Photo from "@/components/Photo";
 import Seo from "@/components/Seo";
 import { BOOK_PAGE_PATH } from "@/constants/booking";
+import { HOURS_SENTENCE } from "@/constants/hours";
 import { GOOGLE_MAPS_URL } from "@/constants/location";
 
 const features = [
@@ -153,7 +154,7 @@ const Index = () => {
               <div>
                 <h3 className="font-body text-xs tracking-[0.2em] uppercase text-primary mb-2">Hours</h3>
                 <p className="font-body text-base text-secondary-foreground">
-                  Open daily, 7:00 AM to 10:00 PM. All four indoor courts, morning to night.
+                  Open {HOURS_SENTENCE}. All four indoor courts, morning to night.
                 </p>
               </div>
               <div>

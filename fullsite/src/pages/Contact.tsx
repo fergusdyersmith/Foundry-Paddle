@@ -5,6 +5,7 @@ import StayInTouchForm from "@/components/StayInTouchForm";
 import WhatsAppJoinLink from "@/components/WhatsAppJoinLink";
 import WhatsAppIcon from "@/components/WhatsAppIcon";
 import Photo from "@/components/Photo";
+import { HOURS_LINE } from "@/constants/hours";
 import Seo from "@/components/Seo";
 
 const TikTokIcon = ({ size = 20 }: { size?: number }) => (
@@ -75,7 +76,7 @@ const Contact = () => {
                 <div className="flex items-start gap-4">
                   <Clock size={18} className="text-primary mt-1 shrink-0" />
                   <div>
-                    <p className="font-body text-sm text-foreground">Open Daily · 7AM–10PM</p>
+                    <p className="font-body text-sm text-foreground">{HOURS_LINE}</p>
                     <p className="font-body text-xs text-muted-foreground">All 4 courts · 7 days a week</p>
                   </div>
                 </div>

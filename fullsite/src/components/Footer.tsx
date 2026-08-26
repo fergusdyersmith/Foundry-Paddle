@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Instagram, Facebook } from "lucide-react";
 import { BOOK_PAGE_PATH } from "@/constants/booking";
 import { GOOGLE_MAPS_EMBED_SRC, GOOGLE_MAPS_URL } from "@/constants/location";
+import { HOURS_LINE } from "@/constants/hours";
 import { APP_URL } from "@/constants/app";
 import WhatsAppJoinLink from "@/components/WhatsAppJoinLink";
 
@@ -43,7 +44,7 @@ const Footer = () => {
             <p className="mt-3 font-body text-sm text-muted-foreground">
               Portland's first padel club.<br />
               <a href={GOOGLE_MAPS_URL} target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">8613 N Crawford St, Portland, OR 97203</a><br />
-              <span className="text-foreground">Open Daily · 7AM–10PM</span>
+              <span className="text-foreground">{HOURS_LINE}</span>
             </p>
           </div>
 
