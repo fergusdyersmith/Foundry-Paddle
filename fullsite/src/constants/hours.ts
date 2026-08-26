@@ -7,10 +7,17 @@
  * bands and the JSON-LD in index.html all said 6am–midnight. Import from here
  * rather than typing the hours again.
  *
- * Two places deliberately keep their own copy, because neither can import a
- * module: the `openingHoursSpecification` in fullsite/index.html (06:00–23:59)
- * and the phone agent's answer, which lives in `club_knowledge` in the Kumi
- * database. Both have to be changed by hand if the hours change.
+ * Two places keep their own copy, because neither can import a module:
+ *
+ *   - `openingHoursSpecification` in fullsite/index.html (06:00–23:59).
+ *   - The "Opening hours / what time do you open" row in Kumi's
+ *     `club_knowledge`, which answers both the on-site chat widget and the
+ *     phone agent. Read at padelmaps.org/api/public-knowledge, managed in the
+ *     Kumi admin at app.foundrypadel.com; the two hostnames are the same
+ *     backend, but only padelmaps.org routes /api.
+ *
+ * Both were checked on 26 August 2026 and both already said 6am–midnight. It
+ * was this file's five copies that were stale, not them.
  */
 
 /** Compact form for stat badges and inline chips: "6AM–Midnight". */
