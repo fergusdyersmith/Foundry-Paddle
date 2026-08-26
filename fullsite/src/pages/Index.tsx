@@ -26,16 +26,24 @@ const Index = () => {
       {/* Hero */}
       <section className="relative h-screen w-full overflow-hidden">
         <div className="absolute inset-0">
-          {/* A phone in portrait sees barely a third of this frame's width, and
-              the server stands at 62-88% across — a centred crop leaves him a
-              sliver at the edge. 85% puts him and the raised paddle in the
-              middle of a tall crop. It is a no-op on any viewport wider than
-              3:2, where the image already fills the width and only the height
-              is cropped. */}
+          {/* A phone in portrait sees barely a third of this frame's width, so
+              which third it is matters. The server stands at 62-88% across and
+              wears white, which fought the white lockup sitting on top of him;
+              the court's centre line is at 47%. At 45% the visible slice is
+              31-62%, which puts the centre line down the middle of the phone
+              and stops just short of the server, so the lockup lands on dark
+              roof structure instead of his shirt. 48% brings his shoulder back
+              into the frame.
+
+              No breakpoint: above a 3:2 viewport the image already fills the
+              width and only the height is cropped, so this does nothing to
+              desktop. Tablet portrait sees ~50% of the width and so still
+              catches part of him — as it did before any of this, at the
+              default 50%. */}
           <Photo
             name="hero-home"
             alt="A player serves under the steel trusses of Foundry Padel's warehouse courts in Portland"
-            className="h-full w-full object-cover object-[85%_center]"
+            className="h-full w-full object-cover object-[45%_center]"
             priority
           />
           <div className="hero-gradient absolute inset-0" />
