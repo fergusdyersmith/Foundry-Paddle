@@ -1,12 +1,16 @@
 import { Clock, ExternalLink, Users } from "lucide-react";
 import { TYPE_LABELS, TYPE_COLORS } from "@/constants/events";
-import { eventBookingUrl, formatTime } from "@/lib/events";
+import { eventBookingUrl, formatTime, isPastEvent } from "@/lib/events";
 import type { PadelEvent } from "@/types/events";
 
 /** Full event row for the agenda list and the day-detail panel.
  *  `stacked` forces the vertical layout regardless of viewport — use it inside
  *  the narrow day-detail side panel, where the horizontal layout would cram
- *  and truncate the title. */
+ *  and truncate the title.
+ *
+ *  The calendar now shows days that have already happened, so a card can describe a
+ *  session that is over. Those keep everything except the BOOK button: sending someone
+ *  to Playtomic to sign up for last Tuesday's clinic is the one thing they must not do. */
 export default function EventCard({
   event,
   stacked = false,
@@ -14,6 +18,7 @@ export default function EventCard({
   event: PadelEvent;
   stacked?: boolean;
 }) {
+  const past = isPastEvent(event);
   const typeLabel = TYPE_LABELS[event.booking_type];
   const typeColor =
     TYPE_COLORS[event.booking_type] || "bg-muted text-muted-foreground";
@@ -22,7 +27,9 @@ export default function EventCard({
   const actions = stacked ? "" : "sm:gap-6";
 
   return (
-    <div className={`flex flex-col gap-4 border border-border bg-card p-4 ${row}`}>
+    <div
+      className={`flex flex-col gap-4 border border-border bg-card p-4 ${row} ${past ? "opacity-70" : ""}`}
+    >
       <div className={`flex shrink-0 items-center gap-2 ${timeWidth}`}>
         <Clock className="h-4 w-4 text-muted-foreground" />
         <div>
@@ -59,15 +66,21 @@ export default function EventCard({
           </span>
         )}
 
-        <a
-          href={eventBookingUrl(event)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="ml-auto inline-flex items-center gap-1.5 bg-primary px-5 py-2 font-display text-xs tracking-widest text-primary-foreground transition-all hover:brightness-110"
-        >
-          BOOK
-          <ExternalLink className="h-3 w-3" />
-        </a>
+        {past ? (
+          <span className="ml-auto inline-flex items-center border border-border px-5 py-2 font-display text-xs tracking-widest text-muted-foreground">
+            PAST
+          </span>
+        ) : (
+          <a
+            href={eventBookingUrl(event)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ml-auto inline-flex items-center gap-1.5 bg-primary px-5 py-2 font-display text-xs tracking-widest text-primary-foreground transition-all hover:brightness-110"
+          >
+            BOOK
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        )}
       </div>
     </div>
   );

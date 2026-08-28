@@ -355,3 +355,77 @@ describe("getEvents can actually run", () => {
     }
   });
 });
+
+// The schedule page shows a whole month, past days included: a visitor sizing the club
+// up on the 28th was shown four blank weeks and five empty September cells. Everything
+// else that reads this API (the TV screen, /book) still wants upcoming-only, so the past
+// is opt-in per request.
+describe("the calendar can ask for days that have already happened", () => {
+  const src = () => readFileSync(new URL("../server.js", import.meta.url), "utf8");
+
+  // getEvents does the filtering inline, so assert the rule the way the code states it.
+  const nowParts = { date: "2026-08-28", time: "14:30" };
+  const isOver = (e) =>
+    e.date < nowParts.date || (e.date === nowParts.date && e.end_time <= nowParts.time);
+
+  const event = (o = {}) => ({
+    date: "2026-08-28",
+    start_time: "10:00",
+    end_time: "11:30",
+    booking_type: "PUBLIC_CLASS",
+    signed_up: 0,
+    ...o,
+  });
+
+  it("treats an earlier day as over", () => {
+    expect(isOver(event({ date: "2026-08-27" }))).toBe(true);
+  });
+
+  it("treats a later day as still to come", () => {
+    expect(isOver(event({ date: "2026-08-29", end_time: "08:00" }))).toBe(false);
+  });
+
+  it("treats this morning as over and tonight as still to come", () => {
+    expect(isOver(event())).toBe(true);
+    expect(isOver(event({ start_time: "18:00", end_time: "19:30" }))).toBe(false);
+  });
+
+  it("keeps a session under way right now, which availability depends on", () => {
+    expect(isOver(event({ start_time: "14:00", end_time: "15:30" }))).toBe(false);
+  });
+
+  it("only drops finished events when the caller did NOT ask for the past", () => {
+    // Both halves of the filter, exactly as getEvents writes it.
+    expect(src()).toMatch(/\.filter\(\(e\) => includePast \|\| !isOver\(e\)\)/);
+    expect(src()).toMatch(/async function getEvents\(\{ from = null, to = null, includePast = false \} = \{\}\)/);
+  });
+
+  it("still hides a FULL open match, but only while it is still ahead", () => {
+    // A played-out match is history; an upcoming full one is a closed court.
+    expect(src()).toMatch(/signed_up \?\? 0\) >= OPEN_MATCH_SIZE && !isOver\(e\)/);
+  });
+
+  it("is opt-in on the range route, so the TV screen and /book are unaffected", () => {
+    expect(src()).toMatch(/req\.query\.include_past === "1"/);
+    expect(src()).toMatch(/getEvents\(\{ from: start, to: end, includePast \}\)/);
+  });
+
+  it("allows a whole six-week grid in one request", () => {
+    const cap = Number(/const MAX_RANGE_DAYS = (\d+);/.exec(src())[1]);
+    expect(cap).toBeGreaterThanOrEqual(42); // 6 weeks x 7 days, the widest month grid
+  });
+
+  it("lets history fail without taking the upcoming half of the calendar with it", () => {
+    const body = src().slice(src().indexOf("async function bookingsSince("));
+    const fn = body.slice(0, body.indexOf("\n}\n"));
+    expect(fn).toMatch(/catch \(error\)/);
+    expect(fn).toMatch(/return forward;/);
+  });
+
+  it("caches a past window for longer than the live one, since it cannot change", () => {
+    const minutes = (re) => Number(re.exec(src())[1]);
+    const live = minutes(/const BOOKINGS_CACHE_TTL = (\d+) \* 60 \* 1000;/);
+    const past = minutes(/const PAST_BOOKINGS_TTL = (\d+) \* 60 \* 1000;/);
+    expect(past).toBeGreaterThan(live);
+  });
+});

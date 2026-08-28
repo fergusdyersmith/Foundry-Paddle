@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 import {
   addDays,
   addMonths,
-  endOfMonth,
   format,
   isAfter,
   isBefore,
@@ -20,6 +19,7 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { TYPE_DOT_COLORS, TYPE_LABELS } from "@/constants/events";
 import { groupEventsByDate, sortTypesByOrder } from "@/lib/events";
+import { monthGridRange } from "@/lib/calendar";
 import { useScheduleEvents } from "@/hooks/useScheduleEvents";
 import MonthGrid from "@/components/schedule/MonthGrid";
 import AgendaList from "@/components/schedule/AgendaList";
@@ -31,11 +31,24 @@ const thisMonth = startOfMonth(today);
 // Playtomic only returns ~30 days out, so the calendar spans at most this month
 // and the next.
 const maxMonth = startOfMonth(addDays(today, 30));
+// ...and back this far. Past months are shown rather than hidden: a visitor deciding
+// whether the club is worth joining wants to see what a full week here actually looks
+// like, and until today's date every month was blank above the fold. Three is a bound on
+// how much history one page can ask Playtomic for, not a claim about the data.
+const HISTORY_MONTHS = 3;
+const minMonth = startOfMonth(subMonths(today, HISTORY_MONTHS));
 
 const Schedule = () => {
   const [monthStart, setMonthStart] = useState(thisMonth);
   const [activeType, setActiveType] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+
+  // The whole grid, not the month: the cells either side belong to the neighbouring
+  // months but are drawn all the same, and they used to be drawn empty even when the
+  // sessions were there to show.
+  const grid = useMemo(() => monthGridRange(monthStart), [monthStart]);
+  // A grid entirely in the past is settled — no need to poll it every minute.
+  const isLive = !isBefore(grid.end, today);
 
   const {
     data: events = [],
@@ -43,7 +56,7 @@ const Schedule = () => {
     isError,
     isFetching,
     refetch,
-  } = useScheduleEvents(startOfMonth(monthStart), endOfMonth(monthStart));
+  } = useScheduleEvents(grid.start, grid.end, { includePast: true, live: isLive });
 
   const availableTypes = useMemo(
     () => sortTypesByOrder([...new Set(events.map((e) => e.booking_type))]),
@@ -57,7 +70,7 @@ const Schedule = () => {
 
   const eventsByDate = useMemo(() => groupEventsByDate(filtered), [filtered]);
 
-  const canPrev = isAfter(monthStart, thisMonth);
+  const canPrev = isAfter(monthStart, minMonth);
   const canNext = isBefore(monthStart, maxMonth);
 
   const selectedKey = selectedDay ? format(selectedDay, "yyyy-MM-dd") : null;
@@ -115,12 +128,18 @@ const Schedule = () => {
               </button>
             </div>
 
-            <span className="hidden items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] text-muted-foreground sm:flex">
-              <RefreshCw
-                className={`h-3 w-3 ${isFetching ? "animate-spin text-primary" : ""}`}
-              />
-              Live
-            </span>
+            {isLive ? (
+              <span className="hidden items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] text-muted-foreground sm:flex">
+                <RefreshCw
+                  className={`h-3 w-3 ${isFetching ? "animate-spin text-primary" : ""}`}
+                />
+                Live
+              </span>
+            ) : (
+              <span className="hidden text-[10px] uppercase tracking-[0.2em] text-muted-foreground sm:flex">
+                Past month
+              </span>
+            )}
           </div>
 
           {/* Type filters (double as a color legend) */}

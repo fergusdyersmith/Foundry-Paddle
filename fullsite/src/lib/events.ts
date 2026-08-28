@@ -32,6 +32,21 @@ export function groupEventsByDate(events: PadelEvent[]): Map<string, PadelEvent[
   return map;
 }
 
+/** Has this event already finished? The API returns a local date plus "HH:mm" strings,
+ *  so the comparison is done in those same terms against the visitor's clock — the same
+ *  reading /book already uses to drop matches that have started. A visitor in another
+ *  timezone can be a few hours out; nothing here does more than dim a card and swap its
+ *  BOOK button, so that is a fair trade for not shipping a timezone library.
+ *
+ *  Pure and exported so the rule is testable: it decides whether the page offers someone
+ *  a booking link to a session that is already over. */
+export function isPastEvent(event: PadelEvent, now: Date = new Date()): boolean {
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+  if (event.date !== today) return event.date < today;
+  return (event.end_time || event.start_time) <= time;
+}
+
 /** Where the BOOK button points for a given event. The server builds a per-type
  *  deep link (tournaments, classes/clinics, and open matches each use a
  *  different Playtomic URL + id); fall back to the club page if it's missing. */

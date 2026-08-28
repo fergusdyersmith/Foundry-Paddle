@@ -1,6 +1,7 @@
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import fs from "node:fs";
 
 export default defineConfig({
   plugins: [react()],
@@ -22,9 +23,28 @@ export default defineConfig({
     ],
   },
   resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-      "@shared": path.resolve(__dirname, "./shared"),
-    },
+    alias: [
+      // "@/..." means fullsite/src in the production site and src/ in the legacy tree,
+      // and both are in the test run. A plain string alias can only point at one of
+      // them, which left fullsite's own modules (lib/events.ts -> "@/constants/events")
+      // unresolvable and therefore untestable. Try the production tree first, then the
+      // legacy one, and resolve to whichever actually holds the file.
+      {
+        find: /^@\//,
+        replacement: "",
+        customResolver(source: string) {
+          const roots = ["./fullsite/src", "./src"].map((r) => path.resolve(__dirname, r));
+          const candidates = ["", ".ts", ".tsx", ".js", ".jsx", "/index.ts", "/index.tsx"];
+          for (const root of roots) {
+            for (const ext of candidates) {
+              const file = path.join(root, source + ext);
+              if (fs.existsSync(file) && fs.statSync(file).isFile()) return file;
+            }
+          }
+          return null;
+        },
+      },
+      { find: "@shared", replacement: path.resolve(__dirname, "./shared") },
+    ],
   },
 });

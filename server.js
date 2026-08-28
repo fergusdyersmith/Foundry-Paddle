@@ -338,27 +338,14 @@ const BOOKINGS_CACHE_TTL = 5 * 60 * 1000;
 const BOOKINGS_LOOKBACK_MS = 3 * 60 * 60 * 1000;
 let bookingsCache = { data: [], fetchedAt: 0 };
 
-async function fetchPlaytomicBookings() {
-  if (bookingsCache.data.length && Date.now() - bookingsCache.fetchedAt < BOOKINGS_CACHE_TTL) {
-    return bookingsCache.data;
-  }
-
+// One page-through of the Playtomic bookings API over an explicit window. The bounds
+// are naive ISO seconds ("2026-08-13T18:00:00"), which is what the API takes.
+//
+// Playtomic caps each response at `size` rows and does NOT sort by date, so a
+// single page can silently drop near-term events once the club has >200 bookings
+// in the window. Page through all of them.
+async function fetchBookingsWindow(start, end) {
   const token = await getPlaytomicToken();
-
-  const now = new Date();
-  // Look back before "now", or bookings already under way are never returned and
-  // a court in use reads as free. "Can I come down right now" is one of the most
-  // common calls a club takes, so this matters. The longest session is 2 hours.
-  const start = new Date(now.getTime() - BOOKINGS_LOOKBACK_MS)
-    .toISOString()
-    .slice(0, 19);
-  const end = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .slice(0, 19);
-
-  // Playtomic caps each response at `size` rows and does NOT sort by date, so a
-  // single page can silently drop near-term events once the club has >200 bookings
-  // in the window. Page through all of them.
   const PAGE_SIZE = 200;
   const MAX_PAGES = 25;
   const all = [];
@@ -393,22 +380,99 @@ async function fetchPlaytomicBookings() {
     if (chunk.length < PAGE_SIZE) break;
   }
 
-  // Cache every live booking, not just the publicly-listed ones. Court
-  // availability is derived by subtracting ALL occupancy (regular bookings and
-  // private lessons very much included) from opening hours, so the public-event
-  // filter has to happen downstream in getEvents rather than here.
-  const live = all.filter((b) => !b.is_canceled);
+  // Keep every live booking, not just the publicly-listed ones. Court availability is
+  // derived by subtracting ALL occupancy (regular bookings and private lessons very
+  // much included) from opening hours, so the public-event filter has to happen
+  // downstream in getEvents rather than here.
+  return { live: all.filter((b) => !b.is_canceled), fetched: all.length };
+}
+
+async function fetchPlaytomicBookings() {
+  if (bookingsCache.data.length && Date.now() - bookingsCache.fetchedAt < BOOKINGS_CACHE_TTL) {
+    return bookingsCache.data;
+  }
+
+  const now = new Date();
+  // Look back before "now", or bookings already under way are never returned and
+  // a court in use reads as free. "Can I come down right now" is one of the most
+  // common calls a club takes, so this matters. The longest session is 2 hours.
+  const start = new Date(now.getTime() - BOOKINGS_LOOKBACK_MS)
+    .toISOString()
+    .slice(0, 19);
+  const end = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 19);
+
+  const { live, fetched } = await fetchBookingsWindow(start, end);
 
   bookingsCache = { data: live, fetchedAt: Date.now() };
 
   console.log(
     "[playtomic] Cached %d live bookings (of %d fetched); %d are public events",
     live.length,
-    all.length,
+    fetched,
     live.filter((b) => EVENT_BOOKING_TYPES.has(effectiveBookingType(b))).length,
   );
 
   return live;
+}
+
+// --- History, for the calendar's past days -------------------------------------
+// The cache above starts a couple of hours ago, so anything older is a second fetch.
+// It is held far longer: a day that has already happened cannot change, and the only
+// reader is a visitor scrolling back to see what a typical month looks like.
+// 120 days is what the schedule page offers (three months back, plus the grid's spill
+// into the month before), and it also keeps one history window inside the fetcher's
+// 25-page ceiling — a longer window would silently truncate rather than error.
+const EVENTS_HISTORY_DAYS = 120;
+const PAST_BOOKINGS_TTL = 15 * 60 * 1000;
+const PAST_BOOKINGS_CACHE_MAX = 8;
+const pastBookingsCache = new Map(); // window start (YYYY-MM-DD) -> { data, fetchedAt }
+
+/** Live bookings from `from` (a club-local YYYY-MM-DD) up to now.
+ *  The window opens a day early because it is sent as a UTC instant while `from` is a
+ *  local date; getEvents filters by local date afterwards, so the extra day costs
+ *  nothing and stops the club's evening events falling outside their own month. */
+async function fetchPastBookings(from) {
+  const floor = new Date(Date.now() - EVENTS_HISTORY_DAYS * 86400000)
+    .toISOString()
+    .slice(0, 10);
+  const start = from < floor ? floor : from;
+
+  const hit = pastBookingsCache.get(start);
+  if (hit && Date.now() - hit.fetchedAt < PAST_BOOKINGS_TTL) return hit.data;
+
+  const windowStart = new Date(Date.parse(`${start}T00:00:00Z`) - 86400000)
+    .toISOString()
+    .slice(0, 19);
+  const { live } = await fetchBookingsWindow(windowStart, new Date().toISOString().slice(0, 19));
+
+  pastBookingsCache.set(start, { data: live, fetchedAt: Date.now() });
+  if (pastBookingsCache.size > PAST_BOOKINGS_CACHE_MAX) {
+    pastBookingsCache.delete(pastBookingsCache.keys().next().value);
+  }
+  return live;
+}
+
+/** The live forward window plus history back to `from`, de-duplicated over the overlap
+ *  (the fresher forward copy wins). History failing must not take the upcoming half of
+ *  the calendar down with it, so that fetch is allowed to fail quietly. */
+async function bookingsSince(from) {
+  const forward = await fetchPlaytomicBookings();
+  const today = toLocalParts(new Date(), CLUB_TIMEZONE).date;
+  if (!from || from >= today) return forward;
+
+  let past;
+  try {
+    past = await fetchPastBookings(from);
+  } catch (error) {
+    console.error("[events] history fetch failed:", error.message);
+    return forward;
+  }
+
+  const byId = new Map();
+  for (const b of [...past, ...forward]) byId.set(b.booking_id || b.object_id, b);
+  return [...byId.values()];
 }
 
 const CLUB_TIMEZONE = process.env.CLUB_TIMEZONE || "America/Los_Angeles";
@@ -525,7 +589,9 @@ function mapBookingGroup(group) {
 // ---------------------------------------------------------------------------
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
-const MAX_RANGE_DAYS = 31;
+// 45, not 31: the calendar fetches the whole GRID it draws, which is up to six weeks
+// (42 days) once the leading and trailing days of the neighbouring months are counted.
+const MAX_RANGE_DAYS = 45;
 
 // Day count (inclusive) between two YYYY-MM-DD strings, or null if start > end.
 function inclusiveDaySpan(start, end) {
@@ -614,20 +680,23 @@ function applyKumiClassInfo(events, classes) {
   return events;
 }
 
-async function getEvents({ from = null, to = null } = {}) {
-  const bookings = (await fetchPlaytomicBookings()).filter((b) =>
-    EVENT_BOOKING_TYPES.has(effectiveBookingType(b)),
-  );
+async function getEvents({ from = null, to = null, includePast = false } = {}) {
+  const source = includePast ? await bookingsSince(from) : await fetchPlaytomicBookings();
+  const bookings = source.filter((b) => EVENT_BOOKING_TYPES.has(effectiveBookingType(b)));
   // The bookings fetch deliberately looks back a few hours so availability can
   // see sessions already under way. The public schedule must not inherit that:
   // an open match that finished an hour ago is not something to advertise.
+  //
+  // The calendar is the one caller that asks for the past on purpose (includePast) —
+  // a month with its first three weeks blanked out told a visitor nothing about what
+  // a week here usually looks like.
   const nowParts = toLocalParts(new Date(), CLUB_TIMEZONE);
+  const isOver = (e) =>
+    e.date < nowParts.date || (e.date === nowParts.date && e.end_time <= nowParts.time);
   // `let`, not `const`: the full-open-match filter below rebinds this.
   let events = groupEventBookings(bookings)
     .map(mapBookingGroup)
-    .filter(
-      (e) => e.date > nowParts.date || (e.date === nowParts.date && e.end_time > nowParts.time),
-    )
+    .filter((e) => includePast || !isOver(e))
     .filter((e) => (from ? e.date >= from : true) && (to ? e.date <= to : true))
     .sort((a, b) =>
       a.date === b.date
@@ -699,8 +768,11 @@ async function getEvents({ from = null, to = null } = {}) {
   // which is worse than not listing it: the schedule exists to answer "what can I do
   // this week?". Padel open matches are always 4 (the price split below has assumed it
   // since this endpoint was written).
+  // ...but only while it is still ahead: a match that has already been played is part
+  // of the history the calendar is showing, full or not.
   events = events.filter(
-    (e) => !(e.booking_type === "OPEN_MATCH" && (e.signed_up ?? 0) >= OPEN_MATCH_SIZE),
+    (e) =>
+      !(e.booking_type === "OPEN_MATCH" && (e.signed_up ?? 0) >= OPEN_MATCH_SIZE && !isOver(e)),
   );
 
   // Open matches: the bookings API reports the court total; four players split
@@ -987,7 +1059,9 @@ app.get("/api/events", async (req, res) => {
   }
 });
 
-// 30-day calendar view: all events in [start, end] inclusive, in one request.
+// Calendar view: all events in [start, end] inclusive, in one request.
+// `include_past=1` keeps days that have already happened, which only the schedule
+// page wants; everything else (the TV screen, /book) still gets upcoming-only.
 app.get("/api/events/range", async (req, res) => {
   if (!PLAYTOMIC_CLIENT_ID || !PLAYTOMIC_CLIENT_SECRET) return eventsNotConfigured(res);
 
@@ -1008,8 +1082,10 @@ app.get("/api/events/range", async (req, res) => {
       .json({ error: `Range too large (max ${MAX_RANGE_DAYS} days).` });
   }
 
+  const includePast = req.query.include_past === "1" || req.query.include_past === "true";
+
   try {
-    return res.json(await getEvents({ from: start, to: end }));
+    return res.json(await getEvents({ from: start, to: end, includePast }));
   } catch (error) {
     return eventsFetchFailed(res, error);
   }

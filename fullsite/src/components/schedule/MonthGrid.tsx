@@ -1,14 +1,5 @@
-import {
-  eachDayOfInterval,
-  endOfMonth,
-  endOfWeek,
-  format,
-  isSameMonth,
-  isToday,
-  startOfMonth,
-  startOfWeek,
-} from "date-fns";
-import { WEEKDAYS, WEEK_STARTS_ON } from "@/lib/calendar";
+import { eachDayOfInterval, format, isBefore, isSameMonth, isToday, startOfDay } from "date-fns";
+import { monthGridRange, WEEKDAYS } from "@/lib/calendar";
 import { TYPE_DOT_COLORS, TYPE_LABELS } from "@/constants/events";
 import type { PadelEvent } from "@/types/events";
 
@@ -39,11 +30,10 @@ export default function MonthGrid({
   eventsByDate: Map<string, PadelEvent[]>;
   onSelectDay: (day: Date) => void;
 }) {
-  // 0 = Sunday. Stated explicitly rather than relying on the date-fns default, so the
-  // pairing with WEEKDAYS above is visible at the point it matters.
-  const gridStart = startOfWeek(startOfMonth(monthStart), { weekStartsOn: WEEK_STARTS_ON });
-  const gridEnd = endOfWeek(endOfMonth(monthStart), { weekStartsOn: WEEK_STARTS_ON });
+  // The same range the page FETCHES, so every cell drawn here had a chance to be filled.
+  const { start: gridStart, end: gridEnd } = monthGridRange(monthStart);
   const days = eachDayOfInterval({ start: gridStart, end: gridEnd });
+  const todayStart = startOfDay(new Date());
 
   return (
     <div className="border border-border bg-card">
@@ -66,6 +56,7 @@ export default function MonthGrid({
           const dayEvents = eventsByDate.get(key) ?? [];
           const inMonth = isSameMonth(day, monthStart);
           const today = isToday(day);
+          const past = isBefore(day, todayStart);
           const hasEvents = dayEvents.length > 0;
 
           return (
@@ -78,6 +69,9 @@ export default function MonthGrid({
                 "flex min-h-[7rem] flex-col gap-1 border-b border-r border-border p-2 text-left transition-colors",
                 "[&:nth-child(7n)]:border-r-0",
                 inMonth ? "" : "bg-background/40",
+                // Days already gone stay on the grid — that is the point of showing the
+                // whole month — but read a shade back, so what is still bookable leads.
+                past ? "opacity-60" : "",
                 hasEvents
                   ? "cursor-pointer hover:bg-secondary/60"
                   : "cursor-default",

@@ -1,8 +1,16 @@
 /** @vitest-environment node */
 import { describe, it, expect } from "vitest";
-import { addDays, endOfMonth, endOfWeek, format, startOfMonth, startOfWeek } from "date-fns";
+import {
+  addDays,
+  eachDayOfInterval,
+  endOfMonth,
+  endOfWeek,
+  format,
+  startOfMonth,
+  startOfWeek,
+} from "date-fns";
 
-import { WEEKDAYS, WEEK_STARTS_ON } from "./calendar";
+import { monthGridRange, WEEKDAYS, WEEK_STARTS_ON } from "./calendar";
 
 describe("the schedule calendar starts on Sunday", () => {
   it("labels the first column Sun and the last Sat", () => {
@@ -41,5 +49,40 @@ describe("the schedule calendar starts on Sunday", () => {
       const days = Math.round((+end - +start) / 86400000);
       expect(days % 7).toBe(0);
     }
+  });
+});
+
+// The grid always drew leading/trailing days from the neighbouring months; the page
+// fetched only the month, so those cells came back empty. August 2026 ends on a Monday,
+// so the calendar draws through Sat 5 September — five days of real sessions that a
+// visitor could see the boxes for but not the events in.
+describe("the fetched range covers every day the grid draws", () => {
+  const key = (d: Date) => format(d, "yyyy-MM-dd");
+
+  it("spans the whole six-week grid for August 2026", () => {
+    const { start, end } = monthGridRange(new Date(2026, 7, 1));
+    expect(key(start)).toBe("2026-07-26"); // Sunday before Sat 1 Aug
+    expect(key(end)).toBe("2026-09-05"); // Saturday after Mon 31 Aug
+  });
+
+  it("matches the days the grid actually renders, every month of the year", () => {
+    for (let m = 0; m < 12; m++) {
+      const monthStart = new Date(2026, m, 1);
+      const { start, end } = monthGridRange(monthStart);
+      const drawn = eachDayOfInterval({
+        start: startOfWeek(startOfMonth(monthStart), { weekStartsOn: WEEK_STARTS_ON }),
+        end: endOfWeek(endOfMonth(monthStart), { weekStartsOn: WEEK_STARTS_ON }),
+      });
+      expect(key(start)).toBe(key(drawn[0]));
+      expect(key(end)).toBe(key(drawn[drawn.length - 1]));
+      expect(drawn.length % 7).toBe(0);
+      expect(drawn.length).toBeLessThanOrEqual(42); // the server's range cap allows 45
+    }
+  });
+
+  it("starts on a Sunday and ends on a Saturday, so whole weeks are fetched", () => {
+    const { start, end } = monthGridRange(new Date(2026, 1, 1)); // Feb 2026 begins on a Sunday
+    expect(format(start, "EEE")).toBe("Sun");
+    expect(format(end, "EEE")).toBe("Sat");
   });
 });
