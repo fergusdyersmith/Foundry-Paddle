@@ -2,6 +2,7 @@ import { Clock, ExternalLink, Users } from "lucide-react";
 import { TYPE_LABELS, TYPE_COLORS } from "@/constants/events";
 import {
   eventBookingUrl,
+  formatPrice,
   formatTime,
   isFullEvent,
   isPastEvent,
@@ -65,6 +66,16 @@ export default function EventCard({
               className={`inline-block px-2 py-0.5 font-display text-[10px] uppercase tracking-wider ${typeColor}`}
             >
               {typeLabel}
+            </span>
+          )}
+          {/* What a PLAYER pays, which is the number the API carries: Kumi's per-person
+              price for clinics and tournaments, and a quarter of the court for an open
+              match. Never the court total — the server drops that rather than publish
+              it as if it were a per-head price. Absent when nobody told us. */}
+          {event.price && (
+            <span className="text-xs font-medium text-foreground">
+              {formatPrice(event.price)}
+              <span className="text-muted-foreground">/person</span>
             </span>
           )}
         </div>

@@ -67,3 +67,31 @@ describe("a card offers BOOK only when there is something to book", () => {
     expect(screen.queryByText("FULL")).toBeNull();
   });
 });
+
+// The day panel described a clinic completely except for the one thing anyone decides
+// on: what it costs.
+describe("a card says what a player pays", () => {
+  it("shows the per-person price beside the type", () => {
+    render(<EventCard event={event({ price: "$25" })} />);
+    expect(screen.getByText("$25")).toBeTruthy();
+    expect(screen.getByText("/person")).toBeTruthy();
+  });
+
+  it("renders a raw Playtomic price as dollars", () => {
+    render(<EventCard event={event({ price: "37.50 USD" })} />);
+    expect(screen.getByText("$37.50")).toBeTruthy();
+  });
+
+  it("says nothing when the price is unknown, rather than guessing", () => {
+    // Null is what the server sends when Kumi's feed is unavailable — the alternative
+    // there would be publishing the COURT total as if a player paid it.
+    render(<EventCard event={event({ price: null })} />);
+    expect(screen.queryByText("/person")).toBeNull();
+  });
+
+  it("still shows the price on a session that is full or past", () => {
+    render(<EventCard event={event({ price: "$25", signed_up: 16, capacity: 16 })} />);
+    expect(screen.getByText("$25")).toBeTruthy();
+    expect(screen.getByText("FULL")).toBeTruthy();
+  });
+});
