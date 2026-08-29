@@ -468,7 +468,7 @@ describe("a tournament the club has not opened yet is not linked", () => {
   }
 
   it("keeps the link, and takes the price, for one that IS in the feed", () => {
-    const [e] = T.applyKumiTournamentInfo([tournament()], [feedRow()], isOver);
+    const [e] = T.applyKumiTournamentInfo([tournament()], [feedRow()], { isOver });
     expect(e.book_url).toContain(ID);
     expect(e.booking_open).toBeUndefined();
     expect(e.price).toBe("$25");
@@ -477,7 +477,7 @@ describe("a tournament the club has not opened yet is not linked", () => {
   });
 
   it("drops the link and says booking is not open when it is missing from the feed", () => {
-    const [e] = T.applyKumiTournamentInfo([tournament()], [], isOver);
+    const [e] = T.applyKumiTournamentInfo([tournament()], [], { isOver });
     expect(e.book_url).toBeNull();
     expect(e.booking_open).toBe(false);
     expect(e.price).toBeNull();
@@ -489,7 +489,7 @@ describe("a tournament the club has not opened yet is not linked", () => {
     const [e] = T.applyKumiTournamentInfo(
       [tournament()],
       [feedRow({ price: null, max_players: null, registered_count: null })],
-      isOver,
+      { isOver },
     );
     expect(e.book_url).toContain(ID);
     expect(e.booking_open).toBeUndefined();
@@ -499,7 +499,7 @@ describe("a tournament the club has not opened yet is not linked", () => {
     const [e] = T.applyKumiTournamentInfo(
       [tournament()],
       [feedRow({ tournament_id: null })],
-      isOver,
+      { isOver },
     );
     expect(e.book_url).toContain(ID);
     expect(e.price).toBe("$25");
@@ -507,7 +507,7 @@ describe("a tournament the club has not opened yet is not linked", () => {
 
   it("leaves PAST tournaments alone, since the feed only carries upcoming ones", () => {
     const played = tournament({ date: "2026-08-12", start_time: "11:00", end_time: "12:30" });
-    const [e] = T.applyKumiTournamentInfo([played], [], isOver);
+    const [e] = T.applyKumiTournamentInfo([played], [], { isOver });
     expect(e.book_url).toContain(ID); // the page shows it as PAST either way
     expect(e.booking_open).toBeUndefined();
   });
@@ -515,7 +515,7 @@ describe("a tournament the club has not opened yet is not linked", () => {
   it("never touches a clinic or an open match", () => {
     const clinic = { ...tournament(), booking_type: "PUBLIC_CLASS", book_url: "https://x/lesson_class/abc" };
     const match = { ...tournament(), booking_type: "OPEN_MATCH", book_url: "https://x/matches/abc" };
-    const out = T.applyKumiTournamentInfo([clinic, match], [], isOver);
+    const out = T.applyKumiTournamentInfo([clinic, match], [], { isOver });
     for (const e of out) {
       expect(e.book_url).toBeTruthy();
       expect(e.booking_open).toBeUndefined();
@@ -524,9 +524,7 @@ describe("a tournament the club has not opened yet is not linked", () => {
 
   it("is wired into getEvents with the same isOver the past filter uses", () => {
     const src = readFileSync(new URL("../server.js", import.meta.url), "utf8");
-    expect(src).toMatch(
-      /applyKumiTournamentInfo\(events, \(await fetchKumiTournaments\(\)\)\.tournaments \|\| \[\], isOver\)/,
-    );
+    expect(src).toMatch(/applyKumiTournamentInfo\(events, \(await fetchKumiTournaments\(\)\)\.tournaments \|\| \[\], \{\s*isOver,\s*today: nowParts\.date,\s*\}\)/);
   });
 
   it("fails open: a Kumi outage takes prices, never links", () => {
@@ -535,5 +533,63 @@ describe("a tournament the club has not opened yet is not linked", () => {
     const block = catchBody.slice(0, catchBody.indexOf("\n  }"));
     expect(block).toMatch(/e\.price = null/);
     expect(block).not.toMatch(/book_url/);
+  });
+});
+
+// The members-first window is a perk, so the page names the day it ends rather than just
+// refusing. The date is start - 5 days, matching the --days default of Kumi's
+// release_private_tournaments.py, which is the cron that actually flips the event public.
+describe("the day a members-first tournament opens to everyone", () => {
+  const isOver = () => false;
+  const ID = "2499c604-bd19-4a71-b216-edd300b37575";
+  const t = (date) => ({
+    id: ID, title: "Midday Social 1.5+", date, start_time: "11:00", end_time: "12:30",
+    booking_type: "TOURNAMENT", signed_up: 0,
+    book_url: `https://app.playtomic.com/tournaments/${ID}`,
+  });
+
+  it("is five days before it plays", () => {
+    const [e] = T.applyKumiTournamentInfo([t("2026-09-10")], [], { isOver, today: "2026-08-29" });
+    expect(e.opens_on).toBe("2026-09-05");
+  });
+
+  it("crosses a month boundary correctly", () => {
+    const [e] = T.applyKumiTournamentInfo([t("2026-09-03")], [], { isOver, today: "2026-08-29" });
+    expect(e.opens_on).toBe("2026-08-29");
+  });
+
+  it("still shows the date on the day itself — that is the day it opens", () => {
+    const [e] = T.applyKumiTournamentInfo([t("2026-09-03")], [], { isOver, today: "2026-08-29" });
+    expect(e.opens_on).toBe("2026-08-29"); // today
+  });
+
+  it("is withheld once it has passed, because that means the release cron is late", () => {
+    // A gated event whose open day has been and gone can only mean the release job is
+    // late or dead (Kumi alerts on exactly that). Until someone acts on it, "opens Aug
+    // 23" printed on the 29th is worse than saying nothing.
+    const [late] = T.applyKumiTournamentInfo([t("2026-08-28")], [], { isOver, today: "2026-08-29" });
+    expect(late.booking_open).toBe(false);
+    expect(late.opens_on).toBeNull();
+  });
+
+  it("is only set on the tournaments that are actually gated", () => {
+    const feed = [{ tournament_id: ID, name: "Midday Social 1.5+", start_utc: "2026-09-10T18:00:00Z", price: "$25", max_players: 12 }];
+    const [e] = T.applyKumiTournamentInfo([t("2026-09-10")], feed, { isOver, today: "2026-08-29" });
+    expect(e.opens_on).toBeUndefined();
+    expect(e.book_url).toContain(ID);
+  });
+
+  it("reads its window from one constant, tied to the cron that does the releasing", () => {
+    const src = readFileSync(new URL("../server.js", import.meta.url), "utf8");
+    expect(src).toMatch(/TOURNAMENT_RELEASE_DAYS = Number\(process\.env\.TOURNAMENT_RELEASE_DAYS \|\| 5\)/);
+    expect(src).toMatch(/release_private_tournaments\.py/);
+    expect(src).toMatch(/shiftDate\(e\.date, -TOURNAMENT_RELEASE_DAYS\)/);
+  });
+
+  it("shifts whole days without tripping over DST", () => {
+    // 1 Nov 2026 is the Sunday the clocks go back in Portland.
+    expect(T.shiftDate("2026-11-03", -5)).toBe("2026-10-29");
+    expect(T.shiftDate("2026-03-10", -5)).toBe("2026-03-05");
+    expect(T.shiftDate("2027-01-02", -5)).toBe("2026-12-28");
   });
 });

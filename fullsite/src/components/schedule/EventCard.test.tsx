@@ -100,9 +100,9 @@ describe("a card says what a player pays", () => {
 // the members' early-booking window a perk. The site must not hand out the join link
 // before then — its id IS the link.
 describe("an event the club has not opened yet offers no way in", () => {
-  it("says NOT YET OPEN instead of BOOK, and links nowhere", () => {
+  it("says MEMBERS FIRST instead of BOOK, and links nowhere", () => {
     render(<EventCard event={event({ booking_open: false, book_url: null, price: null })} />);
-    expect(screen.getByText("NOT YET OPEN")).toBeTruthy();
+    expect(screen.getByText("MEMBERS FIRST")).toBeTruthy();
     expect(screen.queryByText("BOOK")).toBeNull();
     expect(screen.queryByRole("link")).toBeNull();
   });
@@ -121,6 +121,31 @@ describe("an event the club has not opened yet offers no way in", () => {
   it("prefers PAST once it has been, whatever the flag says", () => {
     render(<EventCard event={event({ booking_open: false, book_url: null, date: "2026-08-28" })} />);
     expect(screen.getByText("PAST")).toBeTruthy();
-    expect(screen.queryByText("NOT YET OPEN")).toBeNull();
+    expect(screen.queryByText("MEMBERS FIRST")).toBeNull();
+  });
+});
+
+// "Members first" rather than "not yet open": the wait IS the members' perk, so the card
+// names it, and says when everyone else gets in.
+describe("a members-first card sells the window instead of just closing the door", () => {
+  const gated = { booking_open: false, book_url: null, price: null, signed_up: 0 };
+
+  it("says MEMBERS FIRST and the day it opens to all", () => {
+    render(<EventCard event={event({ ...gated, date: "2026-09-10", opens_on: "2026-09-05" })} />);
+    expect(screen.getByText("MEMBERS FIRST")).toBeTruthy();
+    expect(screen.getByText(/Opens to all Sep 5/)).toBeTruthy();
+    expect(screen.queryByRole("link")).toBeNull();
+  });
+
+  it("drops the date when the server withheld it, keeping the label", () => {
+    render(<EventCard event={event({ ...gated, opens_on: null })} />);
+    expect(screen.getByText("MEMBERS FIRST")).toBeTruthy();
+    expect(screen.queryByText(/Opens to all/)).toBeNull();
+  });
+
+  it("shows the roster again on an event that is open", () => {
+    render(<EventCard event={event({ signed_up: 5, capacity: 8 })} />);
+    expect(screen.getByText("5 of 8 signed up")).toBeTruthy();
+    expect(screen.queryByText(/Opens to all/)).toBeNull();
   });
 });

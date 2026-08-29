@@ -680,6 +680,19 @@ function applyKumiClassInfo(events, classes) {
   return events;
 }
 
+// When a private tournament becomes bookable by everyone. MUST match the --days default
+// of Kumi's scripts/release_private_tournaments.py, the hourly cron that actually flips
+// PRIVATE -> PUBLIC five days before an event plays; this is only what the website SAYS
+// about it. Env-overridable so a change to the club's window is a variable, not a deploy.
+const TOURNAMENT_RELEASE_DAYS = Number(process.env.TOURNAMENT_RELEASE_DAYS || 5);
+
+/** `date` (YYYY-MM-DD) shifted by whole days, in the same calendar terms it came in. */
+function shiftDate(date, days) {
+  const t = Date.parse(`${date}T00:00:00Z`);
+  if (Number.isNaN(t)) return null;
+  return new Date(t + days * 86400000).toISOString().slice(0, 10);
+}
+
 /** Overlay Kumi's per-tournament facts, and gate the ones Playtomic has not released.
  *
  *  The facts are the same story as applyKumiClassInfo: the bookings API reports a court
@@ -703,7 +716,11 @@ function applyKumiClassInfo(events, classes) {
  *
  *  Pure and exported so both halves are testable — one decides what a visitor pays, the
  *  other whether the club's own booking window holds on its website. */
-function applyKumiTournamentInfo(events, tournaments, isOver = () => false) {
+function applyKumiTournamentInfo(
+  events,
+  tournaments,
+  { isOver = () => false, today = null } = {},
+) {
   const byId = new Map();
   const byTitleDate = new Map();
   const releasedIds = new Set();
@@ -748,6 +765,11 @@ function applyKumiTournamentInfo(events, tournaments, isOver = () => false) {
     if (!released && !isOver(e)) {
       e.booking_open = false;
       e.book_url = null;
+      // The date everyone else can book it. Withheld when it has already passed: that
+      // means the release cron is late or dead (Kumi alerts on exactly that), and a
+      // date in the past on a public page is worse than no date at all.
+      const opens = shiftDate(e.date, -TOURNAMENT_RELEASE_DAYS);
+      e.opens_on = today && opens && opens < today ? null : opens;
     }
   }
   return events;
@@ -794,7 +816,10 @@ async function getEvents({ from = null, to = null, includePast = false } = {}) {
   try {
     applyKumiClassInfo(events, (await fetchKumiClasses()).classes || []);
 
-    applyKumiTournamentInfo(events, (await fetchKumiTournaments()).tournaments || [], isOver);
+    applyKumiTournamentInfo(events, (await fetchKumiTournaments()).tournaments || [], {
+      isOver,
+      today: nowParts.date,
+    });
   } catch (error) {
     // Fails OPEN: prices go, links stay. Kumi being unreachable must not take every
     // tournament's BOOK button down with it — a few hours of links we would rather have
@@ -1454,6 +1479,7 @@ export const __testables = {
   bookingDeepLink,
   cleanPrice,
   inclusiveDaySpan,
+  shiftDate,
   courtLabel,
   computeAvailability,
   freeIntervals,

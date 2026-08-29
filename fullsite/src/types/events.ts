@@ -25,4 +25,8 @@ export interface PadelEvent {
    *  programme private and releases each tournament a few days out, and its id is the
    *  join link, so the site must not publish one before then. Absent means bookable. */
   booking_open?: boolean;
+  /** The day it opens to everyone (YYYY-MM-DD), for an event still in its members-first
+   *  window. Null when that day has already passed, which means the release is running
+   *  late rather than that the date is unknown. */
+  opens_on?: string | null;
 }

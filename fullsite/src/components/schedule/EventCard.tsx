@@ -1,4 +1,5 @@
-import { Clock, ExternalLink, Users } from "lucide-react";
+import { Clock, ExternalLink, Lock, Users } from "lucide-react";
+import { format, parseISO } from "date-fns";
 import { TYPE_LABELS, TYPE_COLORS } from "@/constants/events";
 import {
   eventBookingUrl,
@@ -32,6 +33,8 @@ export default function EventCard({
   // Booking has not opened yet: the club releases each tournament a few days out, and
   // until then there is no link to give — see applyKumiTournamentInfo in server.js.
   const notOpen = !past && event.booking_open === false;
+  // Members get the link from the club first; this is the day everyone else can book.
+  const opensOn = notOpen && event.opens_on ? format(parseISO(event.opens_on), "MMM d") : null;
   // Past wins: "PAST" says everything "FULL" would, and more. A session that is not open
   // yet cannot be full either — its capacity is not published until it opens.
   const full = !past && !notOpen && isFullEvent(event);
@@ -88,16 +91,25 @@ export default function EventCard({
       </div>
 
       <div className={`flex shrink-0 items-center gap-4 ${actions}`}>
-        {roster && (
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-            <Users className="h-3.5 w-3.5" />
-            {roster}
-          </span>
+        {notOpen ? (
+          opensOn && (
+            <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-medium text-muted-foreground">
+              <Lock className="h-3.5 w-3.5" />
+              Opens to all {opensOn}
+            </span>
+          )
+        ) : (
+          roster && (
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              <Users className="h-3.5 w-3.5" />
+              {roster}
+            </span>
+          )
         )}
 
         {past || full || notOpen ? (
           <span className="ml-auto inline-flex items-center whitespace-nowrap border border-border px-5 py-2 font-display text-xs tracking-widest text-muted-foreground">
-            {past ? "PAST" : full ? "FULL" : "NOT YET OPEN"}
+            {past ? "PAST" : full ? "FULL" : "MEMBERS FIRST"}
           </span>
         ) : (
           <a
