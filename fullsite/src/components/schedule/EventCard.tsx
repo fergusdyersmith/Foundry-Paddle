@@ -7,6 +7,7 @@ import {
   formatTime,
   isFullEvent,
   isPastEvent,
+  memberPrice,
   signupSummary,
 } from "@/lib/events";
 import type { PadelEvent } from "@/types/events";
@@ -39,6 +40,8 @@ export default function EventCard({
   // yet cannot be full either — its capacity is not published until it opens.
   const full = !past && !notOpen && isFullEvent(event);
   const roster = signupSummary(event);
+  // Only ever set on an off-peak clinic or tournament — see memberPrice.
+  const member = memberPrice(event);
   const typeLabel = TYPE_LABELS[event.booking_type];
   const typeColor =
     TYPE_COLORS[event.booking_type] || "bg-muted text-muted-foreground";
@@ -88,6 +91,13 @@ export default function EventCard({
             </span>
           )}
         </div>
+        {/* What the same session costs a member. Off-peak clinics and tournaments only,
+            where the discount is the same on every tier and a single figure is true. */}
+        {member && (
+          <p className="mt-1 text-xs font-medium text-primary">
+            {member} <span className="text-muted-foreground">members</span>
+          </p>
+        )}
       </div>
 
       <div className={`flex shrink-0 items-center gap-4 ${actions}`}>

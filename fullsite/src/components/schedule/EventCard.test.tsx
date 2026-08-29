@@ -149,3 +149,32 @@ describe("a members-first card sells the window instead of just closing the door
     expect(screen.queryByText(/Opens to all/)).toBeNull();
   });
 });
+
+// Members pay half on an off-peak tournament and a quarter less on an off-peak clinic,
+// the same on every tier. The card says so under the standard price.
+describe("a card shows what a member would pay", () => {
+  // 3 Sep 2026 is a Thursday; 11am is inside the weekday off-peak window.
+  const offPeak = { date: "2026-09-03", start_time: "11:00", end_time: "12:30" };
+
+  it("puts the member price under the standard one", () => {
+    render(<EventCard event={event({ ...offPeak, price: "$20" })} />);
+    expect(screen.getByText("$20")).toBeTruthy();
+    expect(screen.getByText("$10")).toBeTruthy();
+    expect(screen.getByText("members")).toBeTruthy();
+  });
+
+  it("adds nothing at peak, where a member pays the same from their credit", () => {
+    render(
+      <EventCard
+        event={event({ date: "2026-09-07", start_time: "20:00", end_time: "21:00", price: "$50" })}
+      />,
+    );
+    expect(screen.getByText("$50")).toBeTruthy();
+    expect(screen.queryByText("members")).toBeNull();
+  });
+
+  it("adds nothing when there is no price to take a share of", () => {
+    render(<EventCard event={event({ ...offPeak, price: null })} />);
+    expect(screen.queryByText("members")).toBeNull();
+  });
+});

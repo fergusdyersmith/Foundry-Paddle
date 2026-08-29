@@ -4,6 +4,7 @@ import { Check, Star } from "lucide-react";
 import BookCTA from "@/components/BookCTA";
 import FoundingMemberBar from "@/components/FoundingMemberBar";
 import { PLAYTOMIC_MEMBERSHIP_URLS } from "@/constants/booking";
+import { OFF_PEAK_LABELS, PEAK_LABELS } from "@/constants/memberPricing";
 import StayInTouchForm from "@/components/StayInTouchForm";
 import Seo from "@/components/Seo";
 
@@ -17,13 +18,11 @@ const sharedBenefits = [
   "Free Stuff: when we get free stuff, you get free stuff!",
 ];
 
-// Peak / off-peak. Every tier above is priced against these windows, so they
-// are stated on the page rather than left to the booking system.
-const peakWindows = {
-  offPeak: ["Monday to Friday, 6am–4pm and 10pm–midnight",
-            "Saturday & Sunday, 4pm–midnight"],
-  peak: ["Monday to Friday, 4pm–10pm", "Saturday & Sunday, 6am–4pm"],
-};
+// Peak / off-peak. Every tier above is priced against these windows, so they are stated
+// on the page rather than left to the booking system — and they now come from
+// constants/memberPricing.ts, which the schedule reads too when it works out what a
+// member pays for a session. One definition, so the page and the arithmetic agree.
+const peakWindows = { offPeak: OFF_PEAK_LABELS, peak: PEAK_LABELS };
 
 // Published pay-as-you-go rates. Members are measured against these, and a
 // member's monthly credit is spent at exactly these prices, so the page has to

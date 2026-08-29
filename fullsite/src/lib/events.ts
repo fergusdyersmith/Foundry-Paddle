@@ -1,4 +1,6 @@
 import { EVENT_TYPE_ORDER, OPEN_MATCH_CAPACITY } from "@/constants/events";
+import { OFF_PEAK_MEMBER_DISCOUNT, PEAK_WINDOWS } from "@/constants/memberPricing";
+import { getDay, parseISO } from "date-fns";
 import { PLAYTOMIC_TENANT_URL } from "@/constants/booking";
 import type { PadelEvent } from "@/types/events";
 
@@ -90,6 +92,36 @@ export function openFirst(
   const full: PadelEvent[] = [];
   for (const e of events) (isFullEvent(e) ? full : open).push(e);
   return [...open.slice(0, openLimit), ...full.slice(0, fullLimit)];
+}
+
+/** Is this session inside the club's peak window? Judged on its START time: a session is
+ *  priced once, when it begins, and the club's own windows are stated in whole hours that
+ *  sessions start on. */
+export function isPeakEvent(event: PadelEvent): boolean {
+  const day = getDay(parseISO(event.date));
+  return PEAK_WINDOWS.some(
+    (w) =>
+      (w.days as readonly number[]).includes(day) &&
+      event.start_time >= w.start &&
+      event.start_time < w.end, // end exclusive: a 10pm Monday start is off peak
+  );
+}
+
+/** What a member pays for this session, formatted, or null when there is no single
+ *  answer.
+ *
+ *  Null covers most of the schedule, and every case is deliberate: at PEAK a member pays
+ *  the same price and draws on their monthly credit, so a second line would repeat the
+ *  first; an OPEN MATCH is court time, where the benefit runs per tier; and a session
+ *  whose price we never got cannot have a fraction taken off it. Publishing a member
+ *  price that some members do not get would be worse than showing none. */
+export function memberPrice(event: PadelEvent): string | null {
+  const discount = OFF_PEAK_MEMBER_DISCOUNT[event.booking_type];
+  if (!discount || !event.price || isPeakEvent(event)) return null;
+  const amount = Number(String(event.price).replace(/[^0-9.]/g, ""));
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+  const paid = amount * (1 - discount);
+  return `$${Number.isInteger(paid) ? paid : paid.toFixed(2)}`;
 }
 
 /** Where the BOOK button points for a given event. The server builds a per-type
