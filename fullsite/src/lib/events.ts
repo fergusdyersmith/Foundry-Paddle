@@ -74,6 +74,24 @@ export function signupSummary(event: PadelEvent): string {
     : `${event.signed_up} signed up`;
 }
 
+/** Split a list so the events someone can still join come first, then the ones that are
+ *  full, each group keeping the order it arrived in (the API sorts by date, then time).
+ *
+ *  Two separate caps rather than one over the whole list: a short list capped as a whole
+ *  would quietly drop every full session the moment there were enough open ones, and the
+ *  point is to still SHOW what the club runs — a sold-out beginner clinic is a reason to
+ *  come back next week, not noise. The open ones lead because those are the ones a click
+ *  can still fill. */
+export function openFirst(
+  events: PadelEvent[],
+  { openLimit, fullLimit }: { openLimit: number; fullLimit: number },
+): PadelEvent[] {
+  const open: PadelEvent[] = [];
+  const full: PadelEvent[] = [];
+  for (const e of events) (isFullEvent(e) ? full : open).push(e);
+  return [...open.slice(0, openLimit), ...full.slice(0, fullLimit)];
+}
+
 /** Where the BOOK button points for a given event. The server builds a per-type
  *  deep link (tournaments, classes/clinics, and open matches each use a
  *  different Playtomic URL + id); fall back to the club page if it's missing. */

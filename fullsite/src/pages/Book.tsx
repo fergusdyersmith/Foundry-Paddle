@@ -17,6 +17,7 @@ import {
   PLAYTOMIC_PLAY_STORE_URL,
 } from "@/constants/booking";
 import { OPEN_MATCH_CAPACITY } from "@/constants/events";
+import { openFirst } from "@/lib/events";
 import { useScheduleEvents } from "@/hooks/useScheduleEvents";
 import BookEventRow from "@/components/book/BookEventRow";
 import Seo from "@/components/Seo";
@@ -28,7 +29,11 @@ const todayKey = format(today, "yyyy-MM-dd");
 const rangeEnd = addDays(today, 30);
 
 const CLINIC_TYPES = new Set(["PUBLIC_CLASS", "COURSE_CLASS"]);
+// Clinics someone can still join, then a couple that are already full. Kept as two
+// numbers, not one: a single cap over the combined list would drop the full ones
+// entirely on any week with four open clinics, and they are worth seeing.
 const CLINIC_LIMIT = 4;
+const FULL_CLINIC_LIMIT = 2;
 // Open matches shown before the "view more" expander.
 const MATCHES_VISIBLE = 3;
 
@@ -78,8 +83,14 @@ const Book = () => {
     isError,
   } = useScheduleEvents(today, rangeEnd);
 
+  // Open clinics lead, so the ones a booking can still fill are what a visitor reads
+  // first; the full ones follow rather than taking the top of a four-row list.
   const clinics = useMemo(
-    () => events.filter((e) => CLINIC_TYPES.has(e.booking_type)).slice(0, CLINIC_LIMIT),
+    () =>
+      openFirst(
+        events.filter((e) => CLINIC_TYPES.has(e.booking_type)),
+        { openLimit: CLINIC_LIMIT, fullLimit: FULL_CLINIC_LIMIT },
+      ),
     [events],
   );
 

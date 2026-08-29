@@ -1,7 +1,7 @@
 /** @vitest-environment node */
 import { describe, it, expect } from "vitest";
 
-import { isFullEvent, isPastEvent, signupSummary } from "./events";
+import { isFullEvent, isPastEvent, openFirst, signupSummary } from "./events";
 import type { PadelEvent } from "@/types/events";
 
 // The schedule now shows days that have already been, so a card can describe a session
@@ -128,5 +128,64 @@ describe("an event with no spots left is marked full", () => {
 
   it("says nothing at all when nobody has signed up yet", () => {
     expect(signupSummary(event({ signed_up: 0 }))).toBe("");
+  });
+});
+
+// Two of the four rows on /book's clinic list were sold-out clinics, sitting above ones
+// that still had places. The list is what the page uses to fill sessions.
+describe("clinics that can still be filled lead the list", () => {
+  function clinic(id: string, signed_up: number, capacity: number | null = 4): PadelEvent {
+    return {
+      id,
+      title: id,
+      date: "2026-08-30",
+      start_time: "09:00",
+      end_time: "10:00",
+      duration_min: 60,
+      price: null,
+      booking_type: "PUBLIC_CLASS",
+      court: "Court 2",
+      signed_up,
+      capacity,
+      book_url: "https://playtomic.com/x",
+    };
+  }
+  const ids = (events: PadelEvent[]) => events.map((e) => e.id);
+  const LIMITS = { openLimit: 4, fullLimit: 2 };
+
+  it("puts the full ones underneath, whatever order they arrived in", () => {
+    const list = [clinic("full-a", 4), clinic("open-a", 1), clinic("full-b", 4), clinic("open-b", 0)];
+    expect(ids(openFirst(list, LIMITS))).toEqual(["open-a", "open-b", "full-a", "full-b"]);
+  });
+
+  it("keeps each group in the order the API gave it, which is by date and time", () => {
+    const list = [clinic("mon", 0), clinic("tue", 1), clinic("wed", 2)];
+    expect(ids(openFirst(list, LIMITS))).toEqual(["mon", "tue", "wed"]);
+  });
+
+  it("still shows full clinics on a week with more open ones than fit", () => {
+    // The failure a single combined cap would cause: five open clinics and the sold-out
+    // ones vanish from the page entirely.
+    const list = [
+      clinic("full-a", 4),
+      ...[1, 2, 3, 4, 5].map((n) => clinic(`open-${n}`, 0)),
+    ];
+    expect(ids(openFirst(list, LIMITS))).toEqual([
+      "open-1", "open-2", "open-3", "open-4", "full-a",
+    ]);
+  });
+
+  it("caps the full ones too, so a quiet week is not a wall of sold-out rows", () => {
+    const list = [1, 2, 3, 4].map((n) => clinic(`full-${n}`, 4));
+    expect(ids(openFirst(list, LIMITS))).toEqual(["full-1", "full-2"]);
+  });
+
+  it("treats a clinic with no known capacity as open, never sinking it", () => {
+    const list = [clinic("full-a", 4), clinic("unknown", 40, null)];
+    expect(ids(openFirst(list, LIMITS))).toEqual(["unknown", "full-a"]);
+  });
+
+  it("returns an empty list unchanged", () => {
+    expect(openFirst([], LIMITS)).toEqual([]);
   });
 });
