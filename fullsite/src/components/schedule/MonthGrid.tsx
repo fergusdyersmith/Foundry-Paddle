@@ -1,19 +1,26 @@
 import { eachDayOfInterval, format, isBefore, isSameMonth, isToday, startOfDay } from "date-fns";
 import { monthGridRange, WEEKDAYS } from "@/lib/calendar";
 import { TYPE_DOT_COLORS, TYPE_LABELS } from "@/constants/events";
+import { isFullEvent } from "@/lib/events";
 import type { PadelEvent } from "@/types/events";
 
 
 const MAX_CHIPS = 3;
 
-function DayChip({ event }: { event: PadelEvent }) {
+function DayChip({ event, past }: { event: PadelEvent; past: boolean }) {
   const dot = TYPE_DOT_COLORS[event.booking_type] || "bg-muted-foreground";
   const label = TYPE_LABELS[event.booking_type] || event.booking_type;
+  // Marked here too, not only on the card behind the click: the point of the grid is to
+  // scan a month for something to join, and a full session is not that. Not worth saying
+  // on a day that has been, though — nothing there is joinable either way, and the
+  // history months are thick with matches that filled up.
+  const full = !past && isFullEvent(event);
   return (
     <div className="flex items-center gap-1.5 truncate text-left">
       <span className={`h-1.5 w-1.5 shrink-0 ${dot}`} />
       <span className="truncate text-[11px] leading-tight text-muted-foreground">
         <span className="text-foreground/80">{event.start_time}</span> {label}
+        {full && <span className="text-muted-foreground/60"> · Full</span>}
       </span>
     </div>
   );
@@ -34,6 +41,9 @@ export default function MonthGrid({
   const { start: gridStart, end: gridEnd } = monthGridRange(monthStart);
   const days = eachDayOfInterval({ start: gridStart, end: gridEnd });
   const todayStart = startOfDay(new Date());
+  // Dimming a finished day only says something when there are live ones beside it. In a
+  // month that has entirely been, it would put the whole grid behind a veil.
+  const gridHasFuture = !isBefore(gridEnd, todayStart);
 
   return (
     <div className="border border-border bg-card">
@@ -69,9 +79,8 @@ export default function MonthGrid({
                 "flex min-h-[7rem] flex-col gap-1 border-b border-r border-border p-2 text-left transition-colors",
                 "[&:nth-child(7n)]:border-r-0",
                 inMonth ? "" : "bg-background/40",
-                // Days already gone stay on the grid — that is the point of showing the
-                // whole month — but read a shade back, so what is still bookable leads.
-                past ? "opacity-60" : "",
+                // Days already gone read a shade back, so what is still bookable leads.
+                past && gridHasFuture ? "opacity-60" : "",
                 hasEvents
                   ? "cursor-pointer hover:bg-secondary/60"
                   : "cursor-default",
@@ -99,7 +108,7 @@ export default function MonthGrid({
 
               <div className="flex flex-col gap-1 overflow-hidden">
                 {dayEvents.slice(0, MAX_CHIPS).map((e) => (
-                  <DayChip key={e.id} event={e} />
+                  <DayChip key={e.id} event={e} past={past} />
                 ))}
                 {dayEvents.length > MAX_CHIPS && (
                   <span className="text-[10px] font-medium text-primary">

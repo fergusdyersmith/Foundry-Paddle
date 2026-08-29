@@ -1,7 +1,7 @@
 /** @vitest-environment node */
 import { describe, it, expect } from "vitest";
 
-import { isPastEvent } from "./events";
+import { isFullEvent, isPastEvent, signupSummary } from "./events";
 import type { PadelEvent } from "@/types/events";
 
 // The schedule now shows days that have already been, so a card can describe a session
@@ -64,5 +64,69 @@ describe("an event that has finished is marked past", () => {
       isPastEvent(event({ start_time: start, end_time: "" }), NOW);
     expect(noEnd("09:00")).toBe(true);
     expect(noEnd("20:00")).toBe(false);
+  });
+});
+
+// A 16-of-16 tournament read "16 signed up" with a live BOOK button next to it, which
+// sent people to Playtomic to join something they could not join.
+describe("an event with no spots left is marked full", () => {
+  function event(o: Partial<PadelEvent> = {}): PadelEvent {
+    return {
+      id: "e1",
+      title: "Intermediate Tournament",
+      date: "2026-08-29",
+      start_time: "10:00",
+      end_time: "12:00",
+      duration_min: 120,
+      price: null,
+      booking_type: "TOURNAMENT",
+      court: "4 courts",
+      signed_up: 16,
+      capacity: 16,
+      book_url: "https://playtomic.com/x",
+      ...o,
+    };
+  }
+
+  it("calls a tournament at its capacity full", () => {
+    expect(isFullEvent(event())).toBe(true);
+  });
+
+  it("leaves one with a place left bookable", () => {
+    expect(isFullEvent(event({ signed_up: 15 }))).toBe(false);
+  });
+
+  it("treats an oversubscribed event as full rather than letting it through", () => {
+    expect(isFullEvent(event({ signed_up: 17 }))).toBe(true);
+  });
+
+  it("calls a 4-of-4 clinic full", () => {
+    expect(isFullEvent(event({ booking_type: "PUBLIC_CLASS", signed_up: 4, capacity: 4 }))).toBe(
+      true,
+    );
+  });
+
+  it("never guesses when the capacity is unknown", () => {
+    // Kumi's feed is what carries capacity; without it, null means unknown. Labelling a
+    // live clinic FULL costs the club a booking, which is worse than the missing label.
+    expect(isFullEvent(event({ capacity: null, signed_up: 40 }))).toBe(false);
+    expect(isFullEvent(event({ capacity: undefined, signed_up: 40 }))).toBe(false);
+    expect(isFullEvent(event({ capacity: 0, signed_up: 40 }))).toBe(false);
+  });
+
+  it("knows an open match holds four, since Playtomic publishes no maximum", () => {
+    const match = { booking_type: "OPEN_MATCH", capacity: null };
+    expect(isFullEvent(event({ ...match, signed_up: 4 }))).toBe(true);
+    expect(isFullEvent(event({ ...match, signed_up: 3 }))).toBe(false);
+  });
+
+  it("spells the roster out against the capacity when there is one", () => {
+    expect(signupSummary(event())).toBe("16 of 16 signed up");
+    expect(signupSummary(event({ signed_up: 7, capacity: 8 }))).toBe("7 of 8 signed up");
+    expect(signupSummary(event({ capacity: null, signed_up: 3 }))).toBe("3 signed up");
+  });
+
+  it("says nothing at all when nobody has signed up yet", () => {
+    expect(signupSummary(event({ signed_up: 0 }))).toBe("");
   });
 });

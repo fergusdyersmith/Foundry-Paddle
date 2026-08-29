@@ -1,0 +1,69 @@
+import { render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import EventCard from "./EventCard";
+import type { PadelEvent } from "@/types/events";
+
+const NOW = new Date(2026, 7, 29, 9, 0); // Sat 29 Aug 2026, 9am — before the 10am start
+
+function event(o: Partial<PadelEvent> = {}): PadelEvent {
+  return {
+    id: "e1",
+    title: "Intermediate Tournament",
+    date: "2026-08-29",
+    start_time: "10:00",
+    end_time: "12:00",
+    duration_min: 120,
+    price: null,
+    booking_type: "TOURNAMENT",
+    court: "4 courts",
+    signed_up: 16,
+    capacity: 16,
+    book_url: "https://playtomic.com/x",
+    ...o,
+  };
+}
+
+beforeEach(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(NOW);
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+// The reported case, verbatim from the phone: "Intermediate Tournament / 16 signed up /
+// BOOK" on a 16-of-16 tournament.
+describe("a card offers BOOK only when there is something to book", () => {
+  it("says FULL, with no link, when every place is taken", () => {
+    render(<EventCard event={event()} />);
+    expect(screen.getByText("FULL")).toBeTruthy();
+    expect(screen.queryByText("BOOK")).toBeNull();
+    expect(screen.queryByRole("link")).toBeNull();
+  });
+
+  it("shows the roster against the capacity, not a bare count", () => {
+    render(<EventCard event={event()} />);
+    expect(screen.getByText("16 of 16 signed up")).toBeTruthy();
+  });
+
+  it("still books when a place is left", () => {
+    render(<EventCard event={event({ signed_up: 15 })} />);
+    expect(screen.getByText("BOOK")).toBeTruthy();
+    expect(screen.getByRole("link").getAttribute("href")).toBe("https://playtomic.com/x");
+    expect(screen.getByText("15 of 16 signed up")).toBeTruthy();
+  });
+
+  it("books when the capacity is unknown, rather than guessing at full", () => {
+    render(<EventCard event={event({ capacity: null, signed_up: 40 })} />);
+    expect(screen.getByText("BOOK")).toBeTruthy();
+    expect(screen.getByText("40 signed up")).toBeTruthy();
+  });
+
+  it("prefers PAST over FULL once the session is over", () => {
+    // Both are true of yesterday's sold-out tournament; PAST says the more useful thing.
+    render(<EventCard event={event({ date: "2026-08-28" })} />);
+    expect(screen.getByText("PAST")).toBeTruthy();
+    expect(screen.queryByText("FULL")).toBeNull();
+  });
+});

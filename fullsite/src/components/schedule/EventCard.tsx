@@ -1,6 +1,12 @@
 import { Clock, ExternalLink, Users } from "lucide-react";
 import { TYPE_LABELS, TYPE_COLORS } from "@/constants/events";
-import { eventBookingUrl, formatTime, isPastEvent } from "@/lib/events";
+import {
+  eventBookingUrl,
+  formatTime,
+  isFullEvent,
+  isPastEvent,
+  signupSummary,
+} from "@/lib/events";
 import type { PadelEvent } from "@/types/events";
 
 /** Full event row for the agenda list and the day-detail panel.
@@ -10,7 +16,10 @@ import type { PadelEvent } from "@/types/events";
  *
  *  The calendar now shows days that have already happened, so a card can describe a
  *  session that is over. Those keep everything except the BOOK button: sending someone
- *  to Playtomic to sign up for last Tuesday's clinic is the one thing they must not do. */
+ *  to Playtomic to sign up for last Tuesday's clinic is the one thing they must not do.
+ *  A session with no spots left is treated the same way — a 16-of-16 tournament reading
+ *  "16 signed up" next to a live BOOK button invited a click that could only end in
+ *  disappointment. */
 export default function EventCard({
   event,
   stacked = false,
@@ -19,6 +28,9 @@ export default function EventCard({
   stacked?: boolean;
 }) {
   const past = isPastEvent(event);
+  // Past wins: "PAST" says everything "FULL" would, and more.
+  const full = !past && isFullEvent(event);
+  const roster = signupSummary(event);
   const typeLabel = TYPE_LABELS[event.booking_type];
   const typeColor =
     TYPE_COLORS[event.booking_type] || "bg-muted text-muted-foreground";
@@ -28,7 +40,7 @@ export default function EventCard({
 
   return (
     <div
-      className={`flex flex-col gap-4 border border-border bg-card p-4 ${row} ${past ? "opacity-70" : ""}`}
+      className={`flex flex-col gap-4 border border-border bg-card p-4 ${row} ${past || full ? "opacity-70" : ""}`}
     >
       <div className={`flex shrink-0 items-center gap-2 ${timeWidth}`}>
         <Clock className="h-4 w-4 text-muted-foreground" />
@@ -59,16 +71,16 @@ export default function EventCard({
       </div>
 
       <div className={`flex shrink-0 items-center gap-4 ${actions}`}>
-        {event.signed_up > 0 && (
+        {roster && (
           <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
             <Users className="h-3.5 w-3.5" />
-            {event.signed_up} signed up
+            {roster}
           </span>
         )}
 
-        {past ? (
+        {past || full ? (
           <span className="ml-auto inline-flex items-center border border-border px-5 py-2 font-display text-xs tracking-widest text-muted-foreground">
-            PAST
+            {past ? "PAST" : "FULL"}
           </span>
         ) : (
           <a

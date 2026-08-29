@@ -1,4 +1,4 @@
-import { EVENT_TYPE_ORDER } from "@/constants/events";
+import { EVENT_TYPE_ORDER, OPEN_MATCH_CAPACITY } from "@/constants/events";
 import { PLAYTOMIC_TENANT_URL } from "@/constants/booking";
 import type { PadelEvent } from "@/types/events";
 
@@ -45,6 +45,33 @@ export function isPastEvent(event: PadelEvent, now: Date = new Date()): boolean 
   const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
   if (event.date !== today) return event.date < today;
   return (event.end_time || event.start_time) <= time;
+}
+
+/** Is this event out of spots?
+ *
+ *  Only ever true when the capacity is actually KNOWN: clinics, courses and tournaments
+ *  carry one from Kumi's feed, and a padel open match is always four. `capacity` is null
+ *  whenever that enrichment is unavailable, and null means unknown, never full — a
+ *  session wrongly labelled FULL is a booking the club does not get, which is a worse
+ *  error than the one this fixes.
+ *
+ *  Pure and exported so the rule is testable: it decides whether the page still offers
+ *  someone a way to sign up. */
+export function isFullEvent(event: PadelEvent): boolean {
+  const capacity =
+    event.capacity ?? (event.booking_type === "OPEN_MATCH" ? OPEN_MATCH_CAPACITY : null);
+  if (capacity == null || capacity <= 0) return false;
+  return event.signed_up >= capacity;
+}
+
+/** How the roster reads next to an event: "12 of 16 signed up" when the capacity is
+ *  known, "12 signed up" when it is not. Empty when nobody has signed up yet — "0 signed
+ *  up" on a clinic that opened this morning reads worse than saying nothing. */
+export function signupSummary(event: PadelEvent): string {
+  if (event.signed_up <= 0) return "";
+  return event.capacity != null && event.capacity > 0
+    ? `${event.signed_up} of ${event.capacity} signed up`
+    : `${event.signed_up} signed up`;
 }
 
 /** Where the BOOK button points for a given event. The server builds a per-type

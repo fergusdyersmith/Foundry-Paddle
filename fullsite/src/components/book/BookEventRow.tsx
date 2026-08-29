@@ -1,23 +1,27 @@
 import { format, parseISO } from "date-fns";
 import { ExternalLink, Users } from "lucide-react";
 import { OPEN_MATCH_CAPACITY } from "@/constants/events";
-import { eventBookingUrl, formatPrice, formatTime } from "@/lib/events";
+import { eventBookingUrl, formatPrice, formatTime, isFullEvent } from "@/lib/events";
 import type { PadelEvent } from "@/types/events";
 
 /** Compact one-line event row for the Book page's clinic and open-match
  *  lists. The whole row is a link to the event's Playtomic deep link. Open
- *  matches show spots left (roster out of 4) instead of a raw signup count. */
+ *  matches show spots left (roster out of 4) instead of a raw signup count.
+ *
+ *  A clinic or tournament with no spots left keeps its place — it still says what the
+ *  club runs — but stops being a link, because the row's entire affordance is "click to
+ *  book". (Full open matches never get here; the list filters them out.) */
 export default function BookEventRow({ event }: { event: PadelEvent }) {
   const date = parseISO(event.date);
   const isMatch = event.booking_type === "OPEN_MATCH";
   const spotsLeft = Math.max(0, OPEN_MATCH_CAPACITY - event.signed_up);
-  return (
-    <a
-      href={eventBookingUrl(event)}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group flex items-center gap-3 overflow-hidden border border-border bg-card px-4 py-3 transition-colors hover:border-primary sm:gap-4"
-    >
+  const full = isFullEvent(event);
+  const rowClass = `group flex items-center gap-3 overflow-hidden border border-border bg-card px-4 py-3 transition-colors sm:gap-4 ${
+    full ? "opacity-70" : "hover:border-primary"
+  }`;
+
+  const body = (
+    <>
       <div className="w-11 shrink-0 text-center">
         <p className="font-display text-[10px] uppercase tracking-wider text-muted-foreground">
           {format(date, "EEE")}
@@ -53,14 +57,35 @@ export default function BookEventRow({ event }: { event: PadelEvent }) {
         event.signed_up > 0 && (
           <span className="hidden shrink-0 items-center gap-1 text-xs font-medium text-muted-foreground sm:inline-flex">
             <Users className="h-3.5 w-3.5" />
-            {event.signed_up}
+            {event.capacity != null && event.capacity > 0
+              ? `${event.signed_up}/${event.capacity}`
+              : event.signed_up}
           </span>
         )
       )}
-      <span className="inline-flex shrink-0 items-center gap-1.5 font-display text-xs tracking-widest text-primary">
-        BOOK
-        <ExternalLink className="h-3 w-3" />
-      </span>
+      {full ? (
+        <span className="shrink-0 font-display text-xs tracking-widest text-muted-foreground">
+          FULL
+        </span>
+      ) : (
+        <span className="inline-flex shrink-0 items-center gap-1.5 font-display text-xs tracking-widest text-primary">
+          BOOK
+          <ExternalLink className="h-3 w-3" />
+        </span>
+      )}
+    </>
+  );
+
+  if (full) return <div className={rowClass}>{body}</div>;
+
+  return (
+    <a
+      href={eventBookingUrl(event)}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={rowClass}
+    >
+      {body}
     </a>
   );
 }
