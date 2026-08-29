@@ -10,7 +10,7 @@ import {
   startOfWeek,
 } from "date-fns";
 
-import { monthGridRange, WEEKDAYS, WEEK_STARTS_ON } from "./calendar";
+import { monthGridRange, monthNeedsHistory, WEEKDAYS, WEEK_STARTS_ON } from "./calendar";
 
 describe("the schedule calendar starts on Sunday", () => {
   it("labels the first column Sun and the last Sat", () => {
@@ -84,5 +84,37 @@ describe("the fetched range covers every day the grid draws", () => {
     const { start, end } = monthGridRange(new Date(2026, 1, 1)); // Feb 2026 begins on a Sunday
     expect(format(start, "EEE")).toBe("Sun");
     expect(format(end, "EEE")).toBe("Sat");
+  });
+});
+
+// Showing every past day of the CURRENT month was a mistake: it put a second Playtomic
+// fetch (6.9s cold, 66KB) in front of the page a visitor lands on, to fill three weeks
+// of the grid with sessions nobody can join. History is now loaded only when someone
+// navigates back to a month that has already been.
+describe("history is loaded only for a month that has already been", () => {
+  const TODAY = new Date(2026, 7, 29); // Sat 29 Aug 2026
+
+  it("does not ask for it on the month being viewed today", () => {
+    expect(monthNeedsHistory(new Date(2026, 7, 1), TODAY)).toBe(false);
+  });
+
+  it("does not ask for it on a month still to come", () => {
+    expect(monthNeedsHistory(new Date(2026, 8, 1), TODAY)).toBe(false);
+  });
+
+  it("asks for it on last month, and on months before that", () => {
+    expect(monthNeedsHistory(new Date(2026, 6, 1), TODAY)).toBe(true);
+    expect(monthNeedsHistory(new Date(2026, 4, 1), TODAY)).toBe(true);
+  });
+
+  it("compares months, not days — the 1st of this month is not history", () => {
+    // A month start is always <= today within the current month; comparing raw dates
+    // would make every day after the 1st ask for history it does not need.
+    expect(monthNeedsHistory(new Date(2026, 7, 1), new Date(2026, 7, 31))).toBe(false);
+  });
+
+  it("crosses a year boundary the right way round", () => {
+    expect(monthNeedsHistory(new Date(2025, 11, 1), new Date(2026, 0, 15))).toBe(true);
+    expect(monthNeedsHistory(new Date(2026, 0, 1), new Date(2025, 11, 15))).toBe(false);
   });
 });

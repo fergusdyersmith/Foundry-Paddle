@@ -19,7 +19,7 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { TYPE_DOT_COLORS, TYPE_LABELS } from "@/constants/events";
 import { groupEventsByDate, sortTypesByOrder } from "@/lib/events";
-import { monthGridRange } from "@/lib/calendar";
+import { monthGridRange, monthNeedsHistory } from "@/lib/calendar";
 import { useScheduleEvents } from "@/hooks/useScheduleEvents";
 import MonthGrid from "@/components/schedule/MonthGrid";
 import AgendaList from "@/components/schedule/AgendaList";
@@ -31,10 +31,10 @@ const thisMonth = startOfMonth(today);
 // Playtomic only returns ~30 days out, so the calendar spans at most this month
 // and the next.
 const maxMonth = startOfMonth(addDays(today, 30));
-// ...and back this far. Past months are shown rather than hidden: a visitor deciding
-// whether the club is worth joining wants to see what a full week here actually looks
-// like, and until today's date every month was blank above the fold. Three is a bound on
-// how much history one page can ask Playtomic for, not a claim about the data.
+// ...and back this far, for a visitor who wants to see what a full week here actually
+// looks like. Three is a bound on how much history one page can ask Playtomic for, not a
+// claim about the data. History is only ever loaded for a month that HAS been — see
+// showPast below.
 const HISTORY_MONTHS = 3;
 const minMonth = startOfMonth(subMonths(today, HISTORY_MONTHS));
 
@@ -50,13 +50,16 @@ const Schedule = () => {
   // A grid entirely in the past is settled — no need to poll it every minute.
   const isLive = !isBefore(grid.end, today);
 
+  // History is loaded only for a month that has already been — see monthNeedsHistory.
+  const showPast = monthNeedsHistory(monthStart, today);
+
   const {
     data: events = [],
     isLoading,
     isError,
     isFetching,
     refetch,
-  } = useScheduleEvents(grid.start, grid.end, { includePast: true, live: isLive });
+  } = useScheduleEvents(grid.start, grid.end, { includePast: showPast, live: isLive });
 
   const availableTypes = useMemo(
     () => sortTypesByOrder([...new Set(events.map((e) => e.booking_type))]),

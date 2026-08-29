@@ -687,9 +687,10 @@ async function getEvents({ from = null, to = null, includePast = false } = {}) {
   // see sessions already under way. The public schedule must not inherit that:
   // an open match that finished an hour ago is not something to advertise.
   //
-  // The calendar is the one caller that asks for the past on purpose (includePast) —
-  // a month with its first three weeks blanked out told a visitor nothing about what
-  // a week here usually looks like.
+  // The calendar is the one caller that asks for the past on purpose (includePast), and
+  // only when the visitor navigates back to a month that has already been: history is a
+  // second bookings fetch, which is slow enough that the current month must not pay for
+  // it. See showPast in fullsite/src/pages/Schedule.tsx.
   const nowParts = toLocalParts(new Date(), CLUB_TIMEZONE);
   const isOver = (e) =>
     e.date < nowParts.date || (e.date === nowParts.date && e.end_time <= nowParts.time);
