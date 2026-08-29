@@ -29,8 +29,12 @@ export default function EventCard({
   stacked?: boolean;
 }) {
   const past = isPastEvent(event);
-  // Past wins: "PAST" says everything "FULL" would, and more.
-  const full = !past && isFullEvent(event);
+  // Booking has not opened yet: the club releases each tournament a few days out, and
+  // until then there is no link to give — see applyKumiTournamentInfo in server.js.
+  const notOpen = !past && event.booking_open === false;
+  // Past wins: "PAST" says everything "FULL" would, and more. A session that is not open
+  // yet cannot be full either — its capacity is not published until it opens.
+  const full = !past && !notOpen && isFullEvent(event);
   const roster = signupSummary(event);
   const typeLabel = TYPE_LABELS[event.booking_type];
   const typeColor =
@@ -41,7 +45,9 @@ export default function EventCard({
 
   return (
     <div
-      className={`flex flex-col gap-4 border border-border bg-card p-4 ${row} ${past || full ? "opacity-70" : ""}`}
+      className={`flex flex-col gap-4 border border-border bg-card p-4 ${row} ${
+        past || full ? "opacity-70" : ""
+      }`}
     >
       <div className={`flex shrink-0 items-center gap-2 ${timeWidth}`}>
         <Clock className="h-4 w-4 text-muted-foreground" />
@@ -89,9 +95,9 @@ export default function EventCard({
           </span>
         )}
 
-        {past || full ? (
-          <span className="ml-auto inline-flex items-center border border-border px-5 py-2 font-display text-xs tracking-widest text-muted-foreground">
-            {past ? "PAST" : "FULL"}
+        {past || full || notOpen ? (
+          <span className="ml-auto inline-flex items-center whitespace-nowrap border border-border px-5 py-2 font-display text-xs tracking-widest text-muted-foreground">
+            {past ? "PAST" : full ? "FULL" : "NOT YET OPEN"}
           </span>
         ) : (
           <a

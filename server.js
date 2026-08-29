@@ -680,6 +680,79 @@ function applyKumiClassInfo(events, classes) {
   return events;
 }
 
+/** Overlay Kumi's per-tournament facts, and gate the ones Playtomic has not released.
+ *
+ *  The facts are the same story as applyKumiClassInfo: the bookings API reports a court
+ *  total (or, for these, a flat "0 USD"), and the per-player entry price lives only in
+ *  Kumi's feed.
+ *
+ *  The gate is new. That feed lists PUBLIC tournaments only, and from 2026-09 the club's
+ *  whole programme is created private and released to public five days out, so a
+ *  tournament missing from it is one nobody outside the club is meant to be booking yet.
+ *  A tournament_id IS the join link — private on Playtomic means unlisted, not locked —
+ *  and we build ours from the bookings API, which returns every tournament regardless.
+ *  Left alone, the website hands out working join links for the club's entire programme
+ *  a month ahead and the booking window it just introduced means nothing. So an
+ *  unreleased tournament keeps its place on the calendar (the programme is worth seeing)
+ *  with the link removed and `booking_open: false` for the page to explain. Dropping the
+ *  url rather than only flagging it also covers the chatbot and the phone agent's SMS,
+ *  which build their links out of this same field.
+ *
+ *  Past tournaments are left alone: the feed carries upcoming ones only, so every past
+ *  event would otherwise read as unreleased, and the page already shows them as PAST.
+ *
+ *  Pure and exported so both halves are testable — one decides what a visitor pays, the
+ *  other whether the club's own booking window holds on its website. */
+function applyKumiTournamentInfo(events, tournaments, isOver = () => false) {
+  const byId = new Map();
+  const byTitleDate = new Map();
+  const releasedIds = new Set();
+  const releasedKeys = new Set();
+
+  for (const t of tournaments || []) {
+    const key =
+      t.name && t.start_utc
+        ? (() => {
+            const local = toLocalParts(new Date(t.start_utc), CLUB_TIMEZONE);
+            return `${t.name.trim().toLowerCase()}|${local.date}|${local.time}`;
+          })()
+        : null;
+
+    // Released is about being in the feed AT ALL. A public tournament with neither a
+    // price nor a capacity yet is still public, and must not lose its join link over
+    // detail the club has not filled in.
+    if (t.tournament_id) releasedIds.add(t.tournament_id);
+    if (key) releasedKeys.add(key);
+
+    const info = {
+      price: cleanPrice(t.price),
+      capacity: Number.isFinite(t.max_players) ? t.max_players : null,
+      registered: Number.isFinite(t.registered_count) ? t.registered_count : null,
+    };
+    if (!info.price && info.capacity == null) continue;
+    if (t.tournament_id) byId.set(t.tournament_id, info);
+    if (key) byTitleDate.set(key, info);
+  }
+
+  for (const e of events) {
+    if (e.booking_type !== "TOURNAMENT") continue;
+    const urlId = (String(e.book_url || "").match(/tournaments\/([0-9a-f-]+)/) || [])[1];
+    const key = `${(e.title || "").trim().toLowerCase()}|${e.date}|${e.start_time}`;
+
+    const match = (urlId && byId.get(urlId)) || byTitleDate.get(key);
+    e.price = match?.price || null; // never show a court total as a player price
+    e.capacity = match?.capacity ?? null;
+    if (match?.registered != null) e.signed_up = match.registered;
+
+    const released = Boolean((urlId && releasedIds.has(urlId)) || releasedKeys.has(key));
+    if (!released && !isOver(e)) {
+      e.booking_open = false;
+      e.book_url = null;
+    }
+  }
+  return events;
+}
+
 async function getEvents({ from = null, to = null, includePast = false } = {}) {
   const source = includePast ? await bookingsSince(from) : await fetchPlaytomicBookings();
   const bookings = source.filter((b) => EVENT_BOOKING_TYPES.has(effectiveBookingType(b)));
@@ -721,33 +794,11 @@ async function getEvents({ from = null, to = null, includePast = false } = {}) {
   try {
     applyKumiClassInfo(events, (await fetchKumiClasses()).classes || []);
 
-    const kumiT = await fetchKumiTournaments();
-    const tById = new Map();
-    const tByTitleDate = new Map();
-    for (const t of kumiT.tournaments || []) {
-      const info = {
-        price: cleanPrice(t.price),
-        capacity: Number.isFinite(t.max_players) ? t.max_players : null,
-        registered: Number.isFinite(t.registered_count) ? t.registered_count : null,
-      };
-      if (!info.price && info.capacity == null) continue;
-      if (t.tournament_id) tById.set(t.tournament_id, info);
-      if (t.name && t.start_utc) {
-        const local = toLocalParts(new Date(t.start_utc), CLUB_TIMEZONE);
-        tByTitleDate.set(`${t.name.trim().toLowerCase()}|${local.date}|${local.time}`, info);
-      }
-    }
-    for (const e of events) {
-      if (e.booking_type !== "TOURNAMENT") continue;
-      const urlId = (String(e.book_url || "").match(/tournaments\/([0-9a-f-]+)/) || [])[1];
-      const match =
-        (urlId && tById.get(urlId)) ||
-        tByTitleDate.get(`${(e.title || "").trim().toLowerCase()}|${e.date}|${e.start_time}`);
-      e.price = match?.price || null;
-      e.capacity = match?.capacity ?? null;
-      if (match?.registered != null) e.signed_up = match.registered;
-    }
+    applyKumiTournamentInfo(events, (await fetchKumiTournaments()).tournaments || [], isOver);
   } catch (error) {
+    // Fails OPEN: prices go, links stay. Kumi being unreachable must not take every
+    // tournament's BOOK button down with it — a few hours of links we would rather have
+    // held back beats a schedule nobody can book from.
     console.error("[events] kumi price enrichment skipped:", error.message);
     for (const e of events) {
       if (CLASS_TYPES.has(e.booking_type) || e.booking_type === "TOURNAMENT") e.price = null;
@@ -1395,6 +1446,7 @@ export const __testables = {
   effectiveBookingType,
   normalizeMembershipCount,
   applyKumiClassInfo,
+  applyKumiTournamentInfo,
   applyKumiOpenMatchLevels,
   openMatchId,
   groupEventBookings,

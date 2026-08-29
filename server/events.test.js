@@ -429,3 +429,111 @@ describe("the calendar can ask for days that have already happened", () => {
     expect(past).toBeGreaterThan(live);
   });
 });
+
+// Playtomic's PRIVATE means unlisted, not locked: a tournament_id IS the join link, and
+// ours comes from the bookings API, which returns the club's whole programme whatever its
+// visibility. Kumi's feed carries the public ones only, so it is what tells us which
+// tournaments the club has actually opened.
+describe("a tournament the club has not opened yet is not linked", () => {
+  const NOW = { date: "2026-09-03", time: "12:00" };
+  const isOver = (e) => e.date < NOW.date || (e.date === NOW.date && e.end_time <= NOW.time);
+
+  const ID = "2499c604-bd19-4a71-b216-edd300b37575";
+
+  function tournament(overrides = {}) {
+    return {
+      id: ID,
+      title: "Midday Social 1.5+",
+      date: "2026-09-10",
+      start_time: "11:00",
+      end_time: "12:30",
+      booking_type: "TOURNAMENT",
+      signed_up: 0,
+      book_url: `https://app.playtomic.com/tournaments/${ID}`,
+      ...overrides,
+    };
+  }
+
+  // start_utc is UTC; 18:00Z is 11:00 in Portland.
+  function feedRow(overrides = {}) {
+    return {
+      tournament_id: ID,
+      name: "Midday Social 1.5+",
+      start_utc: "2026-09-10T18:00:00Z",
+      price: "$25",
+      max_players: 12,
+      registered_count: 4,
+      ...overrides,
+    };
+  }
+
+  it("keeps the link, and takes the price, for one that IS in the feed", () => {
+    const [e] = T.applyKumiTournamentInfo([tournament()], [feedRow()], isOver);
+    expect(e.book_url).toContain(ID);
+    expect(e.booking_open).toBeUndefined();
+    expect(e.price).toBe("$25");
+    expect(e.capacity).toBe(12);
+    expect(e.signed_up).toBe(4);
+  });
+
+  it("drops the link and says booking is not open when it is missing from the feed", () => {
+    const [e] = T.applyKumiTournamentInfo([tournament()], [], isOver);
+    expect(e.book_url).toBeNull();
+    expect(e.booking_open).toBe(false);
+    expect(e.price).toBeNull();
+  });
+
+  it("still counts a feed row with no price or capacity as released", () => {
+    // The price map skips those rows. Reusing it to decide "released" would strip the
+    // join link off a public tournament the club simply has not priced yet.
+    const [e] = T.applyKumiTournamentInfo(
+      [tournament()],
+      [feedRow({ price: null, max_players: null, registered_count: null })],
+      isOver,
+    );
+    expect(e.book_url).toContain(ID);
+    expect(e.booking_open).toBeUndefined();
+  });
+
+  it("matches on name and start time when the ids do not line up", () => {
+    const [e] = T.applyKumiTournamentInfo(
+      [tournament()],
+      [feedRow({ tournament_id: null })],
+      isOver,
+    );
+    expect(e.book_url).toContain(ID);
+    expect(e.price).toBe("$25");
+  });
+
+  it("leaves PAST tournaments alone, since the feed only carries upcoming ones", () => {
+    const played = tournament({ date: "2026-08-12", start_time: "11:00", end_time: "12:30" });
+    const [e] = T.applyKumiTournamentInfo([played], [], isOver);
+    expect(e.book_url).toContain(ID); // the page shows it as PAST either way
+    expect(e.booking_open).toBeUndefined();
+  });
+
+  it("never touches a clinic or an open match", () => {
+    const clinic = { ...tournament(), booking_type: "PUBLIC_CLASS", book_url: "https://x/lesson_class/abc" };
+    const match = { ...tournament(), booking_type: "OPEN_MATCH", book_url: "https://x/matches/abc" };
+    const out = T.applyKumiTournamentInfo([clinic, match], [], isOver);
+    for (const e of out) {
+      expect(e.book_url).toBeTruthy();
+      expect(e.booking_open).toBeUndefined();
+    }
+  });
+
+  it("is wired into getEvents with the same isOver the past filter uses", () => {
+    const src = readFileSync(new URL("../server.js", import.meta.url), "utf8");
+    expect(src).toMatch(
+      /applyKumiTournamentInfo\(events, \(await fetchKumiTournaments\(\)\)\.tournaments \|\| \[\], isOver\)/,
+    );
+  });
+
+  it("fails open: a Kumi outage takes prices, never links", () => {
+    const src = readFileSync(new URL("../server.js", import.meta.url), "utf8");
+    const catchBody = src.slice(src.indexOf("[events] kumi price enrichment skipped"));
+    const block = catchBody.slice(0, catchBody.indexOf("\n  }"));
+    expect(block).toMatch(/e\.price = null/);
+    expect(block).not.toMatch(/book_url/);
+  });
+});

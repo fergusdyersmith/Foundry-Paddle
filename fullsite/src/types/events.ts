@@ -18,6 +18,11 @@ export interface PadelEvent {
   signed_up: number;
   /** Max players, when known (kumi enrichment for clinics/tournaments). */
   capacity?: number | null;
-  /** Deep link to the specific item on Playtomic (built server-side per type). */
-  book_url: string;
+  /** Deep link to the specific item on Playtomic (built server-side per type). Null on a
+   *  tournament Playtomic has not released yet — see `booking_open`. */
+  book_url: string | null;
+  /** False when the club has not opened this event for booking yet: Playtomic holds the
+   *  programme private and releases each tournament a few days out, and its id is the
+   *  join link, so the site must not publish one before then. Absent means bookable. */
+  booking_open?: boolean;
 }

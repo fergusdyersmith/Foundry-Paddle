@@ -95,3 +95,32 @@ describe("a card says what a player pays", () => {
     expect(screen.getByText("FULL")).toBeTruthy();
   });
 });
+
+// Playtomic holds the club's programme private until a few days out, which is what makes
+// the members' early-booking window a perk. The site must not hand out the join link
+// before then — its id IS the link.
+describe("an event the club has not opened yet offers no way in", () => {
+  it("says NOT YET OPEN instead of BOOK, and links nowhere", () => {
+    render(<EventCard event={event({ booking_open: false, book_url: null, price: null })} />);
+    expect(screen.getByText("NOT YET OPEN")).toBeTruthy();
+    expect(screen.queryByText("BOOK")).toBeNull();
+    expect(screen.queryByRole("link")).toBeNull();
+  });
+
+  it("still shows what it is and when, because the programme is worth seeing", () => {
+    render(<EventCard event={event({ booking_open: false, book_url: null, price: null })} />);
+    expect(screen.getByText("Intermediate Tournament")).toBeTruthy();
+    expect(screen.getByText("10:00 AM - 12:00 PM")).toBeTruthy();
+  });
+
+  it("books normally when the flag is absent, which is every other event", () => {
+    render(<EventCard event={event({ signed_up: 2 })} />);
+    expect(screen.getByText("BOOK")).toBeTruthy();
+  });
+
+  it("prefers PAST once it has been, whatever the flag says", () => {
+    render(<EventCard event={event({ booking_open: false, book_url: null, date: "2026-08-28" })} />);
+    expect(screen.getByText("PAST")).toBeTruthy();
+    expect(screen.queryByText("NOT YET OPEN")).toBeNull();
+  });
+});
