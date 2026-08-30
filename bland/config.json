@@ -1,6 +1,6 @@
 {
-  "knowledge_synced_at": "2026-08-10",
-  "knowledge_base_id": "b0d896d1-58a7-4cd1-9c84-3ec160867049",
+  "knowledge_synced_at": "2026-08-30",
+  "knowledge_base_id": "3e3df32e-76f5-4dc6-94e8-49a389803f47",
   "tool_ids": {
     "check_court_availability": "TL-e4085563-6eb7-4442-8232-d1438c467a85",
     "check_class_schedule": "TL-751687b1-1688-4cb1-82f3-3863f1966edf",
@@ -10,7 +10,7 @@
   "persona_id": "d524f7a1-f79c-4362-a3f3-6f7f069ebe9f",
   "phone_number": "+19715217399",
   "transfer_to": "+15035637442",
-  "deployed_at": "2026-08-18",
+  "deployed_at": "2026-08-30",
   "twilio_ai_routing": {
     "voice_url": "https://server.aws.dc8.bland.ai/incoming?encrypted_key=4e903157-f604-480c-bd70-6fafedc03f06&user_id=b0c61acd-a197-41f5-b853-0521ebdfef79&placement_group=blandshared&region=dc8",
     "voice_method": "POST",
