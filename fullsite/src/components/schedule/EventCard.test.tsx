@@ -178,3 +178,33 @@ describe("a card shows what a member would pay", () => {
     expect(screen.queryByText("members")).toBeNull();
   });
 });
+
+// Unlimited off-peak play covers a member's place in an open match, on every tier.
+describe("an off-peak open match is free for members", () => {
+  const offPeakMatch = {
+    booking_type: "OPEN_MATCH",
+    date: "2026-09-03", // Thursday
+    start_time: "11:00",
+    end_time: "12:30",
+    price: "$15",
+    capacity: null,
+    signed_up: 2,
+  };
+
+  it("reads Free for members, not $0", () => {
+    render(<EventCard event={event(offPeakMatch)} />);
+    expect(screen.getByText("Free")).toBeTruthy();
+    expect(screen.getByText("for members")).toBeTruthy();
+    expect(screen.queryByText("$0")).toBeNull();
+  });
+
+  it("still shows the price everyone else pays", () => {
+    render(<EventCard event={event(offPeakMatch)} />);
+    expect(screen.getByText("$15")).toBeTruthy();
+  });
+
+  it("says nothing on a peak match, where the benefit runs per tier", () => {
+    render(<EventCard event={event({ ...offPeakMatch, start_time: "18:00", end_time: "19:30" })} />);
+    expect(screen.queryByText(/members/)).toBeNull();
+  });
+});

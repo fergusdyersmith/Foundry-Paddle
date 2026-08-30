@@ -22,7 +22,8 @@ export default function BookEventRow({ event }: { event: PadelEvent }) {
   const isMatch = event.booking_type === "OPEN_MATCH";
   const spotsLeft = Math.max(0, OPEN_MATCH_CAPACITY - event.signed_up);
   const full = isFullEvent(event);
-  // Off-peak clinics only, where every tier pays the same reduced rate — see memberPrice.
+  // Off-peak sessions only, where every tier pays the same reduced rate — see memberPrice.
+  // On this page that is a clinic at a quarter off, or an open match a member plays free.
   const member = memberPrice(event);
   const rowClass = `group flex items-center gap-3 overflow-hidden border border-border bg-card px-4 py-3 transition-colors sm:gap-4 ${
     full ? "opacity-70" : "hover:border-primary"
@@ -45,7 +46,12 @@ export default function BookEventRow({ event }: { event: PadelEvent }) {
         <p className="text-xs text-muted-foreground">
           {formatTime(event.start_time)} · {event.duration_min} min
           {event.price ? ` · ${formatPrice(event.price)}` : ""}
-          {member && <span className="font-medium text-primary"> · {member} members</span>}
+          {member && (
+            <span className="font-medium text-primary">
+              {" · "}
+              {member} {member === "Free" ? "for members" : "members"}
+            </span>
+          )}
         </p>
       </div>
       {isMatch ? (

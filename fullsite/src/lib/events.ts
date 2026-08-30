@@ -107,20 +107,25 @@ export function isPeakEvent(event: PadelEvent): boolean {
   );
 }
 
-/** What a member pays for this session, formatted, or null when there is no single
+/** What a member pays for this session — a price, "Free", or null when there is no single
  *  answer.
  *
- *  Null covers most of the schedule, and every case is deliberate: at PEAK a member pays
+ *  Null covers most of the schedule, and both cases are deliberate: at PEAK a member pays
  *  the same price and draws on their monthly credit, so a second line would repeat the
- *  first; an OPEN MATCH is court time, where the benefit runs per tier; and a session
- *  whose price we never got cannot have a fraction taken off it. Publishing a member
- *  price that some members do not get would be worse than showing none. */
+ *  first, and a session whose price we never got cannot have a fraction taken off it.
+ *  Publishing a member price that some members do not get would be worse than none.
+ *
+ *  "Free" is a real answer, not an empty one: off-peak open matches are covered by
+ *  unlimited off-peak play on every tier. It still requires a published price to discount
+ *  — a match with no price is one we know nothing about, including whether it is the kind
+ *  of thing the benefit covers. */
 export function memberPrice(event: PadelEvent): string | null {
   const discount = OFF_PEAK_MEMBER_DISCOUNT[event.booking_type];
   if (!discount || !event.price || isPeakEvent(event)) return null;
   const amount = Number(String(event.price).replace(/[^0-9.]/g, ""));
   if (!Number.isFinite(amount) || amount <= 0) return null;
   const paid = amount * (1 - discount);
+  if (paid <= 0) return "Free";
   return `$${Number.isInteger(paid) ? paid : paid.toFixed(2)}`;
 }
 

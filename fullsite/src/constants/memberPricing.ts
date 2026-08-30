@@ -31,13 +31,15 @@ export const OFF_PEAK_LABELS = [
 ];
 
 /** What a member pays off peak, by booking type: half price on tournaments, a quarter off
- *  clinics, courses and lessons. The same on all three tiers.
+ *  clinics, courses and lessons, and nothing at all for an open match. The same on all
+ *  three tiers, which is what lets one figure stand for "members".
  *
- *  Open matches are deliberately absent. A match spot is court time, and there the benefit
- *  is per tier — free off peak, then 25% or 50% off a member's share at peak, or nothing
- *  on Student — so no single figure is true for "members". Better to say nothing than to
- *  quote a number two thirds of members do not get. */
+ *  An open match is 1 (a whole hundred per cent) because unlimited off-peak play covers a
+ *  member's place in one. The club states it in as many words: "free off-peak play is one
+ *  player's place in an open match". It is the tier ladder's one exception — everything
+ *  else about court time varies by tier, which is why PEAK says nothing for any type. */
 export const OFF_PEAK_MEMBER_DISCOUNT: Record<string, number> = {
+  OPEN_MATCH: 1,
   TOURNAMENT: 0.5,
   PUBLIC_CLASS: 0.25,
   COURSE_CLASS: 0.25,

@@ -53,3 +53,37 @@ describe("the Book page's clinic row", () => {
     expect(screen.getByText("2/4")).toBeTruthy();
   });
 });
+
+// The Book page's open-match column is where this benefit does the most work: a member
+// scanning for a game sees that an off-peak one costs them nothing.
+describe("open matches on the Book page", () => {
+  const match = (o: Partial<PadelEvent> = {}): PadelEvent =>
+    clinic({
+      title: "Beginner/Intermediate Open Match",
+      booking_type: "OPEN_MATCH",
+      date: "2026-09-03",
+      start_time: "11:00",
+      end_time: "12:30",
+      duration_min: 90,
+      price: "$15",
+      capacity: null,
+      signed_up: 2,
+      ...o,
+    });
+
+  it("says an off-peak match is free for members, beside the price everyone pays", () => {
+    render(<BookEventRow event={match()} />);
+    expect(screen.getByText(/\$15/)).toBeTruthy();
+    expect(screen.getByText(/Free for members/)).toBeTruthy();
+  });
+
+  it("says nothing on a peak match", () => {
+    render(<BookEventRow event={match({ start_time: "18:00", end_time: "19:30" })} />);
+    expect(screen.queryByText(/members/)).toBeNull();
+  });
+
+  it("keeps showing spots left, which is what a player is scanning for", () => {
+    render(<BookEventRow event={match()} />);
+    expect(screen.getByText(/2 spots left/)).toBeTruthy();
+  });
+});

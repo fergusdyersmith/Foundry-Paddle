@@ -95,7 +95,10 @@ export default function EventCard({
             where the discount is the same on every tier and a single figure is true. */}
         {member && (
           <p className="mt-1 text-xs font-medium text-primary">
-            {member} <span className="text-muted-foreground">members</span>
+            {member}{" "}
+            <span className="text-muted-foreground">
+              {member === "Free" ? "for members" : "members"}
+            </span>
           </p>
         )}
       </div>

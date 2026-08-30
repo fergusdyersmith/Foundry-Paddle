@@ -71,10 +71,22 @@ describe("what a member pays for a session", () => {
     expect(memberPrice(event({ date: "2026-09-06", start_time: "09:00", price: "$25" }))).toBeNull();
   });
 
-  it("says nothing for an open match, where the benefit runs per tier", () => {
-    // Free off peak, then 25% or 50% off a member's share at peak, or nothing on Student.
-    // No single figure is true, so the card shows none.
-    expect(memberPrice(event({ booking_type: "OPEN_MATCH", price: "$15" }))).toBeNull();
+  it("plays an off-peak open match free, on every tier", () => {
+    // Unlimited off-peak play covers a member's place in an open match — the club states
+    // it in as many words. "Free" is an answer, so it must not fall out as null.
+    expect(memberPrice(event({ booking_type: "OPEN_MATCH", price: "$15" }))).toBe("Free");
+    expect(memberPrice(event({ booking_type: "OPEN_MATCH", price: "22.50 USD" }))).toBe("Free");
+  });
+
+  it("says nothing about a PEAK open match, where the benefit runs per tier", () => {
+    // 25% or 50% off a member's share, or nothing at all on Student. No single figure.
+    const peak = { booking_type: "OPEN_MATCH", date: "2026-09-07", start_time: "18:00" };
+    expect(memberPrice(event({ ...peak, price: "$22.50" }))).toBeNull();
+  });
+
+  it("still needs a published price before it will say Free", () => {
+    // No price is not "we know it is free", it is "we know nothing about this session".
+    expect(memberPrice(event({ booking_type: "OPEN_MATCH", price: null }))).toBeNull();
   });
 
   it("says nothing when the price itself is unknown", () => {
