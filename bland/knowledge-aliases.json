@@ -295,6 +295,24 @@
       "who runs the club",
       "who started the club",
       "when did you open"
+    ],
+    "Using a promo code, voucher or guest pass code on Playtomic": [
+      "how do I use a promo code",
+      "where do I enter a promo code",
+      "I have a discount code",
+      "how do I redeem a voucher",
+      "how do I use my guest pass code",
+      "the code did not work",
+      "where do I put the code when I pay"
+    ],
+    "Book early: members joining tournaments before they open to everyone": [
+      "how do I book a tournament early",
+      "member early booking",
+      "early access to tournaments",
+      "I cannot see the tournament in the app",
+      "when can members sign up for tournaments",
+      "how far ahead can I book a tournament",
+      "where is the book early page"
     ]
   }
 }
