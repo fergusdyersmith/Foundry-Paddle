@@ -1,7 +1,13 @@
 /** @vitest-environment node */
 import { describe, it, expect } from "vitest";
 
-import { isFullEvent, isPastEvent, openFirst, signupSummary } from "./events";
+import {
+  isFullEvent,
+  isPastEvent,
+  openFirst,
+  signupSummary,
+  wallSignupLabel,
+} from "./events";
 import type { PadelEvent } from "@/types/events";
 
 // The schedule now shows days that have already been, so a card can describe a session
@@ -187,5 +193,65 @@ describe("clinics that can still be filled lead the list", () => {
 
   it("returns an empty list unchanged", () => {
     expect(openFirst([], LIMITS)).toEqual([]);
+  });
+});
+
+
+// The wall screen used to build this line inline in JSX, with the whole readout behind
+// `capacity != null`. A class with no capacity set in Playtomic therefore showed nothing:
+// "Early Bird Padel Progression" and both "w/ Javi" sessions each had three people in and
+// the screen said only the time and the duration (2026-08-30). The signup count is the
+// most persuasive thing on that board, so losing it for want of a denominator was the
+// wrong trade.
+describe("the wall screen's roster line", () => {
+  function event(overrides: Partial<PadelEvent> = {}): PadelEvent {
+    return {
+      id: "e1",
+      title: "Early Bird Padel Progression",
+      date: "2026-09-02",
+      start_time: "07:00",
+      end_time: "08:00",
+      duration_min: 60,
+      price: null,
+      booking_type: "PUBLIC_CLASS",
+      court: "Court 1",
+      signed_up: 3,
+      capacity: null,
+      book_url: "https://playtomic.com/x",
+      ...overrides,
+    };
+  }
+
+  it("THE CASE: shows the count even when no capacity is set", () => {
+    expect(wallSignupLabel(event())).toBe("3 signed up");
+  });
+
+  it("shows the denominator when there is one", () => {
+    expect(wallSignupLabel(event({ signed_up: 0, capacity: 4 }))).toBe("0/4 signed up");
+    expect(wallSignupLabel(event({ signed_up: 2, capacity: 4 }))).toBe("2/4 signed up");
+  });
+
+  it("says Full instead of a count once it is full", () => {
+    expect(wallSignupLabel(event({ signed_up: 4, capacity: 4 }))).toBe("Full");
+    expect(wallSignupLabel(event({ signed_up: 5, capacity: 4 }))).toBe("Full");
+  });
+
+  it("keeps 0/4 on the wall, unlike the website", () => {
+    // On a page somebody chose to open, "0 signed up" is discouraging and signupSummary
+    // says nothing. On a wall it is an invitation: the session is running and there is
+    // room. The two differ on purpose, which is why they are two functions.
+    expect(wallSignupLabel(event({ signed_up: 0, capacity: 4 }))).toBe("0/4 signed up");
+    expect(signupSummary(event({ signed_up: 0, capacity: 4 }))).toBe("");
+  });
+
+  it("says nothing when there is neither a capacity nor anybody signed up", () => {
+    // An empty slot already looks empty; "0 signed up" with no target reads as a warning.
+    expect(wallSignupLabel(event({ signed_up: 0, capacity: null }))).toBe("");
+  });
+
+  it("treats an open match as full at four without a stated capacity", () => {
+    // isFullEvent knows an open match holds four even when the API leaves capacity null.
+    expect(wallSignupLabel(event({ booking_type: "OPEN_MATCH", signed_up: 4, capacity: null })))
+      .toBe("Full");
   });
 });

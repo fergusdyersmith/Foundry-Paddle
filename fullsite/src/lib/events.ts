@@ -76,6 +76,27 @@ export function signupSummary(event: PadelEvent): string {
     : `${event.signed_up} signed up`;
 }
 
+/** The same roster line, for the wall screen, which wants the denominator.
+ *
+ *  Deliberately NOT signupSummary, and the difference is one case: a session nobody has
+ *  joined yet shows "0/4 signed up" here and nothing on the website. On a page somebody
+ *  chose to open, "0 signed up" is a discouraging thing to read; on a wall in the club it
+ *  is an invitation, because it says the session is running and there is room.
+ *
+ *  It exists as a named function because the wall used to do this inline in JSX, where
+ *  the whole readout sat behind `capacity != null` and a class with no capacity set in
+ *  Playtomic therefore showed nothing at all. Three sessions with three people already in
+ *  said only their time and duration (2026-08-30). A branch that can go missing inside a
+ *  ternary should be somewhere a test can see it.
+ */
+export function wallSignupLabel(event: PadelEvent): string {
+  if (isFullEvent(event)) return "Full";
+  if (event.capacity != null && event.capacity > 0) {
+    return `${event.signed_up}/${event.capacity} signed up`;
+  }
+  return event.signed_up > 0 ? `${event.signed_up} signed up` : "";
+}
+
 /** Split a list so the events someone can still join come first, then the ones that are
  *  full, each group keeping the order it arrived in (the API sorts by date, then time).
  *

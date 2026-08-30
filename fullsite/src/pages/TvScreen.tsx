@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Head } from "vite-react-ssg";
 import { format, parseISO } from "date-fns";
-import { formatTime } from "@/lib/events";
+import { formatTime, wallSignupLabel } from "@/lib/events";
 import { whatsAppCommunityUrl } from "@/constants/community";
 import type { PadelEvent } from "@/types/events";
 
@@ -267,10 +267,8 @@ const TvScreen = () => {
                   ? ` · ${e.price}/person`
                   : ""}
                 {e.booking_type !== "OPEN_MATCH" &&
-                  e.capacity != null &&
-                  (e.signed_up >= e.capacity
-                    ? " · Full"
-                    : ` · ${e.signed_up}/${e.capacity} signed up`)}
+                  wallSignupLabel(e) &&
+                  ` · ${wallSignupLabel(e)}`}
                 {e.booking_type === "OPEN_MATCH" &&
                   (4 - e.signed_up === 1 ? (
                     <span className="ml-2 inline-block rounded bg-[#AE6C56] px-2 py-0.5 align-middle font-display text-sm tracking-wider text-[#EEEFE3]">
