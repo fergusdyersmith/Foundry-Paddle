@@ -244,7 +244,8 @@ describe("full open matches stay off the schedule", () => {
     const src = fs.readFileSync(new URL("../server.js", import.meta.url), "utf8");
     expect(src).toMatch(/const OPEN_MATCH_SIZE = 4;/);
     expect(src).toMatch(/signed_up \?\? 0\) >= OPEN_MATCH_SIZE/);
-    expect(src).toMatch(/n \/ OPEN_MATCH_SIZE/); // price split shares it
+    // The price split USED to share this constant. It no longer divides at all — see
+    // "an open match is priced at the club's rate" below — so only the filter remains.
   });
 });
 
@@ -591,5 +592,26 @@ describe("the day a members-first tournament opens to everyone", () => {
     expect(T.shiftDate("2026-11-03", -5)).toBe("2026-10-29");
     expect(T.shiftDate("2026-03-10", -5)).toBe("2026-03-05");
     expect(T.shiftDate("2027-01-02", -5)).toBe("2026-12-28");
+  });
+});
+
+// The bookings API's `price` on an open match is money COLLECTED SO FAR, not the court
+// total: two of four players paid reports "30 USD", three reports "45 USD". Dividing it
+// by four published $7.50 and $11.25 for two identical 90-minute matches (reported
+// 2026-08-29). Every row is a multiple of one per-player rate, so the rate is the answer.
+describe("an open match is priced at the club's published rate", () => {
+  const src = () => readFileSync(new URL("../server.js", import.meta.url), "utf8");
+
+  it("no longer divides the collected total by the match size", () => {
+    expect(src()).not.toMatch(/const per = n \/ OPEN_MATCH_SIZE/);
+    expect(src()).toMatch(/e\.price = e\.duration_min === 90 \? formatUsd\(ratesOn\(e\.date\)\.perPlayer90\) : null/);
+  });
+
+  it("takes the rate from the shared table, not a literal in this file", () => {
+    expect(src()).toMatch(/import \{ formatUsd, ratesOn \} from "\.\/shared\/rates\.js"/);
+  });
+
+  it("still uses the match size for the full-match filter", () => {
+    expect(src()).toMatch(/signed_up \?\? 0\) >= OPEN_MATCH_SIZE/);
   });
 });

@@ -17,6 +17,7 @@ import {
   PLAYTOMIC_PLAY_STORE_URL,
 } from "@/constants/booking";
 import { OPEN_MATCH_CAPACITY } from "@/constants/events";
+import { formatUsd, ratesOn } from "@shared/rates";
 import { openFirst } from "@/lib/events";
 import { useScheduleEvents } from "@/hooks/useScheduleEvents";
 import BookEventRow from "@/components/book/BookEventRow";
@@ -24,6 +25,10 @@ import Seo from "@/components/Seo";
 
 const today = startOfDay(new Date());
 const todayKey = format(today, "yyyy-MM-dd");
+// Today's published rates. Dated in shared/rates.js, which the schedule prices open
+// matches from too, so the drop-in line below cannot say one number while a match on the
+// same page says another — and it steps up on its own the day the club's rates do.
+const rates = ratesOn(todayKey);
 // Playtomic only returns ~30 days out, so fetch that whole window once and
 // slice it into the clinic and open-match lists below.
 const rangeEnd = addDays(today, 30);
@@ -112,9 +117,11 @@ const Book = () => {
 
   return (
     <main className="bg-background min-h-screen pt-24">
+      {/* The rates are in the title and the description too, where they go stale just as
+          quietly as in the copy — Google shows this text long after a price changes. */}
       <Seo
-        title="Book a Padel Court in Portland — $60 / 90 min | Foundry Padel"
-        description="Book an indoor padel court at Foundry in Portland — $60 per court for 90 minutes ($15 per player). Join a beginner clinic or an open match, racket rentals from $5. Open daily 6am–midnight."
+        title={`Book a Padel Court in Portland — ${formatUsd(rates.court90)} / 90 min | Foundry Padel`}
+        description={`Book an indoor padel court at Foundry in Portland — ${formatUsd(rates.court90)} per court for 90 minutes (${formatUsd(rates.perPlayer90)} per player). Join a beginner clinic or an open match, racket rentals from $5. Open daily 6am–midnight.`}
         path="/book"
       />
 
@@ -135,8 +142,14 @@ const Book = () => {
             </div>
             <p className="font-body text-base text-secondary-foreground">
               Drop-in play is{" "}
-              <span className="text-foreground font-semibold">$15 per player</span>,{" "}
-              <span className="text-foreground font-semibold">$60 per court</span> for 90 minutes.
+              <span className="text-foreground font-semibold">
+                {formatUsd(rates.perPlayer90)} per player
+              </span>
+              ,{" "}
+              <span className="text-foreground font-semibold">
+                {formatUsd(rates.court90)} per court
+              </span>{" "}
+              for 90 minutes.
               Racket rentals are <span className="text-foreground font-semibold">$5</span> ($10 for
               a high-end demo racket), and balls are for sale at the club. No partner needed.
             </p>

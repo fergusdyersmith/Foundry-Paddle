@@ -9,6 +9,7 @@ import { createNotifier } from "./server/notify.js";
 import { createLinkSender } from "./server/smslink.js";
 import { createCallPoller } from "./server/callpoller.js";
 import { createTransferRouter } from "./server/transfer.js";
+import { formatUsd, ratesOn } from "./shared/rates.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // SITE_DIST exists so the routing tests can point at a fixture tree instead of
@@ -852,17 +853,20 @@ async function getEvents({ from = null, to = null, includePast = false } = {}) {
       !(e.booking_type === "OPEN_MATCH" && (e.signed_up ?? 0) >= OPEN_MATCH_SIZE && !isOver(e)),
   );
 
-  // Open matches: the bookings API reports the court total; four players split
-  // it evenly, so show the per-person share.
+  // Open matches: the club's published per-player rate for the day the match plays.
+  //
+  // NOT the booking row's `price` divided by four, which is what this used to do. That
+  // field is money COLLECTED SO FAR, not the court total: a 90-minute match with two of
+  // four players paid reports "30 USD", one with three reports "45 USD", and the site
+  // published $7.50 and $11.25 for two identical matches. The real number never varied —
+  // every row is a multiple of the same per-player rate — so the rate is what to show,
+  // and the roster count beside it already says how full the match is.
+  //
+  // Only 90-minute matches, because that is the only duration the club publishes a
+  // per-player rate for. Anything else says nothing rather than inventing a pro-rata.
   for (const e of events) {
     if (e.booking_type !== "OPEN_MATCH") continue;
-    const n = parseFloat(String(e.price ?? "").replace(/[^0-9.]/g, ""));
-    if (!Number.isFinite(n) || n <= 0) {
-      e.price = null;
-      continue;
-    }
-    const per = n / OPEN_MATCH_SIZE;
-    e.price = `$${Number.isInteger(per) ? per : per.toFixed(2)}`;
+    e.price = e.duration_min === 90 ? formatUsd(ratesOn(e.date).perPlayer90) : null;
   }
 
   for (const e of events) e.price = e.price === "Free" ? "Free" : cleanPrice(e.price);

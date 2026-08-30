@@ -5,6 +5,7 @@ import BookCTA from "@/components/BookCTA";
 import FoundingMemberBar from "@/components/FoundingMemberBar";
 import { PLAYTOMIC_MEMBERSHIP_URLS } from "@/constants/booking";
 import { OFF_PEAK_LABELS, PEAK_LABELS } from "@/constants/memberPricing";
+import { formatUsd, ratesOn, RATE_CHANGE_DATE } from "@shared/rates";
 import StayInTouchForm from "@/components/StayInTouchForm";
 import Seo from "@/components/Seo";
 
@@ -39,7 +40,14 @@ const rateCard = [
   { item: "Court, 60 minutes", price: "$60", note: "Up to 4 players" },
   { item: "Court, 90 minutes", price: "$90", note: "Up to 4 players" },
   { item: "Court, 120 minutes", price: "$120", note: "Up to 4 players" },
-  { item: "Per player, 90 minutes", price: "$22.50", note: "Join an open match, no partner needed" },
+  // From shared/rates.js, asked for the day this table is labelled with rather than for
+  // today: the card states the NEW rates, and the schedule prices open matches off the
+  // same figure, so the two cannot drift.
+  {
+    item: "Per player, 90 minutes",
+    price: formatUsd(ratesOn(RATE_CHANGE_DATE).perPlayer90),
+    note: "Join an open match, no partner needed",
+  },
   { item: "Racket rental", price: "$5", note: "Standard club racket" },
   { item: "Premium demo racket", price: "$10", note: "Current-season demo stock" },
   { item: "Guest of a member", price: "$22.50", note: "Member guest passes cover this" },

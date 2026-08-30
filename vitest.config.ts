@@ -20,6 +20,9 @@ export default defineConfig({
       // Sync scripts carry real logic (what the phone agent is allowed to say),
       // so their tests have to run with everything else rather than by hand.
       "scripts/**/*.{test,spec}.{js,mjs}",
+      // shared/ is imported by BOTH the server and the site — a change there can break
+      // either, so its tests belong in the same run as both.
+      "shared/**/*.{test,spec}.{js,ts}",
     ],
   },
   resolve: {
