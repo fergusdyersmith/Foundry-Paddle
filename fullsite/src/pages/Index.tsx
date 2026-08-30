@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { formatUsd, ratesOn } from "@shared/rates";
 import { Link } from "react-router-dom";
 import BookCTA from "@/components/BookCTA";
 import StayInTouchForm from "@/components/StayInTouchForm";
@@ -16,12 +17,18 @@ const features = [
   { label: "∞", desc: "Good Times" },
 ];
 
+// Dated in shared/rates.js, the same source /book and the schedule read, so these two
+// lines step up on 1 September on their own. They were hardcoded "$15 / $60", which is
+// how the home page would have spent September quoting August's prices while /book on
+// the same site quoted the new ones.
+const rates = ratesOn(new Date().toISOString().slice(0, 10));
+
 const Index = () => {
   return (
     <main className="bg-background min-h-screen">
       <Seo
         title="Foundry Padel — Portland's First Indoor Padel Club | St. Johns"
-        description="Play padel in Portland at Foundry — 4 indoor glass courts in St. Johns, next to Cathedral Park. $15 per player, $60 per 90-min court. Racket rentals from $5, no partner needed. Open daily 6am–midnight."
+        description={`Play padel in Portland at Foundry — 4 indoor glass courts in St. Johns, next to Cathedral Park. ${formatUsd(rates.perPlayer90)} per player, ${formatUsd(rates.court90)} per 90-min court. Racket rentals from $5, no partner needed. Open daily 6am–midnight.`}
         path="/"
       />
       {/* Hero */}
@@ -148,7 +155,7 @@ const Index = () => {
               <div>
                 <h3 className="font-body text-xs tracking-[0.2em] uppercase text-primary mb-2">Pricing</h3>
                 <p className="font-body text-base text-secondary-foreground">
-                  $15 per player, $60 per court for a 90-minute booking. No membership required to play.
+                  {formatUsd(rates.perPlayer90)} per player, {formatUsd(rates.court90)} per court for a 90-minute booking. No membership required to play.
                 </p>
               </div>
               <div>

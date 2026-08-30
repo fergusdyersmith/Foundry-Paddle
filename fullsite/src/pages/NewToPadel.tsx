@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { formatUsd, ratesOn } from "@shared/rates";
 import { Link } from "react-router-dom";
 import { ArrowRight, Footprints, CalendarCheck, Handshake, Timer } from "lucide-react";
 import { BOOK_PAGE_PATH } from "@/constants/booking";
@@ -26,11 +27,14 @@ const pickleballPoints = [
   },
 ];
 
+// Same dated source as /book, so this cannot quote August's price in September.
+const rates = ratesOn(new Date().toISOString().slice(0, 10));
+
 const firstVisitSteps = [
   {
     icon: CalendarCheck,
     title: "BOOK ONLINE",
-    desc: "$15 per player for a 90-minute session, or grab a spot in an open match or beginner clinic.",
+    desc: `${formatUsd(rates.perPlayer90)} per player for a 90-minute session, or grab a spot in an open match or beginner clinic.`,
   },
   {
     icon: Footprints,
