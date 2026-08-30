@@ -628,6 +628,61 @@ function openMatchId(event) {
  *  unlabelled match is honest, a wrongly labelled one is not. Pure and exported — this
  *  is visitor-facing wording, and the last untested change to this file took the
  *  schedule down. */
+/** Add the open matches the BOOKINGS feed cannot see, and return the merged list.
+ *
+ *  An open match only becomes a booking once it locks a court. Until then Playtomic's
+ *  bookings API has no row for it, so the schedule this site is built from cannot show it
+ *  at all: Foundry had two open matches on 2026-08-30 and the site listed one. The other
+ *  had a player in it, three places free, and no court -- exactly the match a visitor
+ *  could still have joined.
+ *
+ *  Only matches with a start, a duration and a join link are inserted. A row on this
+ *  schedule prints a time, a length and a QR code, and a synthesised one missing any of
+ *  those would be worse than the absence it fixes. Kumi leaves duration null when
+ *  Playtomic never gave an end time, and those are skipped rather than assumed to be 90
+ *  minutes.
+ */
+function mergeUnbookedOpenMatches(events, openMatches, { toLocal }) {
+  const seen = new Set(
+    events.filter((e) => e.booking_type === "OPEN_MATCH").map(openMatchId).filter(Boolean),
+  );
+  const extra = [];
+  for (const m of openMatches || []) {
+    const id = m?.playtomic_match_id;
+    if (!id || seen.has(id)) continue;
+    if (!m.start_utc || !m.duration_min || !m.join_url) continue;
+    const startUtc = new Date(m.start_utc);
+    if (Number.isNaN(startUtc.getTime())) continue;
+    const endUtc = new Date(startUtc.getTime() + m.duration_min * 60_000);
+    const startLocal = toLocal(startUtc);
+    const endLocal = toLocal(endUtc);
+    const labels = (m.levels || []).filter(Boolean);
+    extra.push({
+      // The match id, since there is no booking id to use. Distinct from any real
+      // activity id, and the deep link is what actually matters here.
+      id: id,
+      title: labels.length ? `${labels.join("/")} Open Match` : "Open Match",
+      date: startLocal.date,
+      start_time: startLocal.time,
+      end_time: endLocal.time,
+      duration_min: m.duration_min,
+      price: null,
+      booking_type: "OPEN_MATCH",
+      // No court is the entire reason this match is missing, so say nothing rather than
+      // inventing one.
+      court: null,
+      courts: [],
+      // The schedule counts players, Kumi publishes places left. A match is four.
+      signed_up: Math.max(0, OPEN_MATCH_SIZE - (m.spots_left ?? 0)),
+      book_url: m.join_url,
+    });
+  }
+  if (!extra.length) return events;
+  return [...events, ...extra].sort((a, b) =>
+    `${a.date} ${a.start_time}`.localeCompare(`${b.date} ${b.start_time}`),
+  );
+}
+
 function applyKumiOpenMatchLevels(events, openMatches) {
   const byId = new Map();
   for (const m of openMatches || []) {
@@ -836,7 +891,13 @@ async function getEvents({ from = null, to = null, includePast = false } = {}) {
   // keep reading "Open Match", rather than the failure also wiping the class names and
   // per-person prices that the block above just applied.
   try {
-    applyKumiOpenMatchLevels(events, (await fetchKumiOpenMatches()).open_matches || []);
+    const kumiMatches = (await fetchKumiOpenMatches()).open_matches || [];
+    applyKumiOpenMatchLevels(events, kumiMatches);
+    // AFTER the labelling, so the matches already present keep their existing path, and
+    // the inserted ones arrive named from the same level data.
+    events = mergeUnbookedOpenMatches(events, kumiMatches, {
+      toLocal: (d) => toLocalParts(d, CLUB_TIMEZONE),
+    });
   } catch (error) {
     console.warn("open-match levels unavailable:", error?.message || error);
   }
@@ -1478,6 +1539,7 @@ export const __testables = {
   applyKumiTournamentInfo,
   applyKumiOpenMatchLevels,
   openMatchId,
+  mergeUnbookedOpenMatches,
   groupEventBookings,
   mapBookingGroup,
   bookingDeepLink,

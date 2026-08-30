@@ -325,12 +325,25 @@ describe("open matches are named by the levels they are for", () => {
     // The class overlay runs in a separate try; this one is the newest and least
     // important dependency on the page.
     const fsSrc = readFileSync(new URL("../server.js", import.meta.url), "utf8");
-    // the CALL site, not the function definition (both contain the name)
-    const i = fsSrc.indexOf("applyKumiOpenMatchLevels(events, (await fetchKumiOpenMatches");
+    // The CALL site, not the function definition (both contain the name). Anchored on
+    // the local now that the fetch is hoisted into one, because the merge step below it
+    // needs the same list and fetching twice would double the request.
+    const i = fsSrc.indexOf("applyKumiOpenMatchLevels(events, kumiMatches)");
     const before = fsSrc.lastIndexOf("try {", i);
     const afterClasses = fsSrc.indexOf("applyKumiClassInfo(events");
     expect(before).toBeGreaterThan(afterClasses); // its own try, opened later
-    expect(fsSrc.slice(i, i + 400)).toMatch(/catch \(error\)/);
+    expect(fsSrc.slice(i, i + 700)).toMatch(/catch \(error\)/);
+  });
+
+  it("inserting unbooked matches shares that try, and that fetch", () => {
+    // Same reasoning: this feed is the least important thing on the page, so a failure
+    // in it must not take the schedule down. And one fetch, not two.
+    const fsSrc = readFileSync(new URL("../server.js", import.meta.url), "utf8");
+    const label = fsSrc.indexOf("applyKumiOpenMatchLevels(events, kumiMatches)");
+    const merge = fsSrc.indexOf("events = mergeUnbookedOpenMatches(events, kumiMatches");
+    expect(merge).toBeGreaterThan(label);
+    expect(fsSrc.slice(label, merge + 400)).toMatch(/catch \(error\)/);
+    expect(fsSrc.split("fetchKumiOpenMatches()").length - 1).toBe(2); // defn + one call
   });
 });
 
@@ -613,5 +626,87 @@ describe("an open match is priced at the club's published rate", () => {
 
   it("still uses the match size for the full-match filter", () => {
     expect(src()).toMatch(/signed_up \?\? 0\) >= OPEN_MATCH_SIZE/);
+  });
+});
+
+// An open match only becomes a BOOKING once it locks a court, and this schedule is built
+// from the bookings feed. Foundry had two open matches on 2026-08-30 and the site listed
+// one: the other had a player in it, three places free, and no court -- exactly the match
+// a visitor could still have joined.
+describe("open matches with no court booked yet", () => {
+  const toLocal = () => ({ date: "2026-09-02", time: "06:00" });
+
+  function kumiMatch(o = {}) {
+    return {
+      playtomic_match_id: "0cdc4a7c-b6a7-490e-afa8-cc3590000000",
+      start_utc: "2026-09-02T13:00:00Z",
+      duration_min: 90,
+      levels: ["Beginner", "Intermediate"],
+      spots_left: 3,
+      join_url: "https://app.playtomic.com/matches/0cdc4a7c-b6a7-490e-afa8-cc3590000000",
+      ...o,
+    };
+  }
+
+  it("THE CASE: inserts a match the bookings feed never had", () => {
+    const out = T.mergeUnbookedOpenMatches([], [kumiMatch()], { toLocal });
+    expect(out).toHaveLength(1);
+    expect(out[0].booking_type).toBe("OPEN_MATCH");
+    expect(out[0].duration_min).toBe(90);
+    expect(out[0].book_url).toContain("/matches/");
+  });
+
+  it("counts players from the places left, because that is what Kumi publishes", () => {
+    // A padel open match is four. Three places left means one player is in.
+    expect(T.mergeUnbookedOpenMatches([], [kumiMatch()], { toLocal })[0].signed_up).toBe(1);
+    expect(
+      T.mergeUnbookedOpenMatches([], [kumiMatch({ spots_left: 0 })], { toLocal })[0].signed_up,
+    ).toBe(4);
+  });
+
+  it("names it by level, like every other open match on the page", () => {
+    expect(T.mergeUnbookedOpenMatches([], [kumiMatch()], { toLocal })[0].title).toBe(
+      "Beginner/Intermediate Open Match",
+    );
+  });
+
+  it("keeps the plain title when no level is known", () => {
+    expect(
+      T.mergeUnbookedOpenMatches([], [kumiMatch({ levels: [] })], { toLocal })[0].title,
+    ).toBe("Open Match");
+  });
+
+  it("does not duplicate a match the bookings feed already carries", () => {
+    const existing = {
+      booking_type: "OPEN_MATCH",
+      book_url: "https://app.playtomic.com/matches/0cdc4a7c-b6a7-490e-afa8-cc3590000000",
+    };
+    expect(T.mergeUnbookedOpenMatches([existing], [kumiMatch()], { toLocal })).toHaveLength(1);
+  });
+
+  it("skips a match with no duration rather than assuming ninety minutes", () => {
+    // Every row on this schedule prints a length. Kumi leaves it null when Playtomic
+    // never gave an end time, and a made-up number is a claim the club did not make.
+    expect(
+      T.mergeUnbookedOpenMatches([], [kumiMatch({ duration_min: null })], { toLocal }),
+    ).toHaveLength(0);
+  });
+
+  it("skips a match with no join link, since the row is a QR code", () => {
+    expect(
+      T.mergeUnbookedOpenMatches([], [kumiMatch({ join_url: null })], { toLocal }),
+    ).toHaveLength(0);
+  });
+
+  it("leaves the list untouched when there is nothing to add", () => {
+    const events = [{ booking_type: "TOURNAMENT" }];
+    expect(T.mergeUnbookedOpenMatches(events, [], { toLocal })).toBe(events);
+  });
+
+  it("says nothing about a court rather than inventing one", () => {
+    // Having no court is the entire reason the match was missing.
+    const out = T.mergeUnbookedOpenMatches([], [kumiMatch()], { toLocal })[0];
+    expect(out.court).toBeNull();
+    expect(out.courts).toEqual([]);
   });
 });
