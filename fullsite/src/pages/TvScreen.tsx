@@ -327,7 +327,16 @@ const TvScreen = () => {
               This week at the club · scan any code to book
             </p>
           </div>
-          <p className="font-display text-2xl tabular-nums text-[#96998D]">
+          {/* INSET FROM THE RIGHT EDGE ON PURPOSE, and not for balance.
+              This page is mostly seen embedded in the club's court screen, which lays its
+              own controls over the top right corner -- the menu landed on the clock and
+              swallowed the "PM" (2026-08-30). That overlay is in a different document on
+              a different origin, so it cannot be reached from here and this is the side
+              that has to give way.
+              The canvas is a fixed 1920 scaled by min(w/1920, h/1080), so a fixed overlay
+              covers MORE canvas as the screen gets smaller: 46 canvas px at 1920 wide,
+              69 at 1280. 80 clears both with room to spare. */}
+          <p className="pr-20 font-display text-2xl tabular-nums text-[#96998D]">
             {now ? format(now, "EEE MMM d · h:mm a") : ""}
           </p>
         </header>
