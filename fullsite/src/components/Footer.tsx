@@ -22,6 +22,7 @@ const footerLinks: FooterNavLink[] = [
   { label: "Memberships", path: "/memberships" },
   { label: "FAQ", path: "/faq" },
   { label: "Contact", path: "/contact" },
+  { label: "Private Events", path: "/events" },
   { label: "Book a Court", path: BOOK_PAGE_PATH },
   { label: "Coaching", path: "/coaching" },
   { label: "Gallery", path: "/gallery" },

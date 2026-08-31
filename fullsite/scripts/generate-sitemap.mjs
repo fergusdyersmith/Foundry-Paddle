@@ -16,6 +16,7 @@ const ROUTES = [
   "/gallery",
   "/faq",
   "/contact",
+  "/events",
   "/survey",
   "/privacy",
   "/sms-terms",

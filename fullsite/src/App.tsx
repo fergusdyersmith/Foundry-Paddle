@@ -13,6 +13,7 @@ import SkillSurvey from "./pages/SkillSurvey";
 import Coaching from "./pages/Coaching";
 import Community from "./pages/Community";
 import Gallery from "./pages/Gallery";
+import Events from "./pages/Events";
 import TvScreen from "./pages/TvScreen";
 import Privacy from "./pages/Privacy";
 import SmsTerms from "./pages/SmsTerms";
@@ -39,6 +40,9 @@ export const routes: RouteRecord[] = [
       { path: "memberships", element: <Memberships /> },
       { path: "faq", element: <FAQ /> },
       { path: "contact", element: <Contact /> },
+      // Venue hire: the space inventory and capacity figures behind the Travel
+      // Portland listing. Not the Playtomic session feed — see Events.tsx.
+      { path: "events", element: <Events /> },
       { path: "book", element: <Book /> },
       { path: "new-to-padel", element: <NewToPadel /> },
       // Alias for pickleball-targeted ads/flyers; canonical points to /new-to-padel.
