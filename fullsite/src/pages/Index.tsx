@@ -82,7 +82,7 @@ const Index = () => {
               to={BOOK_PAGE_PATH}
               className="bg-primary px-7 py-3 font-display text-sm tracking-widest text-primary-foreground shadow-[0_0_30px_-10px_hsl(var(--primary)/0.6)] transition-all hover:brightness-110"
             >
-              BOOK YOUR FIRST PLAY — $15
+              BOOK YOUR FIRST PLAY — {formatUsd(rates.perPlayer90)}
             </Link>
             {/* Sits on a photograph, so it carries its own ground rather than
                 relying on the hero gradient: muted-foreground on the background
@@ -190,7 +190,7 @@ const Index = () => {
                 to={BOOK_PAGE_PATH}
                 className="inline-block bg-primary px-10 py-4 font-display text-lg tracking-widest text-primary-foreground transition-all hover:brightness-110"
               >
-                BOOK YOUR FIRST PLAY — $15
+                BOOK YOUR FIRST PLAY — {formatUsd(rates.perPlayer90)}
               </Link>
             </div>
           </motion.div>

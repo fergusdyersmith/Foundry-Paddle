@@ -10,7 +10,10 @@ import Seo from "@/components/Seo";
 /** Conversion landing page for the two paid-acquisition segments: total
  *  beginners and pickleball players. This is the destination for flyers, QR
  *  codes, and ads, so the copy here must match the printed offer: first play
- *  $15, racket rentals $5 ($10 demo), no partner or experience needed. */
+ *  the per-player rate, racket rentals $5 ($10 demo), no partner or experience
+ *  needed. There is NO intro discount: first play is the same price as any play
+ *  (Kelly, 2026-09-01), so the figure comes from shared/rates.js like everywhere
+ *  else and any printed flyer quoting $15 is now out of date. */
 
 const pickleballPoints = [
   {
@@ -54,7 +57,7 @@ const firstVisitSteps = [
 ];
 
 const quickFacts = [
-  { stat: "$15", label: "First play, per player" },
+  { stat: formatUsd(rates.perPlayer90), label: "First play, per player" },
   { stat: "$5", label: "Racket rental" },
   { stat: HOURS_SHORT, label: "Open daily" },
   { stat: "0", label: "Experience needed" },
@@ -64,8 +67,8 @@ const NewToPadel = () => {
   return (
     <main className="bg-background min-h-screen">
       <Seo
-        title="New to Padel? Pickleball Players Welcome, First Play $15 | Foundry Padel"
-        description="Never played padel? Coming from pickleball or tennis? Book your first play for $15 at Foundry Padel in Portland. Racket rentals $5, no partner or experience needed."
+        title={`New to Padel? Pickleball Players Welcome, First Play ${formatUsd(rates.perPlayer90)} | Foundry Padel`}
+        description={`Never played padel? Coming from pickleball or tennis? Book your first play for ${formatUsd(rates.perPlayer90)} at Foundry Padel in Portland. Racket rentals $5, no partner or experience needed.`}
         path="/new-to-padel"
       />
 
@@ -83,7 +86,7 @@ const NewToPadel = () => {
         <div className="relative z-10 mx-auto max-w-3xl px-6 pt-24 text-center">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
             <span className="font-body text-sm tracking-[0.2em] uppercase text-primary">
-              First play $15 · No experience needed
+              First play {formatUsd(rates.perPlayer90)} · No experience needed
             </span>
             <h1 className="mt-4 font-display text-6xl sm:text-8xl leading-none text-foreground">
               NEW TO PADEL?
@@ -98,7 +101,7 @@ const NewToPadel = () => {
                 to={BOOK_PAGE_PATH}
                 className="bg-primary px-10 py-4 font-display text-lg tracking-widest text-primary-foreground shadow-[0_0_40px_-8px_hsl(var(--primary)/0.7)] transition-all hover:brightness-110"
               >
-                BOOK YOUR FIRST PLAY: $15
+                BOOK YOUR FIRST PLAY: {formatUsd(rates.perPlayer90)}
               </Link>
             </div>
           </motion.div>
