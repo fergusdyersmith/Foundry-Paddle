@@ -33,13 +33,16 @@ const peakWindows = { offPeak: OFF_PEAK_LABELS, peak: PEAK_LABELS };
 // did not (a $60 court against a $22.50 spot) the page said a spot cost half as much as
 // a spot.
 //
-// The 60 and 120 minute prices are EXTRAPOLATED from $90/90min, i.e. a flat $60/hour.
-// Only the 90-minute price was given. Leaving the old $40 and $80 would have made two
-// hours ($80) cheaper than ninety minutes ($90), so they could not stay as they were.
+// The 60 and 120 minute prices are EXTRAPOLATED from the 90-minute one at a flat hourly
+// rate, because only the 90-minute price was ever given. They are DERIVED rather than
+// typed, so the three can never disagree: leaving the old $40 and $80 beside a $90
+// ninety-minute court once made two hours cheaper than ninety minutes.
+const court90 = ratesOn(RATE_CHANGE_DATE).court90;
+const courtHour = court90 / 1.5;
 const rateCard = [
-  { item: "Court, 60 minutes", price: "$60", note: "Up to 4 players" },
-  { item: "Court, 90 minutes", price: "$90", note: "Up to 4 players" },
-  { item: "Court, 120 minutes", price: "$120", note: "Up to 4 players" },
+  { item: "Court, 60 minutes", price: formatUsd(courtHour), note: "Up to 4 players" },
+  { item: "Court, 90 minutes", price: formatUsd(court90), note: "Up to 4 players" },
+  { item: "Court, 120 minutes", price: formatUsd(courtHour * 2), note: "Up to 4 players" },
   // From shared/rates.js, asked for the day this table is labelled with rather than for
   // today: the card states the NEW rates, and the schedule prices open matches off the
   // same figure, so the two cannot drift.
@@ -50,7 +53,11 @@ const rateCard = [
   },
   { item: "Racket rental", price: "$5", note: "Standard club racket" },
   { item: "Premium demo racket", price: "$10", note: "Current-season demo stock" },
-  { item: "Guest of a member", price: "$22.50", note: "Member guest passes cover this" },
+  // A guest pays one player's share, so this IS the per-player rate. Stating it twice by
+  // hand is how they end up disagreeing.
+  { item: "Guest of a member",
+    price: formatUsd(ratesOn(RATE_CHANGE_DATE).perPlayer90),
+    note: "Member guest passes cover this" },
 ];
 
 // The club opens 100 memberships in total. Only that total is published: the
@@ -463,12 +470,13 @@ const Memberships = () => {
             You never need a membership to play at Foundry. These are the rates
             everyone pays, and what every membership above is measured against.
           </p>
-          {/* These are the NEW rates, live 1 Sep 2026. Until then /book, /new-to-padel and
-              the home page all still quote the current $15 per player and $60 court, which
-              is correct today. All of them have to change on the same day or the site
-              contradicts itself. */}
+          {/* Live since 1 Sep 2026. /book, /new-to-padel and the home page no longer
+              hardcode these: they read shared/rates.js, which is dated, so the whole site
+              steps up together instead of one page contradicting another for a day. The
+              pages are prerendered though, so the change only reaches visitors on the
+              next build. */}
           <p className="font-body text-xs tracking-[0.1em] uppercase text-primary text-center mb-8">
-            Rates from 1 September 2026
+            Current rates
           </p>
           <div className="border border-border divide-y divide-border">
             {rateCard.map((row) => (
