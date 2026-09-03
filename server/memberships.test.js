@@ -18,13 +18,14 @@ beforeAll(async () => {
 });
 
 describe("the founding-membership count the website is given", () => {
-  it("adds the Nike 16 to a real count and works out the seats left from it", () => {
-    // The 16 Nike memberships are sold and sit outside the public 100. The club still
-    // sells and tracks a hundred; only the published figure carries them.
-    expect(T.normalizeMembershipCount({ cap: 100, sold: 29, pct_full: 29.0 })).toEqual({
-      sold: 45,
+  it("passes the published count through with the seats left worked out", () => {
+    // The figure arrives already carrying the 16 Nike memberships: Kumi applies that at
+    // source, in membership_metrics.published_sold, so the bar and the chatbot answer
+    // from one formula. This end only has to not mangle it.
+    expect(T.normalizeMembershipCount({ cap: 100, sold: 54, pct_full: 54.0 })).toEqual({
+      sold: 54,
       cap: 100,
-      remaining: 55,
+      remaining: 46,
     });
   });
 
@@ -41,49 +42,11 @@ describe("the founding-membership count the website is given", () => {
     });
   });
 
-  it("never shows the cap before the hundredth public membership is actually sold", () => {
-    // The whole point of the taper. A bar reading "100 of 100" while seats remain is a
-    // closed sign on an open shop, and 99 real sales lands on 99.5 of padding, which
-    // rounds to a sold-out club one sale early.
-    for (let real = 0; real < 100; real += 1) {
-      expect(T.paddedSold(real, 100)).toBeLessThan(100);
-    }
-    expect(T.paddedSold(100, 100)).toBe(100);
-  });
-
-  it("only ever goes up, so a sale never shrinks the bar", () => {
-    let prev = -1;
-    for (let real = 0; real <= 100; real += 1) {
-      const shown = T.paddedSold(real, 100);
-      expect(shown).toBeGreaterThanOrEqual(prev);
-      prev = shown;
-    }
-  });
-
-  it("carries the full 16 until the taper begins, then sheds it", () => {
-    expect(T.paddedSold(38, 100)).toBe(54);   // today, +16
-    expect(T.paddedSold(68, 100)).toBe(84);   // last full boost
-    expect(T.paddedSold(76, 100)).toBe(88);   // +12
-    expect(T.paddedSold(84, 100)).toBe(92);   // +8
-    expect(T.paddedSold(92, 100)).toBe(96);   // +4
-    expect(T.paddedSold(99, 100)).toBe(99);   // +0 after flooring
-  });
-
-  it("keeps a sold-out club at 0 left", () => {
-    expect(T.normalizeMembershipCount({ cap: 100, sold: 100 })).toEqual({
-      sold: 100,
-      cap: 100,
-      remaining: 0,
-    });
-  });
-
-  it("shows the Nike 16 even before the first public sale", () => {
-    // Not an empty bar any more, and correctly so: those sixteen are sold. The figure
-    // is only ever inflated relative to PUBLIC sales, never relative to reality.
+  it("still renders an empty bar if upstream ever reports zero", () => {
     expect(T.normalizeMembershipCount({ cap: 100, sold: 0 })).toEqual({
-      sold: 16,
+      sold: 0,
       cap: 100,
-      remaining: 84,
+      remaining: 100,
     });
   });
 
