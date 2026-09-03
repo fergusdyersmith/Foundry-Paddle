@@ -1299,6 +1299,40 @@ const KUMI_MEMBERSHIPS_URL =
   "https://padelmaps.org/api/coaching/memberships?slug=foundry-padel";
 let kumiMembershipsCache = { data: null, fetchedAt: 0 };
 
+// The 16 Nike memberships are sold and are NOT part of the public 100, so the club keeps
+// selling and counting a hundred exactly as before. They are added to the PUBLISHED
+// figure only, to show the real weight of what has gone.
+//
+// This lives at the display boundary on purpose. Kumi keeps reporting the true count, so
+// the admin panel, MRR and the cap alert the club acts on are untouched: the padding
+// exists in one function, on the way out to the website, and nowhere else.
+const NIKE_PADDING = 16;
+// Where the padding starts shrinking. It CANNOT be the point where padding would fill
+// the bar (68 + 16 = 84... the naive choice of 84 real sales): the padded figure would
+// read 100 of 100 with sixteen memberships still for sale, and every taper starting
+// there is degenerate, because to land on 100 the padding must shrink exactly as fast as
+// sales arrive, freezing the bar for the final stretch. Starting earlier keeps it moving
+// on every sale and keeps it under the cap until the cap is genuinely reached.
+const NIKE_TAPER_FROM = 68;
+
+/** What the website shows: real sales plus a shrinking share of the Nike 16.
+ *
+ *  Full padding up to NIKE_TAPER_FROM, then straight-line down to nothing at the cap, so
+ *  the last public membership sold shows exactly 100 of 100 rather than an inflated
+ *  number that has to be quietly corrected.
+ *
+ *  FLOOR, not round. At 99 real the padding is 0.5, and rounding turns 99.5 into a
+ *  sold-out bar one sale early — the single most expensive rounding error available here.
+ */
+function paddedSold(sold, cap) {
+  if (sold >= cap) return cap;
+  const span = cap - NIKE_TAPER_FROM;
+  const pad = sold <= NIKE_TAPER_FROM
+    ? NIKE_PADDING
+    : (NIKE_PADDING * (cap - sold)) / span;
+  return Math.min(cap, Math.floor(sold + pad));
+}
+
 /** Reduce the upstream payload to the two numbers the bar is drawn from, or null.
  *
  *  Null rather than a guess: the page hides the whole section when this fails, which is
@@ -1311,7 +1345,7 @@ function normalizeMembershipCount(raw) {
   const sold = Math.round(Number(raw?.sold));
   if (!Number.isFinite(cap) || cap <= 0) return null;
   if (!Number.isFinite(sold) || sold < 0) return null;
-  const claimed = Math.min(sold, cap);
+  const claimed = paddedSold(Math.min(sold, cap), cap);
   return { sold: claimed, cap, remaining: cap - claimed };
 }
 
@@ -1535,6 +1569,7 @@ export { app };
 export const __testables = {
   effectiveBookingType,
   normalizeMembershipCount,
+  paddedSold,
   applyKumiClassInfo,
   applyKumiTournamentInfo,
   applyKumiOpenMatchLevels,
