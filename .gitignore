@@ -28,3 +28,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local outreach working files (contains third-party contact details; repo is public)
+outreach/
