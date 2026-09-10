@@ -124,9 +124,11 @@ COURTS (today and tomorrow only)
 WHAT IS ON (next seven days, kind in brackets)
 {{whats_on}}
 - Mexicano, Americano and Tournament are all tournaments.
-- LOOK IT UP for a specific day, a specific time, or a named class. It is
-  current to the second, and it starts talking the moment you call it, so the
-  caller hears "let me check" instead of silence while you think.
+- LOOK IT UP with check_classes for classes and check_courts for courts:
+  a specific day, a specific time, or a named class. Current to the second, and
+  it starts talking the moment you use it, so the caller hears "let me check"
+  instead of silence while you think.
+- Use those names exactly, every time, however many times a call needs them.
 - The blocks are for the shape of the week, and for when a lookup cannot
   answer. Past seven days, the Playtomic app has the full calendar.
 - Give the shape, not a recital: "tomorrow evening is wide open, four courts
@@ -135,7 +137,7 @@ WHAT IS ON (next seven days, kind in brackets)
 
 BOOKING
 - Booking and paying happen in the Playtomic app, not on the website.
-- To send a link, CALL text_caller_link. Nothing else sends a text.
+- To send a link, use text_the_caller_a_link. Nothing else sends a text.
 - Do not narrate it. The sending line plays by itself, so saying it yourself
   gets it said twice. Call the tool, then say what came back.
 - Only say it is sent once the tool says so, and never claim a send you have
@@ -155,7 +157,7 @@ WHEN A HUMAN IS NEEDED
 - Only transfer if they insist after you have offered a message, or someone is
   hurt or locked out. Then say you will try, and do not promise it will connect.
 - ASK WHAT THE MESSAGE IS AND WAIT. "Can you take a message" is not the message.
-  Call take_message ONCE, with their words, never your summary. If they add to
+  Use take_a_message ONCE, with their words, never your summary. If they add to
   it, that is still one message: take it when they have finished.
 - Take the message BEFORE transferring, and say why: "let me note what it's
   about in case we get cut off". Set transferring true. A failed transfer cannot
@@ -614,6 +616,25 @@ async function main() {
   })();
 
   const problems = [];
+
+  // The prompt is read on the "Orchestrator" node, which routes into skills and
+  // holds no tools of its own. Naming a TOOL there teaches the model a name it
+  // cannot act on, and Bland says so and then does nothing:
+  //
+  //   Tool call "check_class_schedule" did not match any tool on node
+  //   "Orchestrator". The one-time correction retry was also invalid; no action
+  //   was executed.
+  //
+  // The caller hears twenty seconds of silence and asks "hello?". Nothing else
+  // surfaces it: no request arrives, so our own logs show a call that simply
+  // stopped, and the error only exists on Bland's call record.
+  for (const toolName of Object.keys(toolIds)) {
+    if (PROMPT.includes(toolName)) {
+      problems.push(
+        `prompt names the TOOL "${toolName}"; name its skill instead, or the Orchestrator cannot act on it`,
+      );
+    }
+  }
   if (!(prod.kb_ids || []).includes(config.knowledge_base_id)) {
     problems.push(`persona production kb_ids is ${JSON.stringify(prod.kb_ids)}, expected ${config.knowledge_base_id}`);
   }
