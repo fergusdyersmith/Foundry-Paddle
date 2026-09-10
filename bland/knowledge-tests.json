@@ -43,15 +43,15 @@
     {
       "q": "How much is a court?",
       "expect": [
-        "$40",
-        "40"
+        "$60",
+        "60"
       ]
     },
     {
       "q": "What does it cost to play for 90 minutes?",
       "expect": [
-        "$60",
-        "60"
+        "$90",
+        "90"
       ]
     },
     {
