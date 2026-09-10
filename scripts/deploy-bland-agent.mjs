@@ -155,8 +155,12 @@ BOOKING
   text out, but it's on foundry padel dot com".
 - Ask whether they have the Playtomic app BEFORE sending. If not, send the app
   download first: a booking link is no use without it.
-- A different number goes in phone, read back as you send. A particular class
-  goes in query, in their words.
+- A different number goes in phone, read back as you send.
+- A particular class or match goes in query WITH its date and time. Two can
+  share a title on the same day, so the time is what picks the right one. If
+  you asked them which they meant, send their ANSWER, not their first question.
+- template is "booking" for a court, class, match or tournament. Use "app" only
+  when they actually need the Playtomic download.
 
 WHEN A HUMAN IS NEEDED
 - THEY HAVE ALREADY TRIED. This call rang the owners' phones for eighteen
@@ -344,6 +348,8 @@ function tools() {
         caller_number: "{{from}}",
         template: "{{input.template}}",
         query: "{{input.query}}",
+        date: "{{input.date}}",
+        time: "{{input.time}}",
         call_id: "{{call_id}}",
       },
       input_schema: {
@@ -366,7 +372,16 @@ function tools() {
           query: {
             type: "string",
             description:
-              "What they asked for, in their words, e.g. 'the Midweek Morning Clinic tomorrow'. Send this whenever they want a specific class, clinic or tournament rather than the club in general.",
+              "What they FINALLY settled on, in their words, e.g. 'the Beginner Open Match'. If you asked them which one they meant, send their answer, not their first question.",
+          },
+          date: {
+            type: "string",
+            description: "The day of the class or match, e.g. 'Sunday' or 'tomorrow'.",
+          },
+          time: {
+            type: "string",
+            description:
+              "Its start time, e.g. '2:30 PM'. Two classes can share a title on the same day, so without this the wrong one gets sent.",
           },
         },
         required: ["template"],

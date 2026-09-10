@@ -1184,3 +1184,79 @@ describe("callers do not speak in ISO dates", () => {
     expect(unclearDate("{{input.date}}", { date: null }, THURSDAY)).toBe(false);
   });
 });
+
+describe("texting a link to the right event", () => {
+  const SUNDAY = [
+    // book_url is where the deep link comes from, exactly as Playtomic sends it.
+    { title: "Beginner Clinic 0 - 1 w/ Carlos", date: "2026-09-13", start_time: "09:00", booking_type: "PUBLIC_CLASS",
+      book_url: "https://app.playtomic.com/lesson_class/aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa" },
+    { title: "Beginner/Intermediate Open Match", date: "2026-09-13", start_time: "13:30", booking_type: "OPEN_MATCH",
+      book_url: "https://app.playtomic.com/matches/cccccccc-3333-4333-8333-cccccccccccc" },
+    { title: "Beginner Open Match", date: "2026-09-13", start_time: "14:30", booking_type: "OPEN_MATCH",
+      book_url: "https://app.playtomic.com/matches/dddddddd-4444-4444-8444-dddddddddddd" },
+    { title: "Beginner/Intermediate Open Match", date: "2026-09-13", start_time: "14:30", booking_type: "OPEN_MATCH",
+      book_url: "https://app.playtomic.com/matches/eeeeeeee-5555-4555-8555-eeeeeeeeeeee" },
+  ];
+
+  it("uses the day and time to pick one of two events sharing a title", async () => {
+    // Titles alone cannot do this: Sunday had two Open Matches at half two.
+    const sendLink = vi.fn(async () => ({ sent: true, reason: null }));
+    ctx = await boot({ linkSender: { configured: () => true, sendLink }, events: SUNDAY });
+
+    await post(ctx.base, "/api/voice/sms-link", {
+      template: "booking",
+      query: "the beginner clinic with Carlos",
+      date: "Sunday",
+      time: "9:00 AM",
+      caller_number: "+15412704585",
+      call_id: "call_pick",
+    });
+
+    expect(sendLink).toHaveBeenCalledWith(
+      expect.objectContaining({
+        deepLink: "class",
+        itemId: "aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa",
+        label: expect.stringContaining("Carlos"),
+      }),
+    );
+  });
+
+  it("asks which one rather than sending a coin flip", async () => {
+    // Two events, same day, same time, near-identical titles. Sending either is
+    // wrong half the time, and the caller only finds out after hanging up.
+    const sendLink = vi.fn(async () => ({ sent: true, reason: null }));
+    ctx = await boot({ linkSender: { configured: () => true, sendLink }, events: SUNDAY });
+
+    const body = await (
+      await post(ctx.base, "/api/voice/sms-link", {
+        template: "booking",
+        query: "the open match",
+        date: "Sunday",
+        time: "2:30 PM",
+        caller_number: "+15412704585",
+        call_id: "call_ambig",
+      })
+    ).json();
+
+    expect(body.sent).toBe(false);
+    expect(body.reason).toBe("ambiguous_event");
+    expect(body.speech).toContain("Which one");
+    expect(sendLink).not.toHaveBeenCalled();
+  });
+
+  it("never falls back to the app download for a named class", async () => {
+    // A caller who asked for a class link and got "get the Playtomic app" was
+    // sent something they did not ask for and cannot act on.
+    const sendLink = vi.fn(async () => ({ sent: true, reason: null }));
+    ctx = await boot({ linkSender: { configured: () => true, sendLink }, events: [] });
+
+    await post(ctx.base, "/api/voice/sms-link", {
+      template: "booking",
+      query: "the open match on Sunday",
+      caller_number: "+15412704585",
+      call_id: "call_fallback",
+    });
+
+    expect(sendLink).toHaveBeenCalledWith(expect.objectContaining({ deepLink: "courts" }));
+  });
+});

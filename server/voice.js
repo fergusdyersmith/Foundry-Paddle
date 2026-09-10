@@ -424,6 +424,29 @@ export function spokenPhone(text) {
   return run.length === 10 || run.length === 11 ? run : null;
 }
 
+/** Narrow the week's events to the ones the caller could have meant.
+ *
+ *  Titles alone are not enough to identify an event. Sunday had a Beginner
+ *  Open Match and TWO Beginner/Intermediate Open Matches, at half one and half
+ *  two, sharing a title exactly. A caller who says "the two thirty one" has
+ *  told us precisely which, and matching on words throws that away.
+ *
+ *  Narrowing only when it leaves something: a day or time we misread should
+ *  fall back to the whole week rather than to nothing.
+ */
+export function narrowEvents(events, { date, timeMin }) {
+  let pool = events || [];
+  if (date) {
+    const sameDay = pool.filter((e) => e.date === date);
+    if (sameDay.length) pool = sameDay;
+  }
+  if (timeMin != null) {
+    const sameTime = pool.filter((e) => resolveTime(e.start_time) === timeMin);
+    if (sameTime.length) pool = sameTime;
+  }
+  return pool;
+}
+
 /** A callback number spoken inside the sentence, when no structured field came. */
 export function phoneFromText(text) {
   const match = String(text || "").match(
@@ -804,7 +827,36 @@ export function createVoiceRouter({
     // rather than the club's front page.
     const today = nowLocal(timezone);
     const events = cachedEvents();
-    const matched = events ? matchEvent(text, events.events, today.date) : null;
+    // The caller's day and time, from the structured fields or the sentence.
+    const said = parseWhen(text);
+    const wantDate =
+      resolveDate(unresolved(req.body?.date) ? null : req.body?.date, today.date) ||
+      (said.date ? resolveDate(said.date, today.date) : null);
+    const wantTime =
+      resolveTime(unresolved(req.body?.time) ? null : req.body?.time) ??
+      resolveTime(said.time);
+    const pool = events
+      ? narrowEvents(events.events, { date: wantDate, timeMin: wantTime })
+      : [];
+    // One candidate left after narrowing IS the answer, whatever the words
+    // scored. "The two thirty on Sunday" identifies an event exactly, and
+    // asking a word matcher to confirm it only adds a way to get it wrong.
+    const matched =
+      pool.length === 1 ? pool[0] : pool.length ? matchEvent(text, pool, today.date) : null;
+
+    // Two events, same day, same time, near-identical titles: Sunday has a
+    // Beginner Open Match and a Beginner/Intermediate Open Match, both at half
+    // two. The word matcher scores them equally and rightly refuses to pick,
+    // and picking anyway would send the wrong link half the time. Ask.
+    if (!matched && wantTime != null && pool.length > 1 && pool.length <= 3) {
+      const names = pool.map((e) => e.title);
+      return res.json({
+        ok: false,
+        sent: false,
+        reason: "ambiguous_event",
+        speech: `I've got ${names.length} at ${spoken(pool[0].start_time)}: ${names.join(", and ")}. Which one?`,
+      });
+    }
     // Booking a court is not an event, so nothing ever matched and every court
     // caller got the website. That page is a Playtomic embed, and the prompt
     // tells callers in the same breath that booking happens in the app and not
@@ -812,7 +864,10 @@ export function createVoiceRouter({
     // club's own Playtomic page, which is where they were going anyway.
     const deep =
       (matched ? deepLinkFromEvent(matched) : null) ||
-      (template === "booking" && playtomicTenantId
+      // Anything but the app download falls back to the club's Playtomic page.
+      // A caller who asked for a class link and got "get the Playtomic app" was
+      // sent something they did not ask for and cannot act on.
+      (template !== "app" && playtomicTenantId
         ? { kind: "courts", id: playtomicTenantId }
         : null);
 
@@ -1135,6 +1190,7 @@ export const __testables = {
   phoneFromText,
   resolveDate,
   resolveTime,
+  narrowEvents,
   selectSlots,
   spoken,
   spokenDate,
