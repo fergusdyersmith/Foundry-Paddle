@@ -1604,7 +1604,12 @@ if (isEntrypoint) {
   // never arrives. See server/callpoller.js for why.
   createCallPoller({
     apiKey: process.env.BLAND_API_KEY,
-    number: process.env.CLUB_PHONE_NUMBER || "+19715217887",
+    // The AGENT's number, not the club's. Bland calls arrive on the line the
+    // ring group dials, and the poller filters on an exact match, so pointing
+    // it at the club number silently dropped every call: no Slack card, and no
+    // post-call send of a link the agent promised.
+    number:
+      process.env.BLAND_PHONE_NUMBER || process.env.CLUB_PHONE_NUMBER || "+19715217887",
     notifier,
     linkSender: createLinkSender(),
     cachedEvents,

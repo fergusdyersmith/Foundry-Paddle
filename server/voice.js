@@ -166,9 +166,13 @@ export function resolveDate(input, today) {
 
   const wanted = DAY_WORDS.findIndex((w) => new RegExp(`\\b${w}\\b`).test(raw));
   if (wanted >= 0) {
-    // "this Saturday" said ON Saturday means today. Any other "Saturday" means
-    // the next one, which is what a caller asking on Friday afternoon means.
-    return nextWeekday(today, wanted, { includeToday: /\bthis\b/.test(raw) });
+    // "Thursday" said ON Thursday means TODAY. It used to mean the Thursday a
+    // week away, and the agent, which passes the current weekday when a caller
+    // asks about right now, was answered about next week: "9:42 AM is booked on
+    // Thursday, September 17" for a caller standing in the tenth.
+    //
+    // Only "next Thursday" skips the one they are standing in.
+    return nextWeekday(today, wanted, { includeToday: !/\bnext\b/.test(raw) });
   }
   return null;
 }

@@ -612,10 +612,13 @@ describe("turning data into something speakable", () => {
     expect(V.resolveDate(input, "2026-08-13")).toBe(expected);
   });
 
-  it("reads a weekday as the NEXT one, never today", () => {
-    // 2026-08-13 is a Thursday. A caller saying "Thursday" on Thursday means
-    // next week, not the day they are standing in.
-    expect(V.resolveDate("thursday", "2026-08-13")).toBe("2026-08-20");
+  it("reads a weekday as TODAY when it is today, and next week only if asked", () => {
+    // 2026-08-13 is a Thursday. This used to answer "next Thursday" and it cost
+    // a real caller: the agent passes the current weekday when someone asks
+    // about right now, and got told "9:42 AM is booked on Thursday, September
+    // 17" while the caller stood in the tenth.
+    expect(V.resolveDate("thursday", "2026-08-13")).toBe("2026-08-13");
+    expect(V.resolveDate("next thursday", "2026-08-13")).toBe("2026-08-20");
     expect(V.resolveDate("friday", "2026-08-13")).toBe("2026-08-14");
   });
 
@@ -1154,7 +1157,11 @@ describe("callers do not speak in ISO dates", () => {
     ["september 14", "2026-09-14"],
     ["sept 14", "2026-09-14"],
     ["the 14th", "2026-09-14"],
-    ["thursday", "2026-09-17"],
+    // A weekday said on that weekday means TODAY. The agent passes the current
+    // weekday when a caller asks about right now, and used to be answered about
+    // the same day a week later.
+    ["thursday", "2026-09-10"],
+    ["next thursday", "2026-09-17"],
   ])("reads %s as %s", (said, expected) => {
     expect(resolveDate(said, THURSDAY)).toBe(expected);
   });
