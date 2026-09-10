@@ -108,6 +108,12 @@ HOW TO SPEAK
 - NEVER go quiet. Silence reads as a dropped call. If something will take a
   moment, SAY SO FIRST and then do it: "let me check that for you". Never think
   in silence and then answer.
+- IF YOU ARE NOT SURE WHAT THEY MEAN, ASK. One short question: "which day were
+  you thinking?", "the whole club schedule, or a court for yourself?". A
+  caller will happily answer a question and will not wait through a pause.
+- If a lookup does not come back, SAY SO and answer from what you already have.
+  "I couldn't pull that up, but from what I have here..." Never let a lookup
+  that failed turn into silence.
 
 WHAT YOU KNOW
 - Answer only from the club facts and what the tools return.
@@ -204,7 +210,7 @@ function skills(toolIds) {
         "Look up which courts are free and tell the caller the times and court numbers.",
       condition: "The caller has been told what is free, or that nothing is",
       description:
-        "Caller asks whether a court is free, or wants to book a specific day or time",
+        "COURTS. Any way of asking whether they can play: is a court free, do you have anything at six, any openings tonight, can I book, what times are open, can we get on a court, is it busy, do you have space Saturday morning, can we just turn up, how late are you open tonight, anything this weekend, court availability, I want to book, is there room for four of us.",
     },
     {
       id: "1a2b6d70-5c41-4e88-9a3f-2f0c7d9e4b11",
@@ -214,7 +220,7 @@ function skills(toolIds) {
         "Look up the clinics, courses, tournaments and open matches coming up, with prices and how many places are left.",
       condition: "The caller has been told what is on, or that nothing is",
       description:
-        "Caller asks about clinics, classes, coaching sessions, tournaments or open matches",
+        "WHAT IS ON. Any way of asking what the club is running: classes, clinics, lessons, coaching, tournaments, Mexicano, Americano, socials, open matches, leagues, events, what's on, what's happening, anything going on, the schedule, anything for beginners, when is the next one, do you run anything on Tuesdays, can I join something, is there a group I can play with.",
     },
     {
       id: "3c9e1f22-8b64-4a05-91d7-6e5a0c3b8d42",
@@ -230,7 +236,7 @@ function skills(toolIds) {
       // already finished.
       condition: "text_caller_link has returned a result for this link",
       description:
-        "Caller asks to be texted a link: booking, memberships, directions, or the Playtomic app download",
+        "SEND SOMETHING TO THEIR PHONE. Any way of asking for a link: text me, send it over, can you text that, shoot me the link, where do I sign up, how do I download the app, send it to my wife's number, text me the address, can you send me the membership page, put that in a text.",
     },
     {
       id: "5d7a0b93-4e12-4c76-8f20-9b1d3e6a7c58",
@@ -240,7 +246,7 @@ function skills(toolIds) {
         "Pass the caller's message to the club. Ask what it is about first and wait for their answer: 'can you take a message' is a request, not a message. Use their own words, not a summary of the conversation so far. Take it once, at the end, even if they add to it.",
       condition: "The message has been taken, or the caller has been told it could not be",
       description:
-        "Caller has said what they want passed on, or is about to be put through to a person",
+        "PASS IT ON TO A PERSON. Any way of asking for a human or a callback: can someone call me, is Jake there, can I speak to the owner, I need to talk to somebody, tell them I called, leave a message, get back to me, have the manager ring me, I'll wait for a call.",
     },
   ];
 }

@@ -102,23 +102,91 @@ export function unresolved(value) {
 
 /** Speech-to-text hands us words, not ISO dates. Accept both, and refuse
  *  anything we cannot resolve rather than guessing at a date. */
+const DAY_WORDS = [
+  "sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday",
+];
+const MONTH_WORDS = [
+  "january", "february", "march", "april", "may", "june",
+  "july", "august", "september", "october", "november", "december",
+];
+
+/** The next date on or after `today` whose weekday is `wanted`. */
+function nextWeekday(today, wanted, { includeToday = false } = {}) {
+  const current = new Date(`${today}T00:00:00Z`).getUTCDay();
+  const ahead = (wanted - current + 7) % 7;
+  return addDays(today, ahead === 0 && !includeToday ? 7 : ahead);
+}
+
 export function resolveDate(input, today) {
   if (input == null || input === "" || unresolved(input)) return today;
-  const raw = String(input).trim().toLowerCase();
+  // Punctuation and filler stripped, because this arrives from speech: "uh,
+  // Saturday?" and "on Saturday" and "Saturday." are one caller asking once.
+  const raw = String(input)
+    .trim()
+    .toLowerCase()
+    .replace(/[.,!?]/g, " ")
+    .replace(/\b(uh|um|like|maybe|possibly|say)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!raw) return today;
   if (ISO_DATE.test(raw)) return raw;
-  if (raw === "today" || raw === "tonight") return today;
-  if (raw === "tomorrow") return addDays(today, 1);
-  const weekdays = [
-    "sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday",
-  ];
-  const wanted = weekdays.indexOf(raw.replace(/^(this|next|on)\s+/, ""));
+
+  if (/\b(today|tonight|this (evening|afternoon|morning)|right now|now|later)\b/.test(raw)) return today;
+  if (/\bday after tomorrow\b/.test(raw)) return addDays(today, 2);
+  if (/\btomorrow\b/.test(raw)) return addDays(today, 1);
+
+  // "the weekend" means the coming Saturday, unless it already is the weekend,
+  // in which case the caller means the one they are standing in.
+  if (/\bweekend\b/.test(raw)) {
+    const dow = new Date(`${today}T00:00:00Z`).getUTCDay();
+    if (dow === 6 || dow === 0) return today;
+    return nextWeekday(today, 6);
+  }
+  if (/\bnext week\b/.test(raw)) return nextWeekday(today, 1);
+
+  // "September 14", "Sept 14", "14 September".
+  const month = MONTH_WORDS.findIndex((m) => new RegExp(`\\b${m.slice(0, 3)}[a-z]*\\b`).test(raw));
+  const dayNum = raw.match(/\b(\d{1,2})(?:st|nd|rd|th)?\b/);
+  if (month >= 0 && dayNum) {
+    const year = Number(today.slice(0, 4));
+    const iso = `${year}-${String(month + 1).padStart(2, "0")}-${String(Number(dayNum[1])).padStart(2, "0")}`;
+    // A date already gone means next year: nobody rings a club about last March.
+    return iso >= today ? iso : `${year + 1}${iso.slice(4)}`;
+  }
+  // "the 14th", with no month. The next one, this month or next.
+  const bareDay = raw.match(/\bthe (\d{1,2})(?:st|nd|rd|th)\b/);
+  if (bareDay) {
+    const day = String(Number(bareDay[1])).padStart(2, "0");
+    const thisMonth = `${today.slice(0, 7)}-${day}`;
+    if (thisMonth >= today) return thisMonth;
+    const d = new Date(`${today.slice(0, 7)}-01T00:00:00Z`);
+    d.setUTCMonth(d.getUTCMonth() + 1);
+    return `${d.toISOString().slice(0, 7)}-${day}`;
+  }
+
+  const wanted = DAY_WORDS.findIndex((w) => new RegExp(`\\b${w}\\b`).test(raw));
   if (wanted >= 0) {
-    const current = new Date(`${today}T00:00:00Z`).getUTCDay();
-    // "Friday" always means the next one, never today, which is what a caller
-    // asking on Friday afternoon actually means.
-    return addDays(today, ((wanted - current + 7) % 7) || 7);
+    // "this Saturday" said ON Saturday means today. Any other "Saturday" means
+    // the next one, which is what a caller asking on Friday afternoon means.
+    return nextWeekday(today, wanted, { includeToday: /\bthis\b/.test(raw) });
   }
   return null;
+}
+
+/** A day the caller named that we could not read.
+ *
+ *  Falling back to today looked harmless and was not: "what about this
+ *  weekend" read out today's schedule, confidently and wrongly, and the caller
+ *  has no way to know they were answered about the wrong day. Asking costs one
+ *  turn; a wrong answer costs their trust in every other answer. */
+export function unclearDate(rawDate, when, today) {
+  const attempted = rawDate && !unresolved(rawDate) && String(rawDate).trim() !== "";
+  if (!attempted) return false;
+  // Only ask resolveDate about values that exist. Handed nothing it answers
+  // "today", which is the right default for a caller who named no day and
+  // exactly the wrong answer to "could you read this one?".
+  const fromWhen = when?.date ? resolveDate(when.date, today) : null;
+  return !resolveDate(rawDate, today) && !fromWhen;
 }
 
 /**
@@ -649,6 +717,13 @@ export function createVoiceRouter({
     const today = nowLocal(timezone);
     const rawDate = unresolved(req.body?.date) ? null : req.body?.date;
     const when = parseWhen([req.body?.query, rawDate].filter((x) => x && !unresolved(x)).join(" "));
+    if (unclearDate(rawDate, when, today.date)) {
+      return res.json({
+        ok: false,
+        reason: "unclear_date",
+        speech: "Sorry, which day did you mean?",
+      });
+    }
     const from =
       resolveDate(rawDate, today.date) || resolveDate(when.date, today.date) || today.date;
     const requestedDays = Number(req.body?.days);

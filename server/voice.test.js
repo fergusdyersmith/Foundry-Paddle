@@ -1126,3 +1126,54 @@ describe("which link a court booking actually gets", () => {
     );
   });
 });
+
+describe("callers do not speak in ISO dates", () => {
+  let resolveDate, unclearDate;
+  beforeEach(async () => {
+    vi.resetModules();
+    ({ resolveDate, unclearDate } = await import("./voice.js"));
+  });
+
+  // A Thursday, so "Saturday" and "the weekend" are two days out and
+  // "Thursday" means the one next week rather than the one they are standing in.
+  const THURSDAY = "2026-09-10";
+
+  it.each([
+    ["tomorrow", "2026-09-11"],
+    ["saturday", "2026-09-12"],
+    ["Saturday.", "2026-09-12"],
+    ["uh, Saturday?", "2026-09-12"],
+    ["on saturday", "2026-09-12"],
+    ["this saturday", "2026-09-12"],
+    ["the weekend", "2026-09-12"],
+    ["this weekend", "2026-09-12"],
+    ["day after tomorrow", "2026-09-12"],
+    ["tonight", "2026-09-10"],
+    ["this evening", "2026-09-10"],
+    ["next week", "2026-09-14"],
+    ["september 14", "2026-09-14"],
+    ["sept 14", "2026-09-14"],
+    ["the 14th", "2026-09-14"],
+    ["thursday", "2026-09-17"],
+  ])("reads %s as %s", (said, expected) => {
+    expect(resolveDate(said, THURSDAY)).toBe(expected);
+  });
+
+  it("asks rather than quietly answering about today", () => {
+    // The failure this replaces: "what about this weekend" resolved to null,
+    // fell through to today, and read out today's schedule confidently. The
+    // caller has no way to tell they were answered about the wrong day.
+    expect(unclearDate("sometime after the holidays", { date: null }, THURSDAY)).toBe(true);
+    expect(unclearDate("whenever you are quiet", { date: null }, THURSDAY)).toBe(true);
+    // A day named anywhere in the sentence is understood, not queried.
+    expect(unclearDate("a week on Tuesday-ish", { date: null }, THURSDAY)).toBe(false);
+    expect(unclearDate("saturday", { date: null }, THURSDAY)).toBe(false);
+  });
+
+  it("does not ask when the caller named no day at all", () => {
+    // No day means "what's on generally", which has a good answer.
+    expect(unclearDate(null, { date: null }, THURSDAY)).toBe(false);
+    expect(unclearDate("", { date: null }, THURSDAY)).toBe(false);
+    expect(unclearDate("{{input.date}}", { date: null }, THURSDAY)).toBe(false);
+  });
+});
