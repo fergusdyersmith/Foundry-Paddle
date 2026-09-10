@@ -171,8 +171,10 @@ WHEN A HUMAN IS NEEDED
 - Only transfer if they insist after you have offered a message, or someone is
   hurt or locked out. Then say you will try, and do not promise it will connect.
 - ASK WHAT THE MESSAGE IS AND WAIT. "Can you take a message" is not the message.
-  Use take_a_message ONCE, with their words, never your summary. If they add to
-  it, that is still one message: take it when they have finished.
+  Use take_a_message ONCE. The reason is THE QUESTION THEY ASKED, in their
+  words: "which court has the AI cameras on it". Not the topic, not what the
+  call was about earlier. Someone answers it without having heard the call. If
+  they add to it, that is still one message: take it when they have finished.
 - Take the message BEFORE transferring, and say why: "let me note what it's
   about in case we get cut off". Set transferring true. A failed transfer cannot
   come back to you, so the message is the only record they rang.
@@ -414,7 +416,11 @@ function tools() {
             type: "string",
             description: "Callback number. Omit to use the number they are calling from.",
           },
-          reason: { type: "string", description: "What the message is about." },
+          reason: {
+            type: "string",
+            description:
+              "THE QUESTION THEY ASKED, in their own words, e.g. 'which court has the AI cameras on it'. Not a topic, not a summary of the call so far. Whoever reads this never heard the call and has to answer it, so a reason that does not contain the question is useless to them.",
+          },
           urgent: {
             type: "boolean",
             description: "True only if someone is hurt, locked out, at the door, or clearly distressed.",
