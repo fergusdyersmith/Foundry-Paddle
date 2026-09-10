@@ -25,6 +25,7 @@ const footerLinks: FooterNavLink[] = [
   { label: "Private Events", path: "/events" },
   { label: "Book a Court", path: BOOK_PAGE_PATH },
   { label: "Coaching", path: "/coaching" },
+  { label: "Gift Certificates", path: "/gift-cards" },
   { label: "Gallery", path: "/gallery" },
   { label: "App", href: APP_URL, external: true },
   { label: "Skill Survey", path: "/survey" },

@@ -14,6 +14,8 @@ import Coaching from "./pages/Coaching";
 import Community from "./pages/Community";
 import Gallery from "./pages/Gallery";
 import Events from "./pages/Events";
+import GiftCards from "./pages/GiftCards";
+import GiftThanks from "./pages/GiftThanks";
 import TvScreen from "./pages/TvScreen";
 import Privacy from "./pages/Privacy";
 import SmsTerms from "./pages/SmsTerms";
@@ -44,6 +46,11 @@ export const routes: RouteRecord[] = [
       // Portland listing. Not the Playtomic session feed — see Events.tsx.
       { path: "events", element: <Events /> },
       { path: "book", element: <Book /> },
+      // Gift certificates. The checkout page is prerendered like any other; the
+      // thank-you page is where Square sends the buyer back to, and reads its order
+      // reference and token from the query string, so it is client-only in practice.
+      { path: "gift-cards", element: <GiftCards /> },
+      { path: "gift/thanks", element: <GiftThanks /> },
       { path: "new-to-padel", element: <NewToPadel /> },
       // Alias for pickleball-targeted ads/flyers; canonical points to /new-to-padel.
       { path: "pickleball", element: <NewToPadel /> },

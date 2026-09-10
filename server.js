@@ -1354,6 +1354,85 @@ app.get("/api/coaching/classes", async (req, res) => {
   }
 });
 
+// ---------------------------------------------------------------------------------------
+// Gift certificates.
+//
+// Proxied rather than called cross-origin so the browser only ever talks to one host, the
+// same way the coaching feed works. Three routes and no more:
+//
+//   GET  /api/gift/catalogue          what is for sale, and at what price
+//   POST /api/gift/checkout           makes a pending order, returns a Square page URL
+//   GET  /api/gift/order/:reference   what the thank-you page polls
+//
+// The SQUARE WEBHOOK IS DELIBERATELY NOT HERE. Square posts it straight to padelmaps.org,
+// which verifies a signature computed over the notification URL and the raw body. Routing
+// it through this process would change the URL it was signed against and re-serialise the
+// body, and every payment would then look like a forgery.
+//
+// Nothing here holds a secret. The backend prices the cart itself, so the worst a crafted
+// request can do is create a pending order nobody pays for.
+const GIFT_API = process.env.GIFT_API_BASE || "https://padelmaps.org";
+
+async function giftProxy(req, res, path, init) {
+  try {
+    const upstream = await fetch(`${GIFT_API}${path}`, {
+      ...init,
+      headers: { "Content-Type": "application/json", ...(init?.headers || {}) },
+    });
+    const body = await upstream.text();
+    // The status is passed through, not flattened: the backend answers 400 with a message
+    // written for the buyer to read, and turning that into a 502 would replace something
+    // they can act on with something they cannot.
+    return res.status(upstream.status).type("application/json").send(body);
+  } catch (error) {
+    console.error(`[gift] ${path} proxy failed:`, error.message);
+    return res
+      .status(502)
+      .json({ detail: "We could not reach the gift service. Nothing has been charged." });
+  }
+}
+
+app.get("/api/gift/catalogue", (req, res) =>
+  giftProxy(req, res, "/api/gift/catalogue"));
+
+app.post("/api/gift/checkout", (req, res) =>
+  giftProxy(req, res, "/api/gift/checkout", {
+    method: "POST",
+    body: JSON.stringify(req.body || {}),
+  }));
+
+app.get("/api/gift/order/:reference", (req, res) => {
+  const t = req.query.t ? `?t=${encodeURIComponent(String(req.query.t))}` : "";
+  return giftProxy(req, res, `/api/gift/order/${encodeURIComponent(req.params.reference)}${t}`);
+});
+
+// The printable certificate. Separate from the JSON proxy above because it comes back as
+// a PDF, and giftProxy reads the body as text -- which would quietly corrupt every byte
+// above 0x7f and hand the buyer a file that will not open.
+app.get("/api/gift/order/:reference/certificate", async (req, res) => {
+  const params = new URLSearchParams();
+  for (const k of ["t", "size", "style"]) {
+    if (req.query[k]) params.set(k, String(req.query[k]));
+  }
+  const path = `/api/gift/order/${encodeURIComponent(req.params.reference)}` +
+    `/certificate?${params.toString()}`;
+  try {
+    const upstream = await fetch(`${GIFT_API}${path}`);
+    if (!upstream.ok) {
+      const body = await upstream.text();
+      return res.status(upstream.status).type("application/json").send(body);
+    }
+    const buf = Buffer.from(await upstream.arrayBuffer());
+    res.setHeader("Content-Type", "application/pdf");
+    const disposition = upstream.headers.get("content-disposition");
+    if (disposition) res.setHeader("Content-Disposition", disposition);
+    return res.send(buf);
+  } catch (error) {
+    console.error("[gift] certificate proxy failed:", error.message);
+    return res.status(502).json({ detail: "We could not fetch that certificate." });
+  }
+});
+
 // Website chatbot. It is handed read-only accessors for the two feeds this server already
 // caches, so answering a visitor costs no extra upstream calls; it gets nothing else from
 // this process. See server/chat.js for the trust boundary.

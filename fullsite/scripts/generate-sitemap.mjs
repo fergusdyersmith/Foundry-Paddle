@@ -1,6 +1,7 @@
 // Emits dist/sitemap.xml after the prerender build. Lists canonical URLs only:
 // /pickleball (canonical -> /new-to-padel) and /terms (alias of /sms-terms)
-// are deliberately excluded.
+// are deliberately excluded, and so is /gift/thanks, which is a transactional page
+// nobody should arrive at from a search result.
 import { writeFileSync } from "fs";
 
 const SITE = "https://www.foundrypadel.com";
@@ -17,6 +18,7 @@ const ROUTES = [
   "/faq",
   "/contact",
   "/events",
+  "/gift-cards",
   "/survey",
   "/privacy",
   "/sms-terms",
