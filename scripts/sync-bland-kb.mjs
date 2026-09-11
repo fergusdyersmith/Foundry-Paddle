@@ -164,7 +164,17 @@ async function main() {
   // misses anything phrased differently from the topic line.
   let aliases = {};
   try {
-    aliases = JSON.parse(readFileSync(ALIASES_PATH, "utf8")).aliases || {};
+    const aliasFile = JSON.parse(readFileSync(ALIASES_PATH, "utf8"));
+    aliases = aliasFile.aliases || {};
+    // Phrasings belong under "aliases". Put a topic at the top level and this
+    // silently ignored it: the document was rebuilt, uploaded, and the agent
+    // still could not answer, with nothing anywhere saying why.
+    const stray = Object.keys(aliasFile).filter((k) => k !== "_comment" && k !== "aliases");
+    if (stray.length) {
+      console.error(
+        `[kb] IGNORED ${stray.length} topic(s) at the top level of knowledge-aliases.json; they belong inside "aliases": ${stray.join(", ")}`,
+      );
+    }
   } catch {
     aliases = {};
   }

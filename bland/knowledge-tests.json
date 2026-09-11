@@ -96,8 +96,8 @@
     {
       "q": "How far ahead can I book if I'm not a member?",
       "expect": [
-        "3 days",
-        "three days"
+        "5 days",
+        "five days"
       ]
     },
     {

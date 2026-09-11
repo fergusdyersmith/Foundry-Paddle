@@ -313,18 +313,31 @@
       "when can members sign up for tournaments",
       "how far ahead can I book a tournament",
       "where is the book early page"
+    ],
+    "Match highlights, videos and the AI camera (Clutch app)": [
+      "which court has the camera",
+      "which court has the ai cameras",
+      "what court is filmed",
+      "is my match recorded",
+      "do you film matches",
+      "do you record games",
+      "where are the cameras",
+      "is there video of my game",
+      "how do i get my highlights",
+      "clutch app"
+    ],
+    "How far ahead you can book": [
+      "how many days in advance can i book",
+      "how far in advance can i book",
+      "how far ahead can i book if i am not a member",
+      "how far out can i book",
+      "how early can i book",
+      "when can i book",
+      "booking window",
+      "can i book next week",
+      "can non members book ahead",
+      "do members get to book earlier",
+      "how far ahead do members book"
     ]
-  },
-  "Match highlights, videos and the AI camera (Clutch app)": [
-    "which court has the camera",
-    "which court has the ai cameras",
-    "what court is filmed",
-    "is my match recorded",
-    "do you film matches",
-    "do you record games",
-    "where are the cameras",
-    "is there video of my game",
-    "how do i get my highlights",
-    "clutch app"
-  ]
+  }
 }
