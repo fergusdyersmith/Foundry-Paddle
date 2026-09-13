@@ -102,9 +102,11 @@ const Community = () => {
               as a newsletter undersold the one thing most visitors on this page want. */}
           <p className="font-body text-xs text-muted-foreground mt-8">
             Prefer matches sent straight to you? Sign up at{" "}
-            <Link to="/join" className="text-primary underline underline-offset-2">
+            {/* Plain <a>: /join is proxied by server.js and has no React route, so a
+                <Link> here rendered NotFound on click (it worked only on a direct load). */}
+            <a href="/join" className="text-primary underline underline-offset-2">
               foundrypadel.com/join
-            </Link>{" "}
+            </a>{" "}
             and Kumi will message you open matches at your level, at the times you play.
           </p>
         </motion.div>

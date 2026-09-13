@@ -23,6 +23,16 @@ describe("FindPlayersCTA", () => {
     expect(secondary?.getAttribute("href")).toBe("/find-players");
   });
 
+  it("navigates to /join for real instead of routing to it client-side", () => {
+    // /join has no React route (server.js proxies it to Kumi). A <Link> renders the same
+    // href but swallows the click and lands on NotFound, so the href alone proves nothing.
+    renderCTA();
+    const anchor = screen.getByText("GET MATCHES SENT TO ME").closest("a")!;
+    const click = new MouseEvent("click", { bubbles: true, cancelable: true, button: 0 });
+    anchor.dispatchEvent(click);
+    expect(click.defaultPrevented).toBe(false);
+  });
+
   it("says it is free, because that is the objection it exists to answer", () => {
     renderCTA();
     expect(screen.getByText(/Free · No membership needed/)).toBeTruthy();

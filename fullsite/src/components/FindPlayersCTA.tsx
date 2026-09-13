@@ -39,13 +39,16 @@ const FindPlayersCTA = () => (
         </div>
 
         <div className="flex w-full shrink-0 flex-col items-center gap-4 md:w-auto md:items-start">
-          <Link
-            to="/join"
+          {/* A real <a>, not <Link>: /join is server-rendered by server.js (a proxy of
+              Kumi's sign-up page) and has no React route, so a client-side navigation
+              renders NotFound. */}
+          <a
+            href="/join"
             className="inline-flex w-full items-center justify-center gap-3 bg-primary px-8 py-4 font-display text-lg tracking-widest text-primary-foreground transition-all hover:brightness-110 md:w-auto"
           >
             <MessageCircle size={20} />
             GET MATCHES SENT TO ME
-          </Link>
+          </a>
           <Link
             to="/find-players"
             className="inline-flex items-center gap-2 font-body text-xs uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-primary"

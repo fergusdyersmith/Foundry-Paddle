@@ -15,10 +15,20 @@ const FEED: MatchSlotFeed = {
   sample_matches: 562,
   min_sample: 4,
   computed_at: "2026-09-13T01:26:50Z",
+  // Ten slots, not four: the page only shows its HARDEST TO FILL card once there are more
+  // than eight, and a fixture below that threshold silently skips half the component.
+  // Every hour stays inside 16-19 so the grid's column span is predictable, and MON 5 PM
+  // is deliberately absent as the withheld-slot case.
   slots: [
     { weekday: 1, hour: 17, matches: 13, fill_rate: 0.8, fill_rate_raw: 0.92 },
     { weekday: 2, hour: 19, matches: 14, fill_rate: 0.77, fill_rate_raw: 0.86 },
     { weekday: 3, hour: 19, matches: 27, fill_rate: 0.72, fill_rate_raw: 0.74 },
+    { weekday: 0, hour: 16, matches: 9, fill_rate: 0.7, fill_rate_raw: 0.78 },
+    { weekday: 0, hour: 19, matches: 7, fill_rate: 0.68, fill_rate_raw: 0.71 },
+    { weekday: 4, hour: 16, matches: 6, fill_rate: 0.66, fill_rate_raw: 0.67 },
+    { weekday: 4, hour: 19, matches: 12, fill_rate: 0.62, fill_rate_raw: 0.58 },
+    { weekday: 5, hour: 17, matches: 8, fill_rate: 0.55, fill_rate_raw: 0.5 },
+    { weekday: 6, hour: 18, matches: 5, fill_rate: 0.5, fill_rate_raw: 0.4 },
     { weekday: 2, hour: 16, matches: 11, fill_rate: 0.45, fill_rate_raw: 0.27 },
   ],
 };
@@ -131,5 +141,30 @@ describe("FindPlayers", () => {
     renderPage();
     const cta = await screen.findByText("SIGN ME UP");
     expect(cta.closest("a")?.getAttribute("href")).toBe("/join");
+  });
+
+  it("navigates to /join for real instead of routing to it client-side", async () => {
+    // /join is server-rendered by server.js (a proxy of Kumi's sign-up page) and has no
+    // React route. A react-router <Link> renders an <a href="/join"> too, so checking the
+    // href proves nothing — it also swallows the click and renders NotFound. Shipped that
+    // way on 2026-09-13: a pasted URL worked, every in-app click 404'd.
+    //
+    // What separates them is whether the click survives. A plain <a> leaves it alone.
+    stubFeed(FEED);
+    renderPage();
+
+    for (const label of ["GET MATCHES SENT TO ME", "SIGN ME UP"]) {
+      const anchor = (await screen.findByText(label)).closest("a")!;
+      const click = new MouseEvent("click", { bubbles: true, cancelable: true, button: 0 });
+      anchor.dispatchEvent(click);
+      expect(click.defaultPrevented, `${label} is intercepted by the router`).toBe(false);
+    }
+  });
+
+  it("links the WhatsApp group to /community rather than just naming it", async () => {
+    stubFeed(FEED);
+    renderPage();
+    const link = (await screen.findByText("WhatsApp group")).closest("a");
+    expect(link?.getAttribute("href")).toBe("/community");
   });
 });

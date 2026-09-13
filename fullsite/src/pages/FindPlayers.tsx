@@ -30,7 +30,16 @@ import {
  *  else told anyone.
  */
 
-const KUMI_SIGNUP_PATH = "/join";
+/** /join is NOT a React route.
+ *
+ *  server.js reverse-proxies it to Kumi's own sign-up page (the WhatsApp QR), so it only
+ *  exists server-side. A react-router <Link> would navigate client-side, match nothing,
+ *  and render NotFound — the CTA 404s on click while a pasted URL works, which is exactly
+ *  how it shipped past a direct-load check on 2026-09-13.
+ *
+ *  Every link here must be a plain <a>, so the browser does a real navigation. */
+const JOIN_PATH = "/join";
+
 
 function useMatchSlots() {
   return useQuery<MatchSlotFeed>({
@@ -174,13 +183,13 @@ const FindPlayers = () => {
               Tell us your level and when you play. We will message you open matches that
               fit, so you stop refreshing the app hoping something turns up.
             </p>
-            <Link
-              to={KUMI_SIGNUP_PATH}
+            <a
+              href={JOIN_PATH}
               className="mt-10 inline-flex items-center gap-3 bg-primary px-10 py-4 font-display text-lg tracking-widest text-primary-foreground transition-all hover:brightness-110"
             >
               GET MATCHES SENT TO ME
               <ArrowRight size={20} />
-            </Link>
+            </a>
             <p className="mt-4 font-body text-xs text-muted-foreground">
               Takes about a minute. Free, and you can stop them any time.
             </p>
@@ -233,8 +242,17 @@ const FindPlayers = () => {
                       HARDEST TO FILL
                     </h3>
                     <p className="mb-5 font-body text-xs text-muted-foreground">
-                      Still worth posting, and most of these fill too. Just give them longer,
-                      and tell the WhatsApp group.
+                      Still worth posting, and most of these fill too. Just give them
+                      longer, and tell the{" "}
+                      {/* Linked, because "tell the WhatsApp group" is useless advice to
+                          somebody who is not in it and has no idea it exists. */}
+                      <Link
+                        to="/community"
+                        className="text-primary underline underline-offset-2"
+                      >
+                        WhatsApp group
+                      </Link>
+                      {"."}
                     </p>
                     {ranked
                       .slice(-4)
@@ -395,12 +413,12 @@ const FindPlayers = () => {
             You do not have to post anything at all. Tell us your level and the times you
             play, and we will message you when an open match needs someone like you.
           </p>
-          <Link
-            to={KUMI_SIGNUP_PATH}
+          <a
+            href={JOIN_PATH}
             className="inline-block bg-primary px-10 py-4 font-display text-lg tracking-widest text-primary-foreground transition-all hover:brightness-110"
           >
             SIGN ME UP
-          </Link>
+          </a>
         </motion.div>
       </section>
     </main>
