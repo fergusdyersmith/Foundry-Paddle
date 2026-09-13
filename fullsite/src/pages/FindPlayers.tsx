@@ -104,7 +104,7 @@ function Heatmap({ slots, baseline }: { slots: MatchSlot[]; baseline: number | n
                   return (
                     <td
                       key={h}
-                      title={`${DAY_NAMES[wd]} ${hourLabel(h)} — not enough matches yet`}
+                      title={`${DAY_NAMES[wd]} ${hourLabel(h)}: not enough matches yet`}
                       className="h-7 border border-border/30 bg-transparent"
                     />
                   );
@@ -113,7 +113,7 @@ function Heatmap({ slots, baseline }: { slots: MatchSlot[]; baseline: number | n
                 return (
                   <td
                     key={h}
-                    title={`${slotLabel(slot)} — ${pct}% of open matches fill, from ${slot.matches} matches`}
+                    title={`${slotLabel(slot)}: ${pct}% of open matches fill, from ${slot.matches} matches`}
                     className="h-7 font-body text-[10px] text-primary-foreground"
                     style={{
                       backgroundColor: `hsl(var(--primary) / ${0.14 + intensity(slot.fill_rate, slots) * 0.86})`,
@@ -233,7 +233,7 @@ const FindPlayers = () => {
                       HARDEST TO FILL
                     </h3>
                     <p className="mb-5 font-body text-xs text-muted-foreground">
-                      Still worth posting — most of these fill too. Just give them longer,
+                      Still worth posting, and most of these fill too. Just give them longer,
                       and tell the WhatsApp group.
                     </p>
                     {ranked
@@ -265,7 +265,7 @@ const FindPlayers = () => {
                   {baseline !== null && <>, of which {percent(baseline)}% filled</>}. Times
                   with fewer than {data?.min_sample ?? 4} matches are left out rather than
                   guessed at, and the rest are adjusted toward the club average in
-                  proportion to how few matches they are based on — so a time with six
+                  proportion to how few matches they are based on, so a time with six
                   matches behind it is not presented as confidently as one with twenty-six.
                   Updated nightly.
                 </p>

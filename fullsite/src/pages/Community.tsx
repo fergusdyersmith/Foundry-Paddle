@@ -136,7 +136,7 @@ const Community = () => {
             <Link to="/find-players" className="text-primary underline underline-offset-2">
               See which times fill
             </Link>{" "}
-            first — across the last few months some slots fill far more reliably than
+            first: across the last few months some slots fill far more reliably than
             others.
           </p>
         </motion.div>

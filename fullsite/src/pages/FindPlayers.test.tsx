@@ -89,7 +89,7 @@ describe("FindPlayers", () => {
     stubFeed(FEED);
     renderPage();
 
-    const withheld = await screen.findByTitle(/MON 5 PM — not enough matches yet/);
+    const withheld = await screen.findByTitle(/MON 5 PM: not enough matches yet/);
     expect(withheld.textContent).toBe("");
   });
 

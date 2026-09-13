@@ -234,7 +234,7 @@ const Schedule = () => {
           <Link to="/find-players" className="text-primary underline underline-offset-2">
             Find players
           </Link>{" "}
-          — see which times open matches actually fill, or have them sent to you free.
+          to see which times open matches actually fill, or have them sent to you free.
         </p>
       </section>
     </main>

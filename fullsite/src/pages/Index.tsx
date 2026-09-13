@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { formatUsd, ratesOn } from "@shared/rates";
 import { Link } from "react-router-dom";
 import BookCTA from "@/components/BookCTA";
+import FindPlayersCTA from "@/components/FindPlayersCTA";
 import StayInTouchForm from "@/components/StayInTouchForm";
 import { PartnerLogoBand } from "@/components/PartnerLogoBand";
 import GalleryTeaser from "@/components/GalleryTeaser";
@@ -252,6 +253,11 @@ const Index = () => {
       </section>
 
       <BookCTA />
+
+      {/* Straight after BOOK A COURT, because "who with?" is the next question and the
+          answer is free. BookCTA closes with its own divider, so this one opens with
+          none rather than stacking two rules on top of each other. */}
+      <FindPlayersCTA />
 
       <section className="relative py-28 px-6">
         <StayInTouchForm source="home" />

@@ -366,8 +366,8 @@ const Book = () => {
             <Link to="/find-players" className="text-primary underline underline-offset-2">
               Post your own open match
             </Link>{" "}
-            — we track which times actually fill, or we can text you when one comes up at
-            your level.
+            and see which times actually fill, or have one texted to you when a match
+            comes up at your level.
           </p>
 
           <div className="section-divider mt-16" />
