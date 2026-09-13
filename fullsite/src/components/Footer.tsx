@@ -16,16 +16,24 @@ type FooterNavLink =
   | { label: string; path: string }
   | { label: string; href: string; external: true };
 
-const footerLinks: FooterNavLink[] = [
+// Two columns, split by what someone is here to DO versus what they are here to look
+// up. Fifteen links in one stack ran taller than the map beside it and the useful pages
+// were buried in the middle of it. Deliberately not a halfway bisect of one array: that
+// would put Contact next to Gift Certificates and read as an accident.
+const primaryLinks: FooterNavLink[] = [
   { label: "The Sport", path: "/the-sport" },
   { label: "The Club", path: "/the-club" },
   { label: "Memberships", path: "/memberships" },
+  { label: "Book a Court", path: BOOK_PAGE_PATH },
+  { label: "Find Players", path: "/find-players" },
+  { label: "Coaching", path: "/coaching" },
+  { label: "Private Events", path: "/events" },
+  { label: "Gift Certificates", path: "/gift-cards" },
+];
+
+const secondaryLinks: FooterNavLink[] = [
   { label: "FAQ", path: "/faq" },
   { label: "Contact", path: "/contact" },
-  { label: "Private Events", path: "/events" },
-  { label: "Book a Court", path: BOOK_PAGE_PATH },
-  { label: "Coaching", path: "/coaching" },
-  { label: "Gift Certificates", path: "/gift-cards" },
   { label: "Gallery", path: "/gallery" },
   { label: "App", href: APP_URL, external: true },
   { label: "Skill Survey", path: "/survey" },
@@ -33,11 +41,25 @@ const footerLinks: FooterNavLink[] = [
   { label: "SMS Terms", path: "/sms-terms" },
 ];
 
+const linkClass =
+  "font-body text-sm text-secondary-foreground transition-colors hover:text-primary";
+
+const FooterLink = ({ link }: { link: FooterNavLink }) =>
+  "external" in link ? (
+    <a href={link.href} target="_blank" rel="noopener noreferrer" className={linkClass}>
+      {link.label}
+    </a>
+  ) : (
+    <Link to={link.path} className={linkClass}>
+      {link.label}
+    </Link>
+  );
+
 const Footer = () => {
   return (
     <footer className="border-t border-border py-16 px-6">
       <div className="mx-auto max-w-5xl">
-        <div className="grid grid-cols-1 gap-12 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-12 md:grid-cols-5">
           {/* Brand */}
           <div>
             <Link to="/" className="font-display text-xl tracking-widest text-foreground">
@@ -50,27 +72,21 @@ const Footer = () => {
             </p>
           </div>
 
-          {/* Links */}
-          <div>
+          {/* Links, in two columns. Takes two of the five tracks so each column has room
+              for "Gift Certificates" without wrapping. */}
+          <div className="md:col-span-2">
             <span className="font-body text-xs uppercase tracking-[0.2em] text-muted-foreground">Navigate</span>
-            <div className="mt-3 flex flex-col gap-2">
-              {footerLinks.map((link) =>
-                "external" in link ? (
-                  <a
-                    key={link.label}
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-body text-sm text-secondary-foreground hover:text-primary transition-colors"
-                  >
-                    {link.label}
-                  </a>
-                ) : (
-                  <Link key={link.path} to={link.path} className="font-body text-sm text-secondary-foreground hover:text-primary transition-colors">
-                    {link.label}
-                  </Link>
-                ),
-              )}
+            <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2">
+              <div className="flex flex-col gap-2">
+                {primaryLinks.map((link) => (
+                  <FooterLink key={link.label} link={link} />
+                ))}
+              </div>
+              <div className="flex flex-col gap-2">
+                {secondaryLinks.map((link) => (
+                  <FooterLink key={link.label} link={link} />
+                ))}
+              </div>
             </div>
           </div>
 
@@ -81,9 +97,14 @@ const Footer = () => {
               <a href="mailto:portland@foundrypadel.com" className="font-body text-sm text-secondary-foreground hover:text-primary transition-colors">
                 portland@foundrypadel.com
               </a>
+              {/* text-left because this renders a <button> (it decodes the invite on
+                  click rather than putting it in the markup), and a button centres its
+                  text. Invisible while the column was wide enough for one line; now that
+                  Navigate takes two tracks it wraps, and centred it no longer lines up
+                  with the email address above it. */}
               <WhatsAppJoinLink
                 hideIcon
-                className="mt-2 block font-body text-sm text-secondary-foreground hover:text-primary transition-colors"
+                className="mt-2 block text-left font-body text-sm text-secondary-foreground hover:text-primary transition-colors"
               >
                 Join our WhatsApp community
               </WhatsAppJoinLink>

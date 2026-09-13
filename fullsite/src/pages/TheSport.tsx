@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import BookCTA from "@/components/BookCTA";
+import FindPlayersCTA from "@/components/FindPlayersCTA";
 import WistiaVideo from "@/components/WistiaVideo";
 import Photo from "@/components/Photo";
 import PhotoCycle, { type CycleFrame } from "@/components/PhotoCycle";
@@ -240,6 +241,13 @@ const TheSport = () => {
       </section>
 
       <BookCTA />
+
+      {/* Somebody who has just read the rules has the opposite problem to somebody who
+          has not: they know what to do and have nobody to do it with. */}
+      <FindPlayersCTA
+        title="NOW YOU NEED THREE OTHERS"
+        body="Knowing the rules is the easy part. Tell us your level and when you are free, and we will message you open matches that fit, so your first game is not a favour you have to ask anyone for."
+      />
     </main>
   );
 };

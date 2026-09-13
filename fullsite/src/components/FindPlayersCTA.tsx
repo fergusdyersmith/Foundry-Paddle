@@ -14,7 +14,19 @@ import { ArrowRight, MessageCircle } from "lucide-react";
  *  around on the most-visited page we have. The numbers live one click away on
  *  /find-players, where a failure costs nothing.
  */
-const FindPlayersCTA = () => (
+type Props = {
+  /** Page-specific hook. Defaults to the homepage wording. */
+  title?: string;
+  body?: string;
+};
+
+/** Copy is a prop, layout is not. The same two actions appear on four pages now, and the
+ *  thing worth varying is the sentence that connects them to the page you just read, not
+ *  the buttons or the styling. */
+const FindPlayersCTA = ({
+  title = "NOBODY TO PLAY WITH?",
+  body = "You do not need to bring three friends. Tell us your level and the times you play, and we will message you open matches that fit. Or see which times fill fastest before you post one of your own.",
+}: Props = {}) => (
   <section className="px-6 pb-20">
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -29,12 +41,10 @@ const FindPlayersCTA = () => (
             Free · No membership needed
           </span>
           <h2 className="mt-3 font-display text-3xl leading-tight text-foreground sm:text-4xl">
-            NOBODY TO PLAY WITH?
+            {title}
           </h2>
           <p className="mt-4 font-body text-base leading-relaxed text-secondary-foreground">
-            You do not need to bring three friends. Tell us your level and the times you
-            play, and we will message you open matches that fit. Or see which times fill
-            fastest before you post one of your own.
+            {body}
           </p>
         </div>
 

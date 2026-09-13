@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import BookCTA from "@/components/BookCTA";
+import FindPlayersCTA from "@/components/FindPlayersCTA";
 import Photo from "@/components/Photo";
 import Seo from "@/components/Seo";
 import { PHOTOS } from "@/data/gallery";
@@ -133,6 +134,13 @@ const TheClub = () => {
       </section>
 
       <BookCTA />
+
+      {/* The courts are the part we can show in photographs. The part that actually
+          decides whether someone comes back is whether they had anyone to play. */}
+      <FindPlayersCTA
+        title="THE COURTS ARE THE EASY PART"
+        body="Finding three other people is the hard part, and it is free to fix. Tell us your level and the times you play, and we will message you when an open match needs someone like you."
+      />
     </main>
   );
 };
