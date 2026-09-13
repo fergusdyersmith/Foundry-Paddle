@@ -34,8 +34,10 @@ function useCoachClasses() {
   });
 }
 
-/** If a coach's (Playtomic-hosted) photo 404s, fall back to the placeholder
- *  instead of a broken image — Playtomic sometimes serves dead photo URLs. */
+/** Last-resort guard: fall back to the placeholder rather than a broken image.
+ *  Coach photos are mirrored into the repo (see constants/coaches.ts), so this
+ *  should no longer fire for a coach who edits their Playtomic picture — it now
+ *  only catches a missing file, which means the mirror itself is wrong. */
 const onPhotoError = (e: React.SyntheticEvent<HTMLImageElement>) => {
   if (!e.currentTarget.src.endsWith("/coaches/placeholder.svg")) {
     e.currentTarget.src = "/coaches/placeholder.svg";

@@ -1,0 +1,51 @@
+{
+  "eugene": {
+    "source": "https://padelmaps.org/static/coaches/eugene.jpg",
+    "file": "/coaches/eugene.jpg",
+    "sha256": "da83b09e203f78ec",
+    "bytes": 99798,
+    "fetchedAt": "2026-09-13"
+  },
+  "kelly": {
+    "source": "https://res.cloudinary.com/playtomic/image/upload/c_limit,w_1280/v1/pro/users/6206748/1788048085051",
+    "file": "/coaches/kelly.jpg",
+    "sha256": "c0d04a59c87003c4",
+    "bytes": 62531,
+    "fetchedAt": "2026-09-13"
+  },
+  "ryan": {
+    "source": "https://res.cloudinary.com/playtomic/image/upload/c_limit,w_1280/v1/pro/users/11704693/1760272483481",
+    "file": "/coaches/ryan.jpg",
+    "sha256": "39c91888ee2a9f0b",
+    "bytes": 48353,
+    "fetchedAt": "2026-09-13"
+  },
+  "carlos": {
+    "source": "https://res.cloudinary.com/playtomic/image/upload/c_limit,w_1280/v1/pro/users/15111349/1779924254191",
+    "file": "/coaches/carlos.jpg",
+    "sha256": "2d092db5b15ef18f",
+    "bytes": 74066,
+    "fetchedAt": "2026-09-13"
+  },
+  "juan": {
+    "source": "https://res.cloudinary.com/playtomic/image/upload/c_limit,w_1280/v1/pro/users/14687214/1776654174130",
+    "file": "/coaches/juan.jpg",
+    "sha256": "5ecbdb7bceb7df25",
+    "bytes": 119429,
+    "fetchedAt": "2026-09-13"
+  },
+  "jack": {
+    "source": "https://res.cloudinary.com/playtomic/image/upload/c_limit,w_1280/v1/pro/users/3448382/1782527321574",
+    "file": "/coaches/jack.jpg",
+    "sha256": "d21d782e2df3f725",
+    "bytes": 61150,
+    "fetchedAt": "2026-09-13"
+  },
+  "axel": {
+    "source": "https://res.cloudinary.com/playtomic/image/upload/c_limit,w_1280/v1/pro/users/14509083/1775683355620",
+    "file": "/coaches/axel.jpg",
+    "sha256": "2dabf48668930928",
+    "bytes": 113567,
+    "fetchedAt": "2026-09-13"
+  }
+}

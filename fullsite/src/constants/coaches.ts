@@ -6,6 +6,13 @@
  *  come live from /api/coaching/classes (Kumi-ingested Playtomic data) and are
  *  matched to coaches via `aliases` (class data uses inconsistent name forms,
  *  e.g. "Kelly" vs "Kelly Correia").
+ *
+ *  `photo` is always a LOCAL path under fullsite/public/coaches. It used to point
+ *  straight at Playtomic's Cloudinary, whose URLs end in the upload timestamp — so
+ *  when Kelly changed his picture on 2026-09-12 the old object 404'd and his tile
+ *  fell back to the grey placeholder. The images are mirrored into the repo by
+ *  `node scripts/sync-coach-photos.mjs`; run it (dry run first) to pick up a coach's
+ *  new photo. Do not hand-edit `photo` back to a remote URL.
  */
 
 export interface PrivateLessons {
@@ -58,7 +65,7 @@ export const COACHES: CoachProfile[] = [
     id: "eugene",
     name: "Eugene Jung",
     firstName: "Eugene",
-    photo: "https://padelmaps.org/static/coaches/eugene.jpg",
+    photo: "/coaches/eugene.jpg",
     aliases: ["eugene jung", "eugene"],
     bio: "Eugene is a competitive tennis player with a USTA 4.5 rating and has competed at the national level. A lifelong racquet sports enthusiast, he also founded Pips & Bounce, Portland's premier ping pong social club, combining his passion for sport with building community.",
     specialties:
@@ -79,8 +86,7 @@ export const COACHES: CoachProfile[] = [
     id: "kelly",
     name: "Kelly Correia",
     firstName: "Kelly",
-    photo:
-      "https://res.cloudinary.com/playtomic/image/upload/c_limit,w_1280/v1/pro/users/6206748/1730570365323",
+    photo: "/coaches/kelly.jpg",
     aliases: ["kelly correia", "kelly"],
     bio: "RPP certified coach focused on tactics, technique, and footwork. Every session follows the same structure: ball feed to practice the skill, a focused drill to reinforce it, then a game situation to put it all together.",
     specialties:
@@ -100,8 +106,7 @@ export const COACHES: CoachProfile[] = [
     id: "ryan",
     name: "Ryan Chin",
     firstName: "Ryan",
-    photo:
-      "https://res.cloudinary.com/playtomic/image/upload/c_limit,w_1280/v1/pro/users/11704693/1760272483481",
+    photo: "/coaches/ryan.jpg",
     aliases: ["ryan chin", "ryan"],
     bio: "Played national-level tennis and racquetball through college, and fell in love with padel while traveling in Europe. Excited to see the sport grow and push players to the next level.",
     specialties:
@@ -121,8 +126,7 @@ export const COACHES: CoachProfile[] = [
     id: "carlos",
     name: "Carlos Ramírez Mazuera",
     firstName: "Carlos",
-    photo:
-      "https://res.cloudinary.com/playtomic/image/upload/c_limit,w_1280/v1/pro/users/15111349/1779924254191",
+    photo: "/coaches/carlos.jpg",
     aliases: ["carlos ramírez mazuera", "carlos ramirez mazuera", "carlos"],
     bio: "Bilingual RPP Level 1 & 2 padel coach, fitness and conditioning coach, and former competitive tennis player. Helping players build confidence, technique, movement, and enjoy the game from day one.",
     specialties:
@@ -142,8 +146,7 @@ export const COACHES: CoachProfile[] = [
     id: "juan",
     name: "Juan Gomez Humphrey",
     firstName: "Juan",
-    photo:
-      "https://res.cloudinary.com/playtomic/image/upload/c_limit,w_1280/v1/pro/users/14687214/1776654174130",
+    photo: "/coaches/juan.jpg",
     aliases: ["juan gomez humphrey", "juan"],
     bio: "Passionate lifelong padel and tennis player. Coached tennis for 5 years and now RPP-certified coaching padel too. Started playing padel as a teenager in Mexico in the 90s and fell in love with the sport — now eager to pass on his experience and love of the game.",
     specialties:
@@ -167,8 +170,7 @@ export const COACHES: CoachProfile[] = [
     id: "jack",
     name: "Jack Wang",
     firstName: "Jack",
-    photo:
-      "https://res.cloudinary.com/playtomic/image/upload/c_limit,w_1280/v1/pro/users/3448382/1782527321574",
+    photo: "/coaches/jack.jpg",
     aliases: ["jack wang", "jack"],
     bio: "Full-time tennis coach bringing years of racquet-sport teaching to the court. Jack leads Foundry's 6-week padel course, taking players from first fundamentals to confident match play.",
     specialties: "6-week padel course, tennis-to-padel transition, fundamentals",
@@ -190,8 +192,7 @@ export const COACHES: CoachProfile[] = [
     id: "axel",
     name: "Axel Garay",
     firstName: "Axel",
-    photo:
-      "https://res.cloudinary.com/playtomic/image/upload/c_limit,w_1280/v1/pro/users/14509083/1775683355620",
+    photo: "/coaches/axel.jpg",
     aliases: ["axel garay", "axel"],
     bio: "Axel rounds out the Foundry coaching team, working with players across levels on fundamentals and consistent, repeatable technique.",
     specialties: "Fundamentals, consistency",
