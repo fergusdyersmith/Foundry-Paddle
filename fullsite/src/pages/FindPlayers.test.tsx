@@ -127,13 +127,15 @@ describe("FindPlayers", () => {
     expect(screen.queryByText(/0% filled/)).toBeNull();
   });
 
-  it("warns that converting a booking forfeits free cancellation", async () => {
+  it("does not repeat Playtomic's generic cancellation warning", async () => {
+    // It was on this page and it is not true at Foundry, whose own policy (club_knowledge
+    // #68) is that cancelling more than 24 hours ahead is always free. It came from
+    // Playtomic's help centre, which does not describe this club. Publishing a stricter
+    // policy than the club actually has talks people out of posting matches.
     stubFeed(FEED);
     renderPage();
-    // This is the one instruction on the page that can cost somebody money.
-    await waitFor(() =>
-      expect(screen.getByText(/cannot cancel without paying for the court/)).toBeTruthy(),
-    );
+    await waitFor(() => expect(screen.getByText("HOW TO POST AN OPEN MATCH")).toBeTruthy());
+    expect(screen.queryByText(/cannot cancel without paying/)).toBeNull();
   });
 
   it("points at /join for the free matchmaking sign-up", async () => {

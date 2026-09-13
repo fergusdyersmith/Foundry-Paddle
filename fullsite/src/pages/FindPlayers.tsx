@@ -328,11 +328,23 @@ const FindPlayers = () => {
               },
               {
                 t: "Tap \u201c+ Reserve the first spot\u201d and check out",
-                d: "You are now the host. Whoever reserves first sets the match type, so this is where you choose competitive or casual.",
+                d: "You are now the host, and whoever reserves first sets the match type and the level range for everyone else. Those two choices decide whether it fills, so the next step is worth thirty seconds.",
               },
               {
+                // HARDCODED, unlike the chart above, which is recomputed nightly. Measured
+                // 2026-09-13 over the same 120-day window: level range wider than 1.0 vs
+                // 1.0 or narrower, 592 matches,
+                // p=0.00001, and it holds within busy slots and quiet ones separately, so
+                // it is not just a proxy for wide ranges happening at good times.
+                //
+                // NOT claimed: that casual outperforms competitive. We only know the
+                // match type for 195 matches, and those fill at 96% against a 65%
+                // population, so that subsample is far too biased to publish from. What
+                // is said about casual below is Playtomic's documented behaviour (the
+                // level range does not gate a friendly match), offered as the reason the
+                // measured range effect applies, not as a second measurement.
                 t: "Choose the match type deliberately",
-                d: "Casual lets anyone join whatever their level, and nobody's level changes from the result. Competitive restricts it to your level range, and results move everyone's level. You cannot switch between them afterwards.",
+                d: "This is the biggest lever you have after the time itself. Open matches with a level range wider than one point fill 76% of the time; narrower ones fill 59%, and that gap holds at busy and quiet times alike. Casual drops the level restriction altogether, so anyone can join whatever their level, and nobody's level changes from the result. Competitive holds people to your range and moves everyone's level on the result. If filling the court matters more than the ranking points, pick casual or widen your range. You cannot switch between the two afterwards.",
               },
               {
                 t: "Then leave it alone",
@@ -365,11 +377,6 @@ const FindPlayers = () => {
               <span className="text-foreground">Convert to Public Match</span> depending on
               your app version). It is free, and once it is public it gets posted
               automatically into the club WhatsApp group as well.
-            </p>
-            <p className="mt-3 font-body text-sm leading-relaxed text-secondary-foreground">
-              One thing to know first: once the match is public you cannot cancel without
-              paying for the court, even if nobody joins. That is the reason the timings
-              above are worth a look before you do it.
             </p>
             <p className="mt-3 font-body text-xs text-muted-foreground">
               It will not offer the option if the match is already full, or if anyone on
