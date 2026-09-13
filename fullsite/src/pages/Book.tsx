@@ -358,6 +358,18 @@ const Book = () => {
               )}
             </motion.div>
           </div>
+
+          {/* Nothing on the list worth joining? The answer is to post your own, and
+              /find-players is the only place that says which times are worth posting. */}
+          <p className="mt-16 text-center font-body text-sm text-muted-foreground">
+            Nothing here that fits?{" "}
+            <Link to="/find-players" className="text-primary underline underline-offset-2">
+              Post your own open match
+            </Link>{" "}
+            — we track which times actually fill, or we can text you when one comes up at
+            your level.
+          </p>
+
           <div className="section-divider mt-16" />
         </div>
       </section>

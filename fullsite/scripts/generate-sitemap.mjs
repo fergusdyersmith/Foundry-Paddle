@@ -9,6 +9,7 @@ const ROUTES = [
   "/",
   "/book",
   "/new-to-padel",
+  "/find-players",
   "/coaching",
   "/schedule",
   "/memberships",

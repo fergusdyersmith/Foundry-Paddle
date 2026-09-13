@@ -237,6 +237,14 @@ const NewToPadel = () => {
             >
               WHAT IS PADEL? <ArrowRight className="h-3.5 w-3.5" />
             </Link>
+            {/* The first question after "how do I start" is "who do I play with",
+                and a beginner has nobody yet. This is the answer. */}
+            <Link
+              to="/find-players"
+              className="inline-flex items-center gap-2 font-display text-xs tracking-[0.2em] text-muted-foreground transition-colors hover:text-primary"
+            >
+              NOBODY TO PLAY WITH? <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
           </div>
           <div className="section-divider mt-12" />
         </motion.div>

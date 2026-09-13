@@ -20,3 +20,32 @@ if (typeof window !== "undefined") {
     }),
   });
 }
+
+// framer-motion's `whileInView` (BookCTA, Community, FindPlayers and every other section
+// that fades in on scroll) calls IntersectionObserver on mount, and jsdom has none. The
+// component throws during render, so the failure is not "the animation did not play" but
+// "the page would not mount at all" — which makes any page using it untestable.
+//
+// Nothing observes anything here: the callback is never fired, so an element under
+// `whileInView` stays at its initial style. Assert on text and roles, not on opacity.
+if (typeof window !== "undefined" && !("IntersectionObserver" in window)) {
+  class NoopIntersectionObserver implements IntersectionObserver {
+    readonly root = null;
+    readonly rootMargin = "";
+    readonly thresholds: ReadonlyArray<number> = [];
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+    takeRecords(): IntersectionObserverEntry[] {
+      return [];
+    }
+  }
+  Object.defineProperty(window, "IntersectionObserver", {
+    writable: true,
+    value: NoopIntersectionObserver,
+  });
+  Object.defineProperty(globalThis, "IntersectionObserver", {
+    writable: true,
+    value: NoopIntersectionObserver,
+  });
+}

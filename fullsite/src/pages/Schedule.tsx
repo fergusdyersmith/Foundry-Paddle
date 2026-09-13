@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   addDays,
@@ -224,6 +225,18 @@ const Schedule = () => {
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* The calendar shows what the CLUB has put on. A player looking at a thin week
+          needs the other lever: posting a match themselves. */}
+      <section className="px-6 pb-20">
+        <p className="mx-auto max-w-2xl text-center font-body text-sm text-muted-foreground">
+          Looking for a game rather than a class?{" "}
+          <Link to="/find-players" className="text-primary underline underline-offset-2">
+            Find players
+          </Link>{" "}
+          — see which times open matches actually fill, or have them sent to you free.
+        </p>
+      </section>
     </main>
   );
 };

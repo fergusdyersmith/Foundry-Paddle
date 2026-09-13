@@ -1343,6 +1343,42 @@ app.get("/api/memberships", async (req, res) => {
   }
 });
 
+// Per-slot open-match fill rates for /find-players: how often a match posted at this
+// weekday and hour actually reaches four players.
+//
+// Refreshed once a night on the Kumi box (scripts/open_match_slots_refresh.py), so the
+// five-minute TTL the live class feed needs would be sixty pointless upstream calls an
+// hour for a number that cannot have moved. An hour is still twelve chances to pick up a
+// deploy-day recompute.
+const KUMI_MATCH_SLOTS_URL =
+  process.env.KUMI_MATCH_SLOTS_URL ||
+  "https://padelmaps.org/api/coaching/match-slots?slug=foundry-padel";
+const MATCH_SLOTS_TTL = 60 * 60 * 1000;
+let kumiMatchSlotsCache = { data: null, fetchedAt: 0 };
+
+async function fetchKumiMatchSlots() {
+  if (kumiMatchSlotsCache.data && Date.now() - kumiMatchSlotsCache.fetchedAt < MATCH_SLOTS_TTL) {
+    return kumiMatchSlotsCache.data;
+  }
+  const upstream = await fetch(KUMI_MATCH_SLOTS_URL, { headers: { Accept: "application/json" } });
+  if (!upstream.ok) throw new Error(`Kumi match slots fetch failed (${upstream.status})`);
+  const data = await upstream.json();
+  kumiMatchSlotsCache = { data, fetchedAt: Date.now() };
+  return data;
+}
+
+app.get("/api/coaching/match-slots", async (req, res) => {
+  try {
+    return res.json(await fetchKumiMatchSlots());
+  } catch (error) {
+    console.error("[coaching] match slots proxy failed:", error.message);
+    // Yesterday's fill rates are still true; they describe a 120-day window. Falling
+    // back to them beats hiding the tool over a blip.
+    if (kumiMatchSlotsCache.data) return res.json(kumiMatchSlotsCache.data);
+    return res.status(502).json({ error: "Couldn't load match timing data." });
+  }
+});
+
 app.get("/api/coaching/classes", async (req, res) => {
   try {
     return res.json(await fetchKumiClasses());

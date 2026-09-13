@@ -128,6 +128,17 @@ const Community = () => {
             </Link>
             .
           </p>
+          {/* The other half of the problem: posting one. The group is where people ASK
+              for players; /find-players is where they can see which times actually
+              deliver them. */}
+          <p className="mt-4 font-body text-sm text-muted-foreground">
+            Posting a match of your own?{" "}
+            <Link to="/find-players" className="text-primary underline underline-offset-2">
+              See which times fill
+            </Link>{" "}
+            first — across the last few months some slots fill far more reliably than
+            others.
+          </p>
         </motion.div>
       </section>
 

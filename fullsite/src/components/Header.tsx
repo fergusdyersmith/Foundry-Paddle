@@ -38,6 +38,7 @@ const navLinks: NavItem[] = [
   { label: "THE SPORT", path: "/the-sport" },
   { label: "THE CLUB", path: "/the-club" },
   { label: "SCHEDULE", path: "/schedule" },
+  { label: "FIND PLAYERS", path: "/find-players" },
   { label: "COACHING", path: "/coaching" },
   { label: "MEMBERSHIPS", path: "/memberships" },
 ];

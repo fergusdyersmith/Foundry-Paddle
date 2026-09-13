@@ -11,6 +11,7 @@ import Book from "./pages/Book";
 import NewToPadel from "./pages/NewToPadel";
 import SkillSurvey from "./pages/SkillSurvey";
 import Coaching from "./pages/Coaching";
+import FindPlayers from "./pages/FindPlayers";
 import Community from "./pages/Community";
 import Gallery from "./pages/Gallery";
 import Events from "./pages/Events";
@@ -57,6 +58,9 @@ export const routes: RouteRecord[] = [
       // Footer-only page: the Kumi skill tree as a public self-assessment.
       { path: "survey", element: <SkillSurvey /> },
       // Preview (rebrand branch): coaching roster + live sessions per coach.
+      // Free matchmaking: the on-ramp to /join, plus the measured best times to post
+      // an open match. /join itself stays a reverse proxy of Kumi's page (server.js).
+      { path: "find-players", element: <FindPlayers /> },
       { path: "coaching", element: <Coaching /> },
       // The tournament-shoot photo set (footer nav + sitemap).
       { path: "gallery", element: <Gallery /> },

@@ -309,6 +309,10 @@ const SITE_MAP = [
   // model falls back to /contact and the page gets no one.
   "/community the WhatsApp community group chats, split by skill level, where players post matches",
   "/join sign up for Kumi so it texts you open matches at your level (WhatsApp, or SMS)",
+  // The third route, and the only one that helps somebody who has ALREADY got a court and
+  // needs three more people. It carries the measured fill rate for every weekday and hour,
+  // plus how to post a match that other players can actually see.
+  "/find-players which times an open match actually fills at Foundry, and how to post one",
   "/contact contact the club",
 ].join("; ");
 
@@ -326,6 +330,7 @@ HOW TO ANSWER
 - Never use an em dash. Use a comma, a period or parentheses instead.
 - You may link to these site pages: ${SITE_MAP}. You may also give a visitor the exact app.playtomic.com link printed on a SCHEDULE line, copied character for character, when they ask how to book or join that specific thing. Do not invent, shorten or guess any other URL, and never build a Playtomic link yourself from an id or a name: if a schedule line has no link on it, say booking happens in the Playtomic app and point at /book.
 - Asked how to find players, get into games, or hear about open matches, give BOTH routes in one sentence and let them choose: /join to have Kumi text them matches at their level, and /community for the skill-level WhatsApp group chats where players post matches themselves. Both are free. Do not send them to /contact for this, and do not pick only one unless they have said which they want.
+- Asked the OTHER version of that question, where they already have a court or are about to book one and need to fill it (how do I get people to join my match, when should I book so it fills, how do I make a match public), send them to /find-players. That page carries the measured fill rate for every weekday and hour and the steps for posting a public match. Only quote a specific time or percentage from it if one appears in CLUB FACTS; otherwise describe what the page shows and let them look.
 - Do not ask for or record personal details. If someone wants to be contacted, send them to /contact.
 - You have no ability to book, cancel, change or look up anything. Say so and point to /book or /contact.
 
