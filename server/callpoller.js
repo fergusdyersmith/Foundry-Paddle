@@ -11,11 +11,11 @@
 // call in Slack, and a caller promised a text needs to receive one. So we poll
 // GET /v1/calls, which works, instead of relying on Bland to call us.
 //
-// Deliberately conservative about duplicates. On startup it marks every
-// existing call as seen WITHOUT processing, so a redeploy cannot re-post a
-// morning's calls to Slack. The cost is that a call finishing during a deploy
-// is missed, which is the better failure: a missing Slack card is noticed, a
-// duplicate one teaches people to ignore the channel.
+// On startup it marks existing calls as seen WITHOUT processing, so a redeploy
+// cannot re-post a morning's calls to Slack. Calls from the last ten minutes
+// are the exception and get reported anyway: the process that should have
+// reported them is the one that just died, so they almost certainly never
+// reached the channel. A real call was lost that way.
 
 import {
   promisedText,
@@ -33,6 +33,8 @@ import { sanitize, normalizePhone } from "./notify.js";
 
 const POLL_MS = 60_000;
 const LOOKBACK = 10;
+// How recent a call has to be, at startup, to be worth reporting anyway.
+const REPORT_ON_BOOT_MS = 10 * 60 * 1000;
 
 /**
  * @param {object} deps
@@ -145,12 +147,35 @@ export function createCallPoller({
       return true;
     });
 
-    // First pass after a restart: remember them, report none.
+    // First pass after a restart: remember the old ones, report the fresh ones.
+    //
+    // Priming used to swallow everything, so a redeploy could not re-post a
+    // morning of calls to Slack. It also swallowed any call that happened to
+    // finish just before the restart, and one did: a caller asked about courts
+    // this afternoon, got a good answer, and the club has no record of it
+    // because a deploy landed a few minutes later.
+    //
+    // A call from the last few minutes has almost certainly not been reported,
+    // because the process that would have done it is the one that just died.
+    // Anything older has been sitting there for a while and probably was.
+    // Worst case is a duplicate card, which the notifier merges when it can and
+    // which a person can read past when it cannot. A missing card nobody knows
+    // about is the one that costs a callback.
     if (!primed) {
-      for (const c of calls) seen.add(c.call_id);
+      let carried = 0;
+      for (const c of calls) {
+        const ended = Date.parse(c.updated_at || c.created_at || "");
+        const fresh = ended && Date.now() - ended < REPORT_ON_BOOT_MS;
+        if (fresh) carried += 1;
+        else seen.add(c.call_id);
+      }
       primed = true;
-      console.log("[calls] poller primed with %d existing call(s)", seen.size);
-      return;
+      console.log(
+        "[calls] primed: %d already seen, %d recent enough to report",
+        seen.size,
+        carried,
+      );
+      if (!carried) return;
     }
 
     // Oldest first, so Slack reads in the order the calls happened.

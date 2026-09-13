@@ -286,3 +286,62 @@ describe("a call Bland never marks finished", () => {
     expect(posted).toHaveLength(0);
   });
 });
+
+describe("a restart must not swallow the call that just happened", () => {
+  function pollerFor(calls, posted) {
+    return createCallPoller({
+      apiKey: "k",
+      number: "+19715217399",
+      notifier: {
+        configured: () => true,
+        notifyMessage: async (r) => {
+          posted.push(r.callId);
+          return { delivered: true, channel: "slack" };
+        },
+      },
+      cachedEvents: () => null,
+      fetchImpl: vi.fn(async (url) => {
+        if (url.includes("/v1/calls?")) return { ok: true, json: async () => ({ calls }) };
+        const id = url.split("/v1/calls/")[1];
+        return {
+          ok: true,
+          json: async () => ({ call_id: id, from: "+15417770000", summary: "asked about courts", transcripts: [] }),
+        };
+      }),
+    });
+  }
+
+  it("reports a call that finished moments before the process started", async () => {
+    // A deploy landed a few minutes after a real call and the club never saw it.
+    const posted = [];
+    const justNow = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+    await pollerFor(
+      [{ call_id: "c-fresh", to: "+19715217399", completed: true, created_at: justNow, updated_at: justNow }],
+      posted,
+    ).poll();
+    expect(posted).toEqual(["c-fresh"]);
+  });
+
+  it("still refuses to re-post a morning of old calls", async () => {
+    // The reason priming exists: a redeploy must not replay the day into Slack.
+    const posted = [];
+    const hoursAgo = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString();
+    await pollerFor(
+      [{ call_id: "c-old", to: "+19715217399", completed: true, created_at: hoursAgo, updated_at: hoursAgo }],
+      posted,
+    ).poll();
+    expect(posted).toEqual([]);
+  });
+
+  it("reports a fresh call once, not on every poll", async () => {
+    const posted = [];
+    const justNow = new Date(Date.now() - 60 * 1000).toISOString();
+    const poller = pollerFor(
+      [{ call_id: "c-once", to: "+19715217399", completed: true, created_at: justNow, updated_at: justNow }],
+      posted,
+    );
+    await poller.poll();
+    await poller.poll();
+    expect(posted).toEqual(["c-once"]);
+  });
+});
