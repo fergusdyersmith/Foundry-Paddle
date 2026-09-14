@@ -9,6 +9,7 @@ import {
   rankSlots,
   slotLabel,
   slotMap,
+  updatedLabel,
   verdict,
 } from "./matchSlots";
 
@@ -123,5 +124,39 @@ describe("slotMap", () => {
     // A slot Kumi withheld is simply absent — the grid must render an empty cell,
     // never a 0%.
     expect(m.get("6-6")).toBeUndefined();
+  });
+});
+
+describe("updatedLabel", () => {
+  const now = new Date(2026, 8, 14, 10, 0); // 14 Sep 2026, local
+
+  it("calls a run from earlier the same day today", () => {
+    // The job runs at 04:40; somebody reading at 09:00 should not be told "yesterday".
+    expect(updatedLabel(new Date(2026, 8, 14, 4, 40).toISOString(), now)).toBe("Updated today");
+  });
+
+  it("counts calendar days, not elapsed hours", () => {
+    // ~29 hours earlier, but one calendar day.
+    expect(updatedLabel(new Date(2026, 8, 13, 4, 40).toISOString(), now)).toBe("Updated yesterday");
+  });
+
+  it("stays relative for the first week, because the question is 'is this current?'", () => {
+    expect(updatedLabel(new Date(2026, 8, 11, 4, 40).toISOString(), now)).toBe("Updated 3 days ago");
+  });
+
+  it("switches to a date once the exact age starts to matter", () => {
+    expect(updatedLabel(new Date(2026, 8, 2, 4, 40).toISOString(), now)).toBe("Updated Sep 2");
+  });
+
+  it("says nothing rather than guessing when the feed has no timestamp", () => {
+    // An empty feed returns computed_at: null. A fabricated "Updated today" there would
+    // claim freshness for numbers that do not exist.
+    expect(updatedLabel(null, now)).toBe("");
+    expect(updatedLabel(undefined, now)).toBe("");
+    expect(updatedLabel("not a date", now)).toBe("");
+  });
+
+  it("does not report a future timestamp as stale", () => {
+    expect(updatedLabel(new Date(2026, 8, 15, 4, 40).toISOString(), now)).toBe("Updated today");
   });
 });

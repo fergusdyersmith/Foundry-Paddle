@@ -16,6 +16,7 @@ import {
   rankSlots,
   slotLabel,
   slotMap,
+  updatedLabel,
   verdict,
 } from "@/lib/matchSlots";
 
@@ -222,9 +223,18 @@ const FindPlayers = () => {
                     <Clock size={20} className="text-primary" />
                     MOST LIKELY TO FILL
                   </h3>
-                  <p className="mb-5 font-body text-xs text-muted-foreground">
-                    Ranked by how often an open match at that time reached four players.
-                  </p>
+                  <div className="mb-5 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                    <p className="font-body text-xs text-muted-foreground">
+                      Ranked by how often an open match at that time reached four players.
+                    </p>
+                    {/* The only thing on the page that would tell a visitor the nightly
+                        recompute has stopped. Everything else keeps rendering regardless. */}
+                    {updatedLabel(data?.computed_at) && (
+                      <span className="font-body text-[11px] uppercase tracking-[0.15em] text-muted-foreground">
+                        {updatedLabel(data?.computed_at)}
+                      </span>
+                    )}
+                  </div>
                   {ranked.slice(0, 8).map((slot) => (
                     <SlotRow
                       key={`${slot.weekday}-${slot.hour}`}
@@ -242,17 +252,17 @@ const FindPlayers = () => {
                       HARDEST TO FILL
                     </h3>
                     <p className="mb-5 font-body text-xs text-muted-foreground">
-                      Still worth posting, and most of these fill too. Just give them
-                      longer, and tell the{" "}
-                      {/* Linked, because "tell the WhatsApp group" is useless advice to
-                          somebody who is not in it and has no idea it exists. */}
+                      Still worth posting, and most of these fill too. They just take
+                      longer. Nothing extra to do: every public match is posted into the{" "}
+                      {/* Still linked, even though there is no longer anything to ask of
+                          the reader. Somebody learning the group exists is the point. */}
                       <Link
                         to="/community"
                         className="text-primary underline underline-offset-2"
                       >
                         WhatsApp group
-                      </Link>
-                      {"."}
+                      </Link>{" "}
+                      automatically.
                     </p>
                     {ranked
                       .slice(-4)

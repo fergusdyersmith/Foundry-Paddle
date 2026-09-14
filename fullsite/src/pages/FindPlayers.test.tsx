@@ -169,4 +169,23 @@ describe("FindPlayers", () => {
     const link = (await screen.findByText("WhatsApp group")).closest("a");
     expect(link?.getAttribute("href")).toBe("/community");
   });
+
+  it("does not ask the host to post to the WhatsApp group, which happens automatically", async () => {
+    stubFeed(FEED);
+    renderPage();
+    // "automatically" also appears in the convert-a-booking box, so anchor on the
+    // sentence unique to this card.
+    await waitFor(() =>
+      expect(screen.getByText(/every public match is posted into the/i)).toBeTruthy(),
+    );
+    expect(screen.queryByText(/tell the/)).toBeNull();
+  });
+
+  it("shows when the figures were last recomputed", async () => {
+    // If the nightly job dies the page keeps rendering the same numbers forever; this
+    // line is the only thing that would tell a visitor they had stopped moving.
+    stubFeed({ ...FEED, computed_at: new Date().toISOString() });
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Updated today")).toBeTruthy());
+  });
 });

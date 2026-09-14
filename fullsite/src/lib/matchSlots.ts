@@ -100,6 +100,32 @@ export function intensity(rate: number, slots: MatchSlot[]): number {
   return (rate - lo) / (hi - lo);
 }
 
+/** "Updated today" / "Updated yesterday" / "Updated 12 Sep" from the feed's computed_at.
+ *
+ *  Worth showing for a reason beyond tidiness: the figures are recomputed nightly, and if
+ *  that job ever stops, this line is the only thing on the page that would tell a visitor
+ *  the numbers have frozen. Everything else would keep rendering, confidently, forever.
+ *
+ *  Relative for the first week because that is the question being asked ("is this
+ *  current?"), then an absolute date, where the exact age starts mattering more than the
+ *  gist. `now` is injectable so the test does not depend on the day it runs.
+ */
+export function updatedLabel(iso: string | null | undefined, now: Date = new Date()): string {
+  if (!iso) return "";
+  const then = new Date(iso);
+  if (Number.isNaN(then.getTime())) return "";
+
+  // Compare calendar days in the viewer's own timezone, not elapsed hours: a run at
+  // 04:40 read at 09:00 the same morning is "today", and 23 hours later is "yesterday".
+  const dayOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const days = Math.round((dayOf(now) - dayOf(then)) / 86_400_000);
+
+  if (days <= 0) return "Updated today";
+  if (days === 1) return "Updated yesterday";
+  if (days < 7) return `Updated ${days} days ago`;
+  return `Updated ${then.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+}
+
 /** Plain words for a rate, for the people who will not read a percentage.
  *  Anchored on the club's own average, so "ABOVE AVERAGE" means above THIS club. */
 export function verdict(rate: number, baseline: number | null): string {
