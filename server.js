@@ -279,7 +279,7 @@ const BOOKING_TYPE_LABELS = {
   PRIVATE_CLASS: "Private Class",
   TOURNAMENT: "Tournament",
   OPEN_MATCH: "Open Match",
-  SOCIAL: "Open Play",
+  OPEN_PLAY: "Open Play",
 };
 
 // The club's weekly socials, matched by name. This was the ONLY signal available until
@@ -291,15 +291,19 @@ const BOOKING_TYPE_LABELS = {
 // called a social, so it is left as a tournament rather than guessed at.
 const SOCIAL_NAME = /\bsocials?\b/i;
 
-/** Whether a mapped event is one of the club's socials rather than a real tournament.
+/** Whether a mapped event is open play rather than a competition.
  *  Pure and exported so the rule that decides the badge is testable on its own.
  *
  *  Structural signal first. Playtomic types an open play session OPEN_PLAY and a
  *  competition TOURNAMENT, so from the day the club republishes its socials as open play
  *  the payload says outright which is which, and the guess stops being a guess. The name
  *  rule stays behind it: it is what covered this for the month no structural signal
- *  existed, and it still catches a social created as a competition by mistake. */
-export function isSocialEvent(event) {
+ *  existed, and it still catches a social created as a competition by mistake.
+ *
+ *  An Americano is NOT open play here. It is a competition format that happens to be
+ *  friendly, the club publishes it as one, and calling it open play is the club's
+ *  decision to make rather than this function's. */
+export function isOpenPlayEvent(event) {
   if (event.booking_type !== "TOURNAMENT") return false;
   return event.playtomic_type === "OPEN_PLAY" || SOCIAL_NAME.test(event.title || "");
 }
@@ -315,8 +319,11 @@ export function isSocialEvent(event) {
 // /tournaments/{id} object with an entry price and a release date. One normalisation
 // beats a second branch in each of them, and a branch that gets missed is a silent hole.
 //
-// Nothing is lost by folding: mapBookingGroup keeps the raw value on the event, and
-// isSocialEvent reads it to choose the badge.
+// Nothing is lost by folding, because it is a ROUND TRIP. mapBookingGroup keeps the raw
+// value on the event as playtomic_type; the last step of getEvents reads it and puts the
+// event back to OPEN_PLAY once every TOURNAMENT-keyed step has run. So the type is
+// TOURNAMENT only for the length of the pipeline, and the API reports Playtomic's own
+// word for it.
 //
 // The UNKNOWN promotion below is older and its premise has expired. Manager-created
 // socials used to arrive typed UNKNOWN, so "was promoted" meant "is a social"; a sweep of
@@ -972,23 +979,24 @@ async function getEvents({ from = null, to = null, includePast = false } = {}) {
 
   for (const e of events) e.price = e.price === "Free" ? "Free" : cleanPrice(e.price);
 
-  // A social is a tournament to Playtomic and open play to a player, and the badge was
-  // telling beginners the wrong one. "Midday Social 1.5+" read "Tournament", which is the
-  // single most off-putting word you could stamp on the club's most welcoming session.
+  // Put open play back to OPEN_PLAY. It was folded into TOURNAMENT on the way in (see
+  // effectiveBookingType) so that every enrichment keyed on TOURNAMENT would apply to it;
+  // this is the other end of that round trip, and the type the API reports.
   //
-  // Matched on the NAME, which is not the first choice but is the only one left. The
-  // structural signal used to work: socials arrived as UNKNOWN and were promoted here
-  // (see effectiveBookingType), so "was promoted" meant "is a social". Playtomic has since
-  // started reporting them as TOURNAMENT natively, and a sweep of 499 live bookings found
-  // no UNKNOWN rows at all: the KOCs, the Americano and the four weekly socials are now
-  // indistinguishable in the payload. Checked before writing this, because a rule that
-  // reads a field nobody sets is worse than a rule that reads the title.
+  // The badge is the point. "Midday Social 1.5+" read "Tournament", which is the single
+  // most off-putting word you could stamp on the club's most welcoming session.
+  //
+  // Two signals, and the order matters. Playtomic's own type is authoritative, so a
+  // republished social is recognised whatever it is called. The name rule behind it is
+  // the historical one: for a month there was NO structural signal (socials had stopped
+  // arriving as UNKNOWN and were indistinguishable from the KOCs in a sweep of 499 live
+  // bookings), and it still covers a social somebody builds as a competition by mistake.
   //
   // LAST, after every enrichment above. The price, capacity and deep-link steps all key
   // off TOURNAMENT, and a social still needs every one of them; reclassifying earlier
   // would quietly drop a social's BOOK link and its per-person price.
   for (const e of events) {
-    if (isSocialEvent(e)) e.booking_type = "SOCIAL";
+    if (isOpenPlayEvent(e)) e.booking_type = "OPEN_PLAY";
   }
   return events;
 }
@@ -1718,7 +1726,7 @@ export { app };
 // what the public schedule shows, but were previously unreachable from a test.
 export const __testables = {
   effectiveBookingType,
-  isSocialEvent,
+  isOpenPlayEvent,
   normalizeMembershipCount,
   applyKumiClassInfo,
   applyKumiTournamentInfo,

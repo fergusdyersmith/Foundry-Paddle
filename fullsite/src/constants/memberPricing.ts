@@ -41,9 +41,9 @@ export const OFF_PEAK_LABELS = [
 export const OFF_PEAK_MEMBER_DISCOUNT: Record<string, number> = {
   OPEN_MATCH: 1,
   TOURNAMENT: 0.5,
-  // Same benefit as a tournament: a social IS one to Playtomic, and is only badged
-  // differently. Omitting it here would silently drop the member price off the card.
-  SOCIAL: 0.5,
+  // Same benefit as a tournament: Playtomic prices open play exactly like one, and only
+  // the badge differs. Omitting it here would silently drop the member price off the card.
+  OPEN_PLAY: 0.5,
   PUBLIC_CLASS: 0.25,
   COURSE_CLASS: 0.25,
   PRIVATE_CLASS: 0.25,

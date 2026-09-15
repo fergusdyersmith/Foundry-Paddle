@@ -95,7 +95,7 @@ const RIGHT_PANELS = [
   {
     key: "tournaments",
     title: "TOURNAMENTS & EVENTS",
-    types: new Set(["TOURNAMENT", "SOCIAL"]),
+    types: new Set(["TOURNAMENT", "OPEN_PLAY"]),
     empty: "No tournaments on the calendar yet — watch this space.",
   },
   {
@@ -265,7 +265,7 @@ const TvScreen = () => {
                 {e.price &&
                 (e.booking_type === "OPEN_MATCH" ||
                   e.booking_type === "TOURNAMENT" ||
-                  e.booking_type === "SOCIAL")
+                  e.booking_type === "OPEN_PLAY")
                   ? ` · ${e.price}/person`
                   : ""}
                 {e.booking_type !== "OPEN_MATCH" &&

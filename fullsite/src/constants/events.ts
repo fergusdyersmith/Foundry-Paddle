@@ -4,7 +4,7 @@ export const TYPE_LABELS: Record<string, string> = {
   PUBLIC_CLASS: "Clinic",
   PRIVATE_CLASS: "Private Class",
   TOURNAMENT: "Tournament",
-  SOCIAL: "Open Play",
+  OPEN_PLAY: "Open Play",
   OPEN_MATCH: "Open Match",
 };
 
@@ -18,7 +18,7 @@ export const TYPE_COLORS: Record<string, string> = {
   PUBLIC_CLASS: "bg-emerald-500/15 text-emerald-400",
   PRIVATE_CLASS: "bg-amber-500/15 text-amber-400",
   TOURNAMENT: "bg-violet-500/15 text-violet-400",
-  SOCIAL: "bg-rose-500/15 text-rose-400",
+  OPEN_PLAY: "bg-rose-500/15 text-rose-400",
   OPEN_MATCH: "bg-sky-500/15 text-sky-400",
 };
 
@@ -28,7 +28,7 @@ export const TYPE_DOT_COLORS: Record<string, string> = {
   PUBLIC_CLASS: "bg-emerald-400",
   PRIVATE_CLASS: "bg-amber-400",
   TOURNAMENT: "bg-violet-400",
-  SOCIAL: "bg-rose-400",
+  OPEN_PLAY: "bg-rose-400",
   OPEN_MATCH: "bg-sky-400",
 };
 
@@ -38,6 +38,6 @@ export const EVENT_TYPE_ORDER = [
   "PUBLIC_CLASS",
   "PRIVATE_CLASS",
   "TOURNAMENT",
-  "SOCIAL",
+  "OPEN_PLAY",
   "OPEN_MATCH",
 ];

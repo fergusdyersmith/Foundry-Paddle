@@ -1,15 +1,17 @@
 /** @vitest-environment node */
-/** The club's weekly socials are badged Open Play, not Tournament.
+/** Open play is badged Open Play, not Tournament.
  *
  * "Midday Social 1.5+" read "Tournament" on the public schedule, which is the most
  * off-putting word the site could stamp on its most welcoming session.
  *
- * Playtomic cannot tell the two apart. The structural signal used to work, because
- * socials arrived typed UNKNOWN and were promoted (see effectiveBookingType), so "was
- * promoted" meant "is a social". A sweep of 499 live bookings on 2026-09-14 found no
- * UNKNOWN rows at all: the KOCs, the Americano and the four weekly socials now arrive
- * identically, as TOURNAMENT with a tournament_id. Hence a name rule, and hence this
- * file, which pins it against the real names in that sweep.
+ * Two signals decide it. Playtomic's own type is authoritative: a session published as
+ * an OPEN_PLAY programme says so in the payload. Behind it sits a name rule, which is
+ * the historical one. For a month there was no structural signal at all -- socials had
+ * stopped arriving as UNKNOWN, and a sweep of 499 live bookings on 2026-09-14 found the
+ * KOCs, the Americano and the four weekly socials arriving identically as TOURNAMENT.
+ * The name cases below are pinned against the real titles from that sweep.
+ *
+ * The type the site uses is Playtomic's own word, OPEN_PLAY, rather than a coined one.
  */
 import { describe, it, expect, beforeAll } from "vitest";
 import { mkdtempSync } from "node:fs";
@@ -37,7 +39,7 @@ const openPlayRow = (activity_name) => ({
   resource_name: "Court 1",
 });
 
-describe("isSocialEvent", () => {
+describe("isOpenPlayEvent", () => {
   // Every social on the club's calendar in the September sweep.
   it.each([
     "Midday Social 1.5+",
@@ -45,7 +47,7 @@ describe("isSocialEvent", () => {
     "Evening Social 0 - 1.75",
     "Morning Social 0 - 1.75",
   ])("treats %s as open play", (title) => {
-    expect(T.isSocialEvent(ev(title))).toBe(true);
+    expect(T.isOpenPlayEvent(ev(title))).toBe(true);
   });
 
   // Every real tournament from the same sweep. These must keep the tournament badge.
@@ -60,39 +62,51 @@ describe("isSocialEvent", () => {
     "Tournament 2.5+",
     "Tournament 2.75+",
   ])("leaves %s as a tournament", (title) => {
-    expect(T.isSocialEvent(ev(title))).toBe(false);
+    expect(T.isOpenPlayEvent(ev(title))).toBe(false);
   });
 
   it("leaves the Americano alone", () => {
     // Arguably open play too, but it is named for its format rather than called a
     // social. Guessing at that is Monica's call, not the renderer's.
-    expect(T.isSocialEvent(ev("Beginner Friendly Americano 0 - 2"))).toBe(false);
+    expect(T.isOpenPlayEvent(ev("Beginner Friendly Americano 0 - 2"))).toBe(false);
+  });
+
+  it("keeps the Americano a tournament on the structural signal too", () => {
+    // The club publishes it as a competition, so both signals must agree it is one.
+    // This is the case most likely to be "fixed" by mistake later.
+    expect(
+      T.isOpenPlayEvent({
+        title: "Beginner Friendly Americano 0 - 2",
+        booking_type: "TOURNAMENT",
+        playtomic_type: "TOURNAMENT",
+      }),
+    ).toBe(false);
   });
 
   it("matches on a whole word, so a championship is not a social", () => {
-    expect(T.isSocialEvent(ev("Social Club Championship"))).toBe(true);
-    expect(T.isSocialEvent(ev("Antisocial Doubles"))).toBe(false);
-    expect(T.isSocialEvent(ev("Socialite Cup"))).toBe(false);
+    expect(T.isOpenPlayEvent(ev("Social Club Championship"))).toBe(true);
+    expect(T.isOpenPlayEvent(ev("Antisocial Doubles"))).toBe(false);
+    expect(T.isOpenPlayEvent(ev("Socialite Cup"))).toBe(false);
   });
 
   it("only ever reclassifies a tournament", () => {
     // The rule must not reach into clinics, courses or open matches, whatever they
     // happen to be called.
     for (const t of ["PUBLIC_CLASS", "COURSE_CLASS", "PRIVATE_CLASS", "OPEN_MATCH"]) {
-      expect(T.isSocialEvent(ev("Saturday Social Clinic", t))).toBe(false);
+      expect(T.isOpenPlayEvent(ev("Saturday Social Clinic", t))).toBe(false);
     }
   });
 
   it("survives an event with no title", () => {
-    expect(T.isSocialEvent({ booking_type: "TOURNAMENT" })).toBe(false);
-    expect(T.isSocialEvent(ev(null))).toBe(false);
+    expect(T.isOpenPlayEvent({ booking_type: "TOURNAMENT" })).toBe(false);
+    expect(T.isOpenPlayEvent(ev(null))).toBe(false);
   });
 
   // The structural signal, which arrived when the club stopped publishing its socials
   // as competitions. It outranks the name, so a social does not have to be CALLED one.
   it("trusts the Playtomic type over the name", () => {
     expect(
-      T.isSocialEvent({
+      T.isOpenPlayEvent({
         title: "Thursday Round Robin",
         booking_type: "TOURNAMENT",
         playtomic_type: "OPEN_PLAY",
@@ -103,7 +117,7 @@ describe("isSocialEvent", () => {
   it("does not promote a real competition that happens to carry the type", () => {
     // TOURNAMENT in, TOURNAMENT out. Only OPEN_PLAY means open play.
     expect(
-      T.isSocialEvent({
+      T.isOpenPlayEvent({
         title: "Advanced KOC 3+",
         booking_type: "TOURNAMENT",
         playtomic_type: "TOURNAMENT",
@@ -147,9 +161,11 @@ describe("effectiveBookingType", () => {
 describe("an open play session, from Playtomic row to badge", () => {
   it("is published as a tournament and badged as a social", () => {
     const e = T.mapBookingGroup([openPlayRow("Midday Social 1.5+")]);
-    expect(e.booking_type).toBe("TOURNAMENT"); // survives the allowlist
+    // TOURNAMENT for the length of the pipeline, which is how it clears the allowlist
+    // and picks up its price, deep link and release gate.
+    expect(e.booking_type).toBe("TOURNAMENT");
     expect(e.playtomic_type).toBe("OPEN_PLAY"); // and still knows what it is
-    expect(T.isSocialEvent(e)).toBe(true); // so it badges Open Play
+    expect(T.isOpenPlayEvent(e)).toBe(true); // so the last step puts it back
   });
 
   it("keeps the deep link pointing at the event, not the club page", () => {
