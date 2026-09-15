@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Foundry Padel - Small Team Sessions</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap">
+<style>
+  @page { size: 8.5in 11in; margin: 0; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { width:8.5in; height:11in; }
+  body {
+    font-family:"Schibsted Grotesk","Helvetica Neue",Arial,sans-serif;
+    color:#22302B; background:#fff;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+  .sheet { width:8.5in; height:11in; display:flex; flex-direction:column; overflow:hidden; }
+
+  /* ---------- HERO ---------- */
+  .hero {
+    position:relative; height:3.42in; background:#1D2824;
+    background-image:url("assets/hero.jpg");
+    background-size:cover; background-position:center 38%;
+    padding:0.38in 0.52in 0.30in;
+    display:flex; flex-direction:column;
+  }
+  .hero::after {
+    content:""; position:absolute; inset:0;
+    background:linear-gradient(180deg, rgba(29,40,36,.80) 0%, rgba(29,40,36,.42) 42%, rgba(29,40,36,.88) 100%);
+  }
+  .hero > * { position:relative; z-index:1; }
+  .hdr { display:flex; justify-content:space-between; align-items:flex-start; }
+  .lockup { display:flex; align-items:center; gap:.085in; }
+  .lockup img { height:.40in; width:auto; display:block; }
+  .lockup span {
+    font-family:Archivo,sans-serif; font-weight:600; font-size:6.6pt;
+    letter-spacing:.135em; color:#EDECE6; text-transform:uppercase;
+  }
+  .addr {
+    text-align:right; font-family:Archivo,sans-serif; font-weight:600;
+    font-size:6.4pt; letter-spacing:.155em; line-height:1.85;
+    color:#C08E77; text-transform:uppercase;
+  }
+  .h1 {
+    margin-top:auto;
+    font-family:Archivo,sans-serif; font-weight:700;
+    font-size:33pt; line-height:.96; letter-spacing:-.012em;
+    color:#F2F1EB; text-transform:uppercase;
+  }
+  .h1 .muted { color:#93A096; }
+  .stand {
+    margin-top:.14in; max-width:4.55in;
+    font-size:9.3pt; line-height:1.52; color:#D5D8D1; font-weight:400;
+  }
+
+  /* ---------- STAT BAND ---------- */
+  .stats { display:flex; background:#303F39; height:.86in; }
+  .stat { flex:1; padding:.19in .30in 0; border-left:1px solid #46544D; }
+  .stat:first-child { border-left:0; }
+  .stat b {
+    display:block; font-family:Archivo,sans-serif; font-weight:700;
+    font-size:19.5pt; line-height:1; color:#EDECE6; letter-spacing:-.015em;
+  }
+  .stat i {
+    display:block; margin-top:.075in; font-style:normal;
+    font-family:Archivo,sans-serif; font-weight:600;
+    font-size:5.7pt; letter-spacing:.155em; color:#93A096; text-transform:uppercase;
+  }
+
+  /* ---------- BODY ---------- */
+  .body { flex:1; padding:.26in .52in 0; display:flex; flex-direction:column; }
+  .eyebrow {
+    font-family:Archivo,sans-serif; font-weight:600; font-size:6.4pt;
+    letter-spacing:.185em; color:#AD6D56; text-transform:uppercase;
+  }
+  .rule { width:.36in; height:2.2px; background:#303F39; margin:.115in 0 .115in; }
+  .h2 {
+    font-family:Archivo,sans-serif; font-weight:700; font-size:16.5pt;
+    line-height:1.06; color:#303F39; text-transform:uppercase; letter-spacing:-.008em;
+  }
+  .lede { margin-top:.115in; font-size:9.1pt; line-height:1.56; color:#22302B; }
+  .lede strong { font-weight:700; color:#22302B; }
+
+  /* ---------- OFFERS ---------- */
+  .offers { margin-top:.20in; }
+  .row {
+    display:grid; grid-template-columns:1.62in 1fr; gap:.20in;
+    padding:.115in 0; border-top:1px solid #DCD7CB;
+  }
+  .row:first-child { border-top:0; padding-top:.04in; }
+  .rn {
+    font-family:Archivo,sans-serif; font-weight:700; font-size:9.6pt;
+    line-height:1.14; color:#303F39; text-transform:uppercase; letter-spacing:-.004em;
+  }
+  .rs {
+    margin-top:.042in; font-family:Archivo,sans-serif; font-weight:600;
+    font-size:5.7pt; letter-spacing:.155em; color:#AD6D56; text-transform:uppercase;
+  }
+  .rd { font-size:8.35pt; line-height:1.50; color:#3A4842; }
+  .rd strong { font-weight:700; color:#22302B; }
+
+  /* ---------- WHO ---------- */
+  .who {
+    margin:.17in 0 .18in; background:#EDEAE0; padding:.105in .18in;
+    font-size:8.1pt; color:#3A4842; line-height:1.5;
+  }
+  .who b {
+    font-family:Archivo,sans-serif; font-weight:700; font-size:6.6pt;
+    letter-spacing:.155em; color:#303F39; text-transform:uppercase; margin-right:.10in;
+  }
+
+  /* ---------- PHOTO STRIP ---------- */
+  .strip { display:flex; height:.92in; }
+  .strip img { flex:1; width:33.34%; height:100%; object-fit:cover; display:block; }
+
+  /* ---------- CTA ---------- */
+  .cta {
+    position:relative; height:1.60in; background:#1D2824;
+    background-image:url("assets/cta.jpg"); background-size:cover; background-position:center 60%;
+    padding:.22in .52in .18in; display:flex; flex-direction:column; justify-content:center;
+  }
+  .cta::after {
+    content:""; position:absolute; inset:0;
+    background:linear-gradient(180deg, rgba(29,40,36,.86) 0%, rgba(29,40,36,.93) 100%);
+  }
+  .cta > * { position:relative; z-index:1; }
+  .h3 {
+    font-family:Archivo,sans-serif; font-weight:700; font-size:21pt;
+    line-height:.98; color:#F2F1EB; text-transform:uppercase; letter-spacing:-.012em;
+  }
+  .h3 .muted { color:#93A096; }
+  .contacts { display:flex; gap:.34in; margin-top:.20in; }
+  .c i {
+    display:block; font-style:normal; font-family:Archivo,sans-serif; font-weight:600;
+    font-size:5.7pt; letter-spacing:.155em; color:#C08E77; text-transform:uppercase;
+  }
+  .c b { display:block; margin-top:.055in; font-size:8.4pt; font-weight:600; color:#F2F1EB; }
+
+  /* ---------- FOOTER ---------- */
+  .foot {
+    height:.44in; background:#1F2A26; display:flex; align-items:center;
+    justify-content:space-between; padding:0 .52in;
+  }
+  .foot .lockup img { height:.20in; }
+  .foot .lockup span { font-size:5.4pt; letter-spacing:.155em; color:#8A968E; }
+  .foot p {
+    font-family:Archivo,sans-serif; font-weight:600; font-size:5.7pt;
+    letter-spacing:.155em; color:#8A968E; text-transform:uppercase;
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="hero">
+    <div class="hdr">
+      <div class="lockup">
+        <img src="assets/logo-mid.png" alt="">
+        <span>Foundry Padel</span>
+      </div>
+      <div class="addr">Small Team Sessions<br>8613 N Crawford St<br>St. Johns, Portland OR</div>
+    </div>
+    <h1 class="h1">Eight people<br>is <span class="muted">enough.</span></h1>
+    <p class="stand">You do not need a department, a committee, or a date that works for two hundred
+      people. Two courts, two hours, one coach, and everybody plays.</p>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><b>8</b><i>People, two courts</i></div>
+    <div class="stat"><b>2</b><i>Hours start to finish</i></div>
+    <div class="stat"><b>30</b><i>Minutes to first match</i></div>
+    <div class="stat"><b>0</b><i>Experience needed</i></div>
+  </div>
+
+  <div class="body">
+    <div class="eyebrow">Small Team Sessions</div>
+    <div class="rule"></div>
+    <h2 class="h2">The small version works better</h2>
+    <p class="lede">Most people ask us about the big one: a full buyout, a couple of hundred guests,
+      the whole club. The small version is easier to book and better to be at. <strong>Eight people fill
+      two courts</strong>, everyone is on court for the whole session, and nobody stands on the side
+      waiting for a turn. Padel is doubles only, underarm serve, and the walls keep the ball alive,
+      so beginners rally instead of chasing.</p>
+
+    <div class="offers">
+      <div class="row">
+        <div><div class="rn">Team Session</div><div class="rs">Up to 8</div></div>
+        <div class="rd"><strong>Two courts, two hours, one coach for the whole session.</strong>
+          Racquets and balls provided. Nobody needs to have held a racquet before, and everybody is
+          playing real points within half an hour.</div>
+      </div>
+      <div class="row">
+        <div><div class="rn">Two Teams</div><div class="rs">Up to 16</div></div>
+        <div class="rd"><strong>All four courts.</strong> Two departments against each other, or one
+          group split into a round-robin so every pair plays every other pair. Same format, twice the
+          people, still nobody sitting out.</div>
+      </div>
+      <div class="row">
+        <div><div class="rn">Standing Slot</div><div class="rs">Monthly or quarterly</div></div>
+        <div class="rd"><strong>The same group, the same slot, already on the calendar.</strong>
+          Weekday off-peak hours are the easiest for us to hold and the easiest for a team to keep.</div>
+      </div>
+      <div class="row">
+        <div><div class="rn">Client Entertaining</div><div class="rs">Small groups</div></div>
+        <div class="rd"><strong>Two courts and the upstairs lounge</strong> for a client group or a
+          board dinner. Quieter than a buyout, still coached, still ends with a drink upstairs.</div>
+      </div>
+    </div>
+
+    <div class="who"><b>Who this is for</b> Team leads &middot; Engineering teams &middot; Sales kickoffs &middot; Onboarding &middot; Department socials &middot; Client entertaining</div>
+  </div>
+
+  <div class="strip">
+    <img src="assets/s1.jpg" alt="">
+    <img src="assets/s2.jpg" alt="">
+    <img src="assets/s3.jpg" alt="">
+  </div>
+
+  <div class="cta">
+    <h3 class="h3">Pick a Thursday.<br>Bring your <span class="muted">team.</span></h3>
+    <div class="contacts">
+      <div class="c"><i>Email</i><b>portland@foundrypadel.com</b></div>
+      <div class="c"><i>Call Jake</i><b>(971) 378-7499</b></div>
+      <div class="c"><i>Find us</i><b>8613 N Crawford St, Portland OR</b></div>
+      <div class="c"><i>Online</i><b>foundrypadel.com</b></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div class="lockup"><img src="assets/logo-dark.png" alt=""><span>Foundry Padel</span></div>
+    <p>Open daily 6am to midnight &middot; Portland's first padel club</p>
+  </div>
+
+</div>
+</body>
+</html>
