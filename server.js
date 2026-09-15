@@ -867,6 +867,7 @@ function applyKumiTournamentInfo(
     if (key) byTitleDate.set(key, info);
   }
 
+  const hidden = new Set();
   for (const e of events) {
     if (e.booking_type !== "TOURNAMENT") continue;
     const urlId = (String(e.book_url || "").match(/tournaments\/([0-9a-f-]+)/) || [])[1];
@@ -882,14 +883,36 @@ function applyKumiTournamentInfo(
     if (!released && !isOver(e)) {
       e.booking_open = false;
       e.book_url = null;
-      // The date everyone else can book it. Withheld when it has already passed: that
-      // means the release cron is late or dead (Kumi alerts on exactly that), and a
-      // date in the past on a public page is worse than no date at all.
       const opens = shiftDate(e.date, -TOURNAMENT_RELEASE_DAYS);
-      e.opens_on = today && opens && opens < today ? null : opens;
+      const overdue = Boolean(today && opens && opens < today);
+
+      // STILL PRIVATE PAST ITS OWN RELEASE DATE IS NOT A LATE RELEASE, IT IS A HIDDEN
+      // EVENT, and it must come off the public calendar entirely.
+      //
+      // Private means two different things and only this tells them apart. An event
+      // awaiting release is private with its release date still ahead of it, and showing
+      // it as MEMBERS FIRST is the whole point. An outside group's court hire is private
+      // because somebody made it private ON PURPOSE and it is never going to be released:
+      // Playtomic types those OPEN_PLAY, which folds into TOURNAMENT here, so they came
+      // through this gate and were published with a MEMBERS FIRST badge as if the club
+      // were about to open them up. "Beaverton Area Pickleball" is a visiting group's
+      // booking; it reached the public calendar twice before, which is why Kumi's release
+      // cron carries a state file that refuses to re-publish anything a human has hidden
+      // (scripts/release_private_tournaments.py — that event is its seed entry).
+      //
+      // The release cron runs hourly and alerts loudly when it fails, so "genuinely late"
+      // is rare and monitored, while "hidden on purpose" is a routine club workflow. A
+      // badge reading MEMBERS FIRST with no date was no use to a visitor anyway.
+      if (overdue) {
+        hidden.add(e);
+        continue;
+      }
+      e.opens_on = opens;
     }
   }
-  return events;
+  // Filtered at the end rather than spliced mid-loop, so the pass over `events` is not
+  // mutating the thing it is iterating.
+  return hidden.size ? events.filter((e) => !hidden.has(e)) : events;
 }
 
 async function getEvents({ from = null, to = null, includePast = false } = {}) {
@@ -933,7 +956,10 @@ async function getEvents({ from = null, to = null, includePast = false } = {}) {
   try {
     applyKumiClassInfo(events, (await fetchKumiClasses()).classes || []);
 
-    applyKumiTournamentInfo(events, (await fetchKumiTournaments()).tournaments || [], {
+    // Reassigned, not just mutated: this now also DROPS events (a private hire kept
+    // private past its own release date). Ignoring the return would have left them on
+    // the calendar and made the whole gate a no-op.
+    events = applyKumiTournamentInfo(events, (await fetchKumiTournaments()).tournaments || [], {
       isOver,
       today: nowParts.date,
     });

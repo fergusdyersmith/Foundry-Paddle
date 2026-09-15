@@ -577,13 +577,35 @@ describe("the day a members-first tournament opens to everyone", () => {
     expect(e.opens_on).toBe("2026-08-29"); // today
   });
 
-  it("is withheld once it has passed, because that means the release cron is late", () => {
-    // A gated event whose open day has been and gone can only mean the release job is
-    // late or dead (Kumi alerts on exactly that). Until someone acts on it, "opens Aug
-    // 23" printed on the 29th is worse than saying nothing.
-    const [late] = T.applyKumiTournamentInfo([t("2026-08-28")], [], { isOver, today: "2026-08-29" });
-    expect(late.booking_open).toBe(false);
-    expect(late.opens_on).toBeNull();
+  it("drops an event still private past its own release date: it was hidden on purpose", () => {
+    // This used to keep the event and blank the date, on the reading that a passed open
+    // day "can only mean the release job is late or dead". It cannot: an outside group's
+    // court hire is private because somebody made it private and it is never going to be
+    // released. Playtomic types those OPEN_PLAY, which folds into TOURNAMENT and comes
+    // through this gate, so "Beaverton Area Pickleball" — a visiting group's booking —
+    // was published on the club's public calendar wearing a MEMBERS FIRST badge.
+    //
+    // Kumi's release cron already knows the difference and keeps a state file so it never
+    // re-publishes anything a human has hidden; that same event is its seed entry, having
+    // reached the calendar twice before.
+    const out = T.applyKumiTournamentInfo([t("2026-08-28")], [], { isOver, today: "2026-08-29" });
+    expect(out).toHaveLength(0);
+  });
+
+  it("keeps an event whose release day is still ahead of it", () => {
+    // The other meaning of private, and the one MEMBERS FIRST exists for. Dropping these
+    // would hide the club's whole programme.
+    const out = T.applyKumiTournamentInfo([t("2026-09-03")], [], { isOver, today: "2026-08-29" });
+    expect(out).toHaveLength(1);
+    expect(out[0].booking_open).toBe(false);
+    expect(out[0].opens_on).toBe("2026-08-29");
+  });
+
+  it("does not drop a gated event that has already been played", () => {
+    // Past events are not gated at all, and the calendar shows them as PAST.
+    const past = t("2026-08-20");
+    const out = T.applyKumiTournamentInfo([past], [], { isOver: () => true, today: "2026-08-29" });
+    expect(out).toHaveLength(1);
   });
 
   it("is only set on the tournaments that are actually gated", () => {
