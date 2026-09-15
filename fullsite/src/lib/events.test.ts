@@ -2,10 +2,14 @@
 import { describe, it, expect } from "vitest";
 
 import {
+  bookableFirst,
+  eventWaitlist,
+  groupEventsByDate,
   isFullEvent,
   isPastEvent,
   openFirst,
   signupSummary,
+  waitlistSummary,
   wallSignupLabel,
 } from "./events";
 import type { PadelEvent } from "@/types/events";
@@ -253,5 +257,102 @@ describe("the wall screen's roster line", () => {
     // isFullEvent knows an open match holds four even when the API leaves capacity null.
     expect(wallSignupLabel(event({ booking_type: "OPEN_MATCH", signed_up: 4, capacity: null })))
       .toBe("Full");
+  });
+});
+
+
+// Playtomic has no waitlist, so the club runs one as a second event and Kumi pairs them.
+// Before this, a sold-out tournament read FULL and dead-ended while a queue anybody could
+// join sat open beside it.
+describe("a full event with a waitlist", () => {
+  function event(o: Partial<PadelEvent> = {}): PadelEvent {
+    return {
+      id: "koc",
+      title: "Advanced KOC 3+",
+      // Far enough out that "past" never depends on when the suite runs.
+      date: "2099-01-01",
+      start_time: "19:00",
+      end_time: "20:30",
+      duration_min: 90,
+      price: "$25",
+      booking_type: "TOURNAMENT",
+      court: "4 courts",
+      signed_up: 16,
+      capacity: 16,
+      book_url: "https://app.playtomic.com/tournaments/main",
+      waitlist: { url: "https://app.playtomic.com/tournaments/wl", queued: 1 },
+      ...o,
+    };
+  }
+
+  it("offers the queue when the event is full", () => {
+    expect(eventWaitlist(event())?.url).toBe("https://app.playtomic.com/tournaments/wl");
+    expect(waitlistSummary(event())).toBe("1 on the waitlist");
+  });
+
+  it("does NOT offer the queue while there is still room", () => {
+    // Sending somebody to a waitlist they could skip is worse than not showing one.
+    expect(eventWaitlist(event({ signed_up: 15 }))).toBeNull();
+    expect(waitlistSummary(event({ signed_up: 15 }))).toBe("");
+  });
+
+  it("does not offer the queue for a session that has already happened", () => {
+    expect(eventWaitlist(event({ date: "2020-01-01" }))).toBeNull();
+  });
+
+  it("says nothing when the queue is empty rather than '0 on the waitlist'", () => {
+    const e = event({ waitlist: { url: "https://app.playtomic.com/tournaments/wl", queued: 0 } });
+    expect(eventWaitlist(e)).not.toBeNull();   // the button still shows
+    expect(waitlistSummary(e)).toBe("");       // the count does not
+  });
+
+  it("copes with a full event that has no waitlist at all", () => {
+    expect(eventWaitlist(event({ waitlist: null }))).toBeNull();
+    expect(waitlistSummary(event({ waitlist: undefined }))).toBe("");
+  });
+});
+
+describe("a day lists what you can still join first", () => {
+  function event(o: Partial<PadelEvent> = {}): PadelEvent {
+    return {
+      id: Math.random().toString(36).slice(2),
+      title: "Session",
+      date: "2099-01-01",
+      start_time: "10:00",
+      end_time: "11:00",
+      duration_min: 60,
+      price: null,
+      booking_type: "PUBLIC_CLASS",
+      court: "Court 1",
+      signed_up: 0,
+      book_url: "https://playtomic.com/x",
+      ...o,
+    };
+  }
+  const full = (t: string) => event({ start_time: t, signed_up: 3, capacity: 3, title: `full ${t}` });
+  const open = (t: string) => event({ start_time: t, signed_up: 1, capacity: 3, title: `open ${t}` });
+
+  it("moves sold-out sessions below the bookable ones", () => {
+    // The club's own Thursday: sold out at 07:00, 15:00 and 16:00, bookable in between.
+    const day = [full("07:00"), open("10:00"), open("11:00"), full("15:00"), full("16:00"), open("18:00")];
+    expect(bookableFirst(day).map((e) => e.title)).toEqual([
+      "open 10:00", "open 11:00", "open 18:00",
+      "full 07:00", "full 15:00", "full 16:00",
+    ]);
+  });
+
+  it("keeps clock order inside each group, so the day still reads as a day", () => {
+    const day = [open("18:00"), open("09:00")];
+    expect(bookableFirst(day).map((e) => e.start_time)).toEqual(["18:00", "09:00"]);
+  });
+
+  it("drops nothing: a sold-out clinic is still worth showing", () => {
+    const day = [full("07:00"), open("10:00")];
+    expect(bookableFirst(day)).toHaveLength(2);
+  });
+
+  it("applies to every day the schedule groups, not just one call site", () => {
+    const grouped = groupEventsByDate([full("07:00"), open("10:00")]);
+    expect(grouped.get("2099-01-01")?.map((e) => e.title)).toEqual(["open 10:00", "full 07:00"]);
   });
 });

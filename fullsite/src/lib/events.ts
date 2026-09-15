@@ -31,7 +31,29 @@ export function groupEventsByDate(events: PadelEvent[]): Map<string, PadelEvent[
     if (list) list.push(e);
     else map.set(e.date, [e]);
   }
+  for (const [date, list] of map) map.set(date, bookableFirst(list));
   return map;
+}
+
+/** Within one day: everything still joinable, then everything that is not.
+ *
+ *  Strictly chronological reads as a timetable, which is what it is, but the club's own
+ *  Thursday put three sold-out sessions at 7am, 3pm and 4pm among four bookable ones, so
+ *  the first thing on the page was something nobody could have. The day's shape still
+ *  reads correctly because each group keeps its own clock order; what moves is only the
+ *  part a visitor cannot act on.
+ *
+ *  A full event with an open waitlist sorts DOWN with the rest. It is still full, and a
+ *  queue is not a booking — it keeps its own button once you reach it.
+ *
+ *  Sorted, not filtered: a sold-out clinic is a reason to come back next week, and the
+ *  schedule's job is to show what the club runs.
+ */
+export function bookableFirst(events: PadelEvent[]): PadelEvent[] {
+  const open: PadelEvent[] = [];
+  const closed: PadelEvent[] = [];
+  for (const e of events) (isPastEvent(e) || isFullEvent(e) ? closed : open).push(e);
+  return [...open, ...closed];
 }
 
 /** Has this event already finished? The API returns a local date plus "HH:mm" strings,
@@ -74,6 +96,28 @@ export function signupSummary(event: PadelEvent): string {
   return event.capacity != null && event.capacity > 0
     ? `${event.signed_up} of ${event.capacity} signed up`
     : `${event.signed_up} signed up`;
+}
+
+/** The open queue behind a full event, or null.
+ *
+ *  Only ever offered on a session that is FULL and not past. A waitlist beside an event
+ *  with room should not be open at all (Kumi stands those down), and offering one here
+ *  would send somebody to a queue when they could simply book. */
+export function eventWaitlist(event: PadelEvent): { url: string; queued: number } | null {
+  if (isPastEvent(event) || !isFullEvent(event)) return null;
+  return event.waitlist?.url ? event.waitlist : null;
+}
+
+/** "1 on the waitlist" / "4 on the waitlist", or empty when nobody is queued yet.
+ *
+ *  "on the waitlist" rather than "ahead of you" on purpose: the count is the waitlist's
+ *  registration total, and Playtomic cannot remove somebody the desk has already moved
+ *  into the event, so it can include a person who is no longer waiting for anything.
+ *  What is said here stays true either way. */
+export function waitlistSummary(event: PadelEvent): string {
+  const wl = eventWaitlist(event);
+  if (!wl || wl.queued <= 0) return "";
+  return `${wl.queued} on the waitlist`;
 }
 
 /** The same roster line, for the wall screen, which wants the denominator.

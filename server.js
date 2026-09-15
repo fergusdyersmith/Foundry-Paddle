@@ -844,12 +844,25 @@ function applyKumiTournamentInfo(
     if (t.tournament_id) releasedIds.add(t.tournament_id);
     if (key) releasedKeys.add(key);
 
+    // The waitlist rows are not events in their own right. They never reach here from
+    // the bookings feed (a waitlist holds no court, so Playtomic has no booking for it),
+    // but they are in Kumi's list and must not be matched as if they were the real thing.
+    if (t.is_waitlist) continue;
+
     const info = {
       price: cleanPrice(t.price),
       capacity: Number.isFinite(t.max_players) ? t.max_players : null,
       registered: Number.isFinite(t.registered_count) ? t.registered_count : null,
+      // Kumi pairs "<event> Waitlist" back to its event; turn its id into the same kind
+      // of deep link a tournament gets, so a full event has somewhere to send people.
+      waitlist: t.waitlist?.tournament_id
+        ? {
+            url: `${PLAYTOMIC_APP}/tournaments/${t.waitlist.tournament_id}`,
+            queued: Number.isFinite(t.waitlist.queued) ? t.waitlist.queued : 0,
+          }
+        : null,
     };
-    if (!info.price && info.capacity == null) continue;
+    if (!info.price && info.capacity == null && !info.waitlist) continue;
     if (t.tournament_id) byId.set(t.tournament_id, info);
     if (key) byTitleDate.set(key, info);
   }
@@ -863,6 +876,7 @@ function applyKumiTournamentInfo(
     e.price = match?.price || null; // never show a court total as a player price
     e.capacity = match?.capacity ?? null;
     if (match?.registered != null) e.signed_up = match.registered;
+    e.waitlist = match?.waitlist ?? null;
 
     const released = Boolean((urlId && releasedIds.has(urlId)) || releasedKeys.has(key));
     if (!released && !isOver(e)) {

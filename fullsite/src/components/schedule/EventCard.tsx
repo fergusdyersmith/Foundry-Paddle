@@ -3,12 +3,14 @@ import { format, parseISO } from "date-fns";
 import { TYPE_LABELS, TYPE_COLORS } from "@/constants/events";
 import {
   eventBookingUrl,
+  eventWaitlist,
   formatPrice,
   formatTime,
   isFullEvent,
   isPastEvent,
   memberPrice,
   signupSummary,
+  waitlistSummary,
 } from "@/lib/events";
 import type { PadelEvent } from "@/types/events";
 
@@ -40,6 +42,11 @@ export default function EventCard({
   // yet cannot be full either — its capacity is not published until it opens.
   const full = !past && !notOpen && isFullEvent(event);
   const roster = signupSummary(event);
+  // A sold-out session the club is queueing for. "FULL" full stop was a dead end: the
+  // 2026-09-15 Advanced KOC read 16 of 16 with an open waitlist beside it that the
+  // website could not see and therefore never mentioned.
+  const waitlist = eventWaitlist(event);
+  const queued = waitlistSummary(event);
   // Only ever set on an off-peak clinic or tournament — see memberPrice.
   const member = memberPrice(event);
   const typeLabel = TYPE_LABELS[event.booking_type];
@@ -52,7 +59,7 @@ export default function EventCard({
   return (
     <div
       className={`flex flex-col gap-4 border border-border bg-card p-4 ${row} ${
-        past || full ? "opacity-70" : ""
+        past || (full && !waitlist) ? "opacity-70" : ""
       }`}
     >
       <div className={`flex shrink-0 items-center gap-2 ${timeWidth}`}>
@@ -113,14 +120,33 @@ export default function EventCard({
           )
         ) : (
           roster && (
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-              <Users className="h-3.5 w-3.5" />
-              {roster}
+            // The queue gets its own line rather than trailing the roster: in the narrow
+            // day panel a wrapped "· 1 on the waitlist" put the separator at the start of
+            // a line, and a bare middot opening a line reads like a typo.
+            <span className="inline-flex items-start gap-1.5 text-xs font-medium text-muted-foreground">
+              <Users className="mt-px h-3.5 w-3.5 shrink-0" />
+              <span className="flex flex-col">
+                <span>{roster}</span>
+                {queued && <span className="text-primary">{queued}</span>}
+              </span>
             </span>
           )
         )}
 
-        {past || full || notOpen ? (
+        {waitlist ? (
+          // Full, but joinable. Outlined rather than solid so it does not compete with a
+          // real BOOK on the same screen: this is the second-best outcome, not the one
+          // we are steering people toward.
+          <a
+            href={waitlist.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ml-auto inline-flex items-center gap-1.5 whitespace-nowrap border border-primary px-5 py-2 font-display text-xs tracking-widest text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
+          >
+            JOIN WAITLIST
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        ) : past || full || notOpen ? (
           <span className="ml-auto inline-flex items-center whitespace-nowrap border border-border px-5 py-2 font-display text-xs tracking-widest text-muted-foreground">
             {past ? "PAST" : full ? "FULL" : "MEMBERS FIRST"}
           </span>

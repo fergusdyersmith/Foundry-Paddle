@@ -29,4 +29,14 @@ export interface PadelEvent {
    *  window. Null when that day has already passed, which means the release is running
    *  late rather than that the date is unknown. */
   opens_on?: string | null;
+  /** The queue for a full event, when the club is running one.
+   *
+   *  Playtomic has no waitlist, so the club runs one as a second tournament named
+   *  "<the event> Waitlist" at the same time. Kumi pairs them and the server turns the
+   *  pair into this; without it a sold-out tournament read FULL and dead-ended, while a
+   *  queue anybody could join sat open beside it.
+   *
+   *  `queued` can overstate by the number the desk has already promoted, since Playtomic
+   *  cannot take anyone off an event once they are on it. The error only runs one way. */
+  waitlist?: { url: string; queued: number } | null;
 }

@@ -208,3 +208,49 @@ describe("an off-peak open match is free for members", () => {
     expect(screen.queryByText(/members/)).toBeNull();
   });
 });
+
+// A sold-out session the club is queueing for. "FULL" full stop was a dead end: the
+// 2026-09-15 Advanced KOC read 16 of 16 with an open waitlist beside it.
+describe("a full event with a waitlist", () => {
+  const WL = { url: "https://app.playtomic.com/tournaments/wl", queued: 1 };
+
+  it("offers JOIN WAITLIST instead of a dead FULL badge", () => {
+    render(<EventCard event={event({ waitlist: WL })} />);
+    const cta = screen.getByText("JOIN WAITLIST").closest("a");
+    expect(cta?.getAttribute("href")).toBe(WL.url);
+    expect(screen.queryByText("FULL")).toBeNull();
+  });
+
+  it("opens the queue in a new tab, like every other Playtomic link here", () => {
+    render(<EventCard event={event({ waitlist: WL })} />);
+    const cta = screen.getByText("JOIN WAITLIST").closest("a");
+    expect(cta?.getAttribute("target")).toBe("_blank");
+    expect(cta?.getAttribute("rel")).toContain("noopener");
+  });
+
+  it("shows how many are queued beside the roster", () => {
+    render(<EventCard event={event({ waitlist: WL })} />);
+    expect(screen.getByText(/16 of 16 signed up/)).toBeTruthy();
+    expect(screen.getByText(/1 on the waitlist/)).toBeTruthy();
+  });
+
+  it("shows the button but no count when nobody has queued yet", () => {
+    render(<EventCard event={event({ waitlist: { ...WL, queued: 0 } })} />);
+    expect(screen.getByText("JOIN WAITLIST")).toBeTruthy();
+    expect(screen.queryByText(/on the waitlist/)).toBeNull();
+  });
+
+  it("still says FULL when the club is not running a queue", () => {
+    render(<EventCard event={event({ waitlist: null })} />);
+    expect(screen.getByText("FULL")).toBeTruthy();
+    expect(screen.queryByText("JOIN WAITLIST")).toBeNull();
+  });
+
+  it("never offers a queue for a session that has already finished", () => {
+    // PAST beats everything: the queue for last Tuesday's tournament is not a thing
+    // anybody should be sent to.
+    render(<EventCard event={event({ date: "2026-08-28", waitlist: WL })} />);
+    expect(screen.getByText("PAST")).toBeTruthy();
+    expect(screen.queryByText("JOIN WAITLIST")).toBeNull();
+  });
+});
