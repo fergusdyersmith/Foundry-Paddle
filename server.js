@@ -279,7 +279,21 @@ const BOOKING_TYPE_LABELS = {
   PRIVATE_CLASS: "Private Class",
   TOURNAMENT: "Tournament",
   OPEN_MATCH: "Open Match",
+  SOCIAL: "Open Play",
 };
+
+// The club's weekly socials, which Playtomic cannot distinguish from a tournament. Word
+// boundaries on purpose: this decides a badge, so it matches "Midday Social 1.5+" and
+// would not match a future "Social Club Championship". An Americano is arguably open play
+// too, but it is named after its format rather than called a social, so it is left as a
+// tournament rather than guessed at.
+const SOCIAL_NAME = /\bsocials?\b/i;
+
+/** Whether a mapped event is one of the club's socials rather than a real tournament.
+ *  Pure and exported so the rule that decides the badge is testable on its own. */
+export function isSocialEvent(event) {
+  return event.booking_type === "TOURNAMENT" && SOCIAL_NAME.test(event.title || "");
+}
 
 // Playtomic reports manager-created social events (e.g. the weekly "Midday
 // Social") with booking_type UNKNOWN, even though Kumi's tournaments feed lists
@@ -931,6 +945,25 @@ async function getEvents({ from = null, to = null, includePast = false } = {}) {
   }
 
   for (const e of events) e.price = e.price === "Free" ? "Free" : cleanPrice(e.price);
+
+  // A social is a tournament to Playtomic and open play to a player, and the badge was
+  // telling beginners the wrong one. "Midday Social 1.5+" read "Tournament", which is the
+  // single most off-putting word you could stamp on the club's most welcoming session.
+  //
+  // Matched on the NAME, which is not the first choice but is the only one left. The
+  // structural signal used to work: socials arrived as UNKNOWN and were promoted here
+  // (see effectiveBookingType), so "was promoted" meant "is a social". Playtomic has since
+  // started reporting them as TOURNAMENT natively, and a sweep of 499 live bookings found
+  // no UNKNOWN rows at all: the KOCs, the Americano and the four weekly socials are now
+  // indistinguishable in the payload. Checked before writing this, because a rule that
+  // reads a field nobody sets is worse than a rule that reads the title.
+  //
+  // LAST, after every enrichment above. The price, capacity and deep-link steps all key
+  // off TOURNAMENT, and a social still needs every one of them; reclassifying earlier
+  // would quietly drop a social's BOOK link and its per-person price.
+  for (const e of events) {
+    if (isSocialEvent(e)) e.booking_type = "SOCIAL";
+  }
   return events;
 }
 
@@ -1659,6 +1692,7 @@ export { app };
 // what the public schedule shows, but were previously unreachable from a test.
 export const __testables = {
   effectiveBookingType,
+  isSocialEvent,
   normalizeMembershipCount,
   applyKumiClassInfo,
   applyKumiTournamentInfo,

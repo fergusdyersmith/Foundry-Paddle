@@ -95,7 +95,7 @@ const RIGHT_PANELS = [
   {
     key: "tournaments",
     title: "TOURNAMENTS & EVENTS",
-    types: new Set(["TOURNAMENT"]),
+    types: new Set(["TOURNAMENT", "SOCIAL"]),
     empty: "No tournaments on the calendar yet — watch this space.",
   },
   {
@@ -263,7 +263,9 @@ const TvScreen = () => {
                 {/* Clinic/course prices stay off the wall screen; matches and
                     tournaments show the per-person price from the API. */}
                 {e.price &&
-                (e.booking_type === "OPEN_MATCH" || e.booking_type === "TOURNAMENT")
+                (e.booking_type === "OPEN_MATCH" ||
+                  e.booking_type === "TOURNAMENT" ||
+                  e.booking_type === "SOCIAL")
                   ? ` · ${e.price}/person`
                   : ""}
                 {e.booking_type !== "OPEN_MATCH" &&
