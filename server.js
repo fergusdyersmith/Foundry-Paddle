@@ -282,28 +282,51 @@ const BOOKING_TYPE_LABELS = {
   SOCIAL: "Open Play",
 };
 
-// The club's weekly socials, which Playtomic cannot distinguish from a tournament. Word
-// boundaries on purpose: this decides a badge, so it matches "Midday Social 1.5+" and
-// would not match a future "Social Club Championship". An Americano is arguably open play
-// too, but it is named after its format rather than called a social, so it is left as a
-// tournament rather than guessed at.
+// The club's weekly socials, matched by name. This was the ONLY signal available until
+// the club started publishing them as Playtomic open play programmes; it is kept as the
+// fallback for anything built before that, and for a social somebody creates as a
+// competition by mistake. Word boundaries on purpose: this decides a badge, so it matches
+// "Midday Social 1.5+" and would not match a future "Social Club Championship". An
+// Americano is arguably open play too, but it is named after its format rather than
+// called a social, so it is left as a tournament rather than guessed at.
 const SOCIAL_NAME = /\bsocials?\b/i;
 
 /** Whether a mapped event is one of the club's socials rather than a real tournament.
- *  Pure and exported so the rule that decides the badge is testable on its own. */
+ *  Pure and exported so the rule that decides the badge is testable on its own.
+ *
+ *  Structural signal first. Playtomic types an open play session OPEN_PLAY and a
+ *  competition TOURNAMENT, so from the day the club republishes its socials as open play
+ *  the payload says outright which is which, and the guess stops being a guess. The name
+ *  rule stays behind it: it is what covered this for the month no structural signal
+ *  existed, and it still catches a social created as a competition by mistake. */
 export function isSocialEvent(event) {
-  return event.booking_type === "TOURNAMENT" && SOCIAL_NAME.test(event.title || "");
+  if (event.booking_type !== "TOURNAMENT") return false;
+  return event.playtomic_type === "OPEN_PLAY" || SOCIAL_NAME.test(event.title || "");
 }
 
-// Playtomic reports manager-created social events (e.g. the weekly "Midday
-// Social") with booking_type UNKNOWN, even though Kumi's tournaments feed lists
-// them as tournaments under the same id. Left alone they are filtered out and
-// never reach the public schedule.
+// OPEN_PLAY is folded into TOURNAMENT here, at the single point every consumer goes
+// through. That is deliberate and it is load-bearing in both directions.
 //
-// UNKNOWN is a catch-all, so only rows carrying a tournament_id are promoted —
-// anything else Playtomic labels UNKNOWN stays off the public site rather than
-// risking a private booking being published.
+// Without it the socials VANISH from the site the moment the club republishes them as
+// open play: EVENT_BOOKING_TYPES is an allowlist, OPEN_PLAY is not in it, and the filter
+// runs on this function's output. Everything else downstream — the deep link, the
+// per-person price, the members-first release gate — was written against TOURNAMENT and
+// is correct for an open play session too, because Playtomic still models one as a
+// /tournaments/{id} object with an entry price and a release date. One normalisation
+// beats a second branch in each of them, and a branch that gets missed is a silent hole.
+//
+// Nothing is lost by folding: mapBookingGroup keeps the raw value on the event, and
+// isSocialEvent reads it to choose the badge.
+//
+// The UNKNOWN promotion below is older and its premise has expired. Manager-created
+// socials used to arrive typed UNKNOWN, so "was promoted" meant "is a social"; a sweep of
+// 499 live bookings on 2026-09-14 found no UNKNOWN rows at all. It stays because an
+// UNKNOWN row carrying a tournament_id is still a real event worth publishing, but it no
+// longer identifies anything. Only rows with a tournament_id are promoted, so anything
+// else Playtomic labels UNKNOWN stays off the public site rather than risking a private
+// booking being published.
 function effectiveBookingType(booking) {
+  if (booking.booking_type === "OPEN_PLAY") return "TOURNAMENT";
   if (booking.booking_type === "UNKNOWN" && booking.tournament_id) {
     return "TOURNAMENT";
   }
@@ -591,6 +614,9 @@ function mapBookingGroup(group) {
     duration_min: durationMin,
     price: booking.price || null,
     booking_type: bookingType,
+    // The type Playtomic actually sent, before effectiveBookingType folded OPEN_PLAY
+    // into TOURNAMENT. This is what tells a social apart from a competition.
+    playtomic_type: booking.booking_type,
     court: courts.length <= 1 ? courts[0] || null : `${courts.length} courts`,
     // The individual courts too, so the phone agent can say which ones.
     courts,

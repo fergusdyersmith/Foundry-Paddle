@@ -25,6 +25,18 @@ beforeAll(async () => {
 
 const ev = (title, booking_type = "TOURNAMENT") => ({ title, booking_type });
 
+// A row as Playtomic sends it for a session the club published as OPEN PLAY.
+const openPlayRow = (activity_name) => ({
+  booking_id: "b1",
+  activity_id: "a1",
+  tournament_id: "6f79829c-d2a7-4ea8-ac60-c27746187545",
+  booking_type: "OPEN_PLAY",
+  activity_name,
+  booking_start_date: "2026-10-01T18:00:00",
+  booking_end_date: "2026-10-01T19:30:00",
+  resource_name: "Court 1",
+});
+
 describe("isSocialEvent", () => {
   // Every social on the club's calendar in the September sweep.
   it.each([
@@ -74,5 +86,77 @@ describe("isSocialEvent", () => {
   it("survives an event with no title", () => {
     expect(T.isSocialEvent({ booking_type: "TOURNAMENT" })).toBe(false);
     expect(T.isSocialEvent(ev(null))).toBe(false);
+  });
+
+  // The structural signal, which arrived when the club stopped publishing its socials
+  // as competitions. It outranks the name, so a social does not have to be CALLED one.
+  it("trusts the Playtomic type over the name", () => {
+    expect(
+      T.isSocialEvent({
+        title: "Thursday Round Robin",
+        booking_type: "TOURNAMENT",
+        playtomic_type: "OPEN_PLAY",
+      }),
+    ).toBe(true);
+  });
+
+  it("does not promote a real competition that happens to carry the type", () => {
+    // TOURNAMENT in, TOURNAMENT out. Only OPEN_PLAY means open play.
+    expect(
+      T.isSocialEvent({
+        title: "Advanced KOC 3+",
+        booking_type: "TOURNAMENT",
+        playtomic_type: "TOURNAMENT",
+      }),
+    ).toBe(false);
+  });
+});
+
+/** The half that decides whether a session reaches the site at all.
+ *
+ *  EVENT_BOOKING_TYPES is an allowlist and OPEN_PLAY is not a member of it, so the
+ *  normalisation below is the only reason a republished social still appears. Without
+ *  it the club's two weekly socials drop off the public schedule silently, with no
+ *  error anywhere, the day the programmes are rebuilt. */
+describe("effectiveBookingType", () => {
+  it("folds OPEN_PLAY into TOURNAMENT so the allowlist still publishes it", () => {
+    expect(T.effectiveBookingType({ booking_type: "OPEN_PLAY" })).toBe("TOURNAMENT");
+  });
+
+  it("still promotes an UNKNOWN row that carries a tournament_id", () => {
+    expect(
+      T.effectiveBookingType({ booking_type: "UNKNOWN", tournament_id: "t1" }),
+    ).toBe("TOURNAMENT");
+  });
+
+  it("leaves an UNKNOWN row with no tournament_id alone", () => {
+    // A private booking must never be promoted onto the public schedule.
+    expect(T.effectiveBookingType({ booking_type: "UNKNOWN" })).toBe("UNKNOWN");
+  });
+
+  it("passes every other type through untouched", () => {
+    for (const bt of ["TOURNAMENT", "PUBLIC_CLASS", "COURSE_CLASS", "OPEN_MATCH"]) {
+      expect(T.effectiveBookingType({ booking_type: bt })).toBe(bt);
+    }
+  });
+});
+
+/** End to end over the two steps, because the bug this guards against lives in the
+ *  SEAM between them: fold the type too early and the badge is lost, too late and the
+ *  event never reaches the page. */
+describe("an open play session, from Playtomic row to badge", () => {
+  it("is published as a tournament and badged as a social", () => {
+    const e = T.mapBookingGroup([openPlayRow("Midday Social 1.5+")]);
+    expect(e.booking_type).toBe("TOURNAMENT"); // survives the allowlist
+    expect(e.playtomic_type).toBe("OPEN_PLAY"); // and still knows what it is
+    expect(T.isSocialEvent(e)).toBe(true); // so it badges Open Play
+  });
+
+  it("keeps the deep link pointing at the event, not the club page", () => {
+    // The OPEN_PLAY row has no case of its own in bookingDeepLink; it reaches the
+    // tournament branch only because the type was folded first.
+    expect(T.bookingDeepLink(openPlayRow("Midday Social 1.5+"))).toContain(
+      "/tournaments/6f79829c-d2a7-4ea8-ac60-c27746187545",
+    );
   });
 });
