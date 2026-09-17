@@ -96,10 +96,10 @@ export const COACHES: CoachProfile[] = [
     levelRange: "Beginner & intermediate",
     privateLessons: {
       playtomicBookable: true,
-      rate: "$90/hour, court included",
+      rate: "$125/hour, court included",
       availability: "Tue and Thu, 10–11 AM",
       detail:
-        "2–4 people: $100/hr, court included. 90-min and 2-hr sessions available.",
+        "2 people: $150/hr · 3 people: $170/hr · 4 people: $190/hr, court included. 90-min and 2-hr sessions available.",
     },
   },
   {
@@ -116,10 +116,10 @@ export const COACHES: CoachProfile[] = [
     levelRange: "All levels",
     privateLessons: {
       playtomicBookable: true,
-      rate: "$90/hour, court included",
-      availability: "Tue, Wed, Thu · 5–8 PM (peak)",
+      rate: "$125/hour, court included",
+      availability: "Tue, Wed, Thu · 5–10 PM; Mon · 5–8 PM and 9–10 PM",
       detail:
-        "1 person: $90/hr · 2 people: $110/hr · 3 people: $130/hr · 4 people: $145/hr. 90-min and 2-hr sessions available.",
+        "2 people: $150/hr · 3 people: $170/hr · 4 people: $190/hr, court included. 90-min and 2-hr sessions available.",
     },
   },
   {
@@ -136,10 +136,13 @@ export const COACHES: CoachProfile[] = [
     levelRange: "All levels",
     privateLessons: {
       playtomicBookable: true,
-      rate: "$85/hour, court included",
-      availability: "Tue, Wed, Thu · 6:30–8:30 AM and 4:30–6:30 PM",
+      rate: "$125/hour, court included",
+      // Mornings only. The 4:30–6:30 PM slot was a Playtomic pricing rule that ran
+      // one month and lapsed on 2026-08-28; it was still advertised here for three
+      // weeks after it stopped being bookable.
+      availability: "Tue, Wed, Thu · 6:30–8:30 AM",
       detail:
-        "2 people: $105/hr · 3 people: $125/hr · 4 people: $140/hr, court included. 90-min and 2-hr sessions available. Packages available.",
+        "2 people: $150/hr · 3 people: $170/hr · 4 people: $190/hr, court included. 90-min and 2-hr sessions available. Packages available.",
     },
   },
   {
@@ -155,15 +158,14 @@ export const COACHES: CoachProfile[] = [
     languages: "English, Spanish",
     levelRange: "All levels",
     privateLessons: {
-      // The only coach with two price bands, so the headline is "from". $95 off-peak,
-      // $115 at peak: both are real Playtomic pricing rules, not a negotiation.
       playtomicBookable: true,
-      rate: "From $95/hour, court included",
-      // Mon–Wed is two Playtomic rules back to back, 9–3 off-peak then 3–5 peak,
-      // so it reads as one 9–5 window here.
+      rate: "$125/hour, court included",
+      // Mon–Wed is two Playtomic rules back to back, 9–3 and 3–5, so it reads as one
+      // 9–5 window here. They were priced differently until 2026-09-17; every coach
+      // is on one rate now, so there is no longer an off-peak band to mention.
       availability: "Mon–Wed · 9 AM–5 PM; Thu and Fri · 9 AM–12 PM",
       detail:
-        "$95/hr off-peak, $115/hr peak (weekdays 3–5 PM and Friday mornings). 2–3 people $95/hr off-peak, 4 people $100/hr. 90-min and 2-hr sessions available.",
+        "2 people: $150/hr · 3 people: $170/hr · 4 people: $190/hr, court included. 90-min and 2-hr sessions available.",
     },
   },
   {
