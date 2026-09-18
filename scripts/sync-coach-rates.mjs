@@ -28,8 +28,9 @@
  * IMPORTANT: Playtomic's prices already INCLUDE the court. Never add the $40 court
  * fee to them — doing that is what produced the wrong numbers.
  *
- * Eugene has no Playtomic pricing rules, so his entry is deliberately left untouched
- * and must be edited by hand until he sets pricing up.
+ * Only coaches Playtomic has pricing rules for are touched at all. Tato, Eugene and
+ * Axel stopped coaching in September 2026 and are marked takingPrivateLessons: false,
+ * which hides their panel; this script will not put a rate back on them.
  */
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";

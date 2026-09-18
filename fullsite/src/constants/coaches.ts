@@ -56,6 +56,21 @@ export interface CoachProfile {
   languages?: string;
   levelRange?: string;
   privateLessons?: PrivateLessons;
+  /**
+   * False for a coach not taking private lessons here at the moment, which hides the
+   * PRIVATE LESSONS panel outright.
+   *
+   * Absent means they are, and the panel shows either their rate or "Private
+   * availability coming soon" with a mail link. That default is right for somebody who
+   * has not set pricing up yet and wrong for somebody who has stopped coaching: it
+   * invites a member to email about a lesson nobody is going to give, and "coming soon"
+   * is a promise the club cannot keep on their behalf.
+   *
+   * They keep their bio on the page. Whether they return is the club's call, not this
+   * file's, and deleting a coach loses the photo and the aliases that match their
+   * historic classes.
+   */
+  takingPrivateLessons?: boolean;
   /** Placeholder bio/photo pending real content from the coach. */
   mock?: boolean;
 }
@@ -72,15 +87,10 @@ export const COACHES: CoachProfile[] = [
       "Helping beginner and intermediate players build confidence: proper fundamentals, sound technique, and smart court habits for long-term development.",
     languages: "English",
     levelRange: "Beginner & intermediate",
-    privateLessons: {
-      // The only coach with no Playtomic pricing rules, so this is the one rate
-      // still derived from free text ($60 + $40 court) rather than read from
-      // pt_lesson. Confirm with Eugene, or set his pricing up in Playtomic and it
-      // becomes self-maintaining like the others.
-      playtomicBookable: false,
-      rate: "$100/hour, court included",
-      availability: "Mon (AM), Wed (before 5 PM), Thu and Fri (AM)",
-    },
+    // Not coaching here at the moment. The rate that sat here was the last one derived
+    // from free text rather than Playtomic, and by 2026-09-18 it was also the cheapest
+    // on the page, for lessons nobody was giving.
+    takingPrivateLessons: false,
   },
   {
     id: "kelly",
@@ -189,6 +199,8 @@ export const COACHES: CoachProfile[] = [
     specialties: "Beginner open play, first-timer onboarding",
     levelRange: "Beginner & intermediate",
     mock: true,
+    // Not coaching here at the moment.
+    takingPrivateLessons: false
   },
   {
     id: "axel",
@@ -200,6 +212,8 @@ export const COACHES: CoachProfile[] = [
     specialties: "Fundamentals, consistency",
     levelRange: "All levels",
     mock: true,
+    // Not coaching here at the moment.
+    takingPrivateLessons: false
   },
 ];
 

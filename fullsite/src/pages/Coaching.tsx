@@ -291,7 +291,11 @@ const Coaching = () => {
                   )}
                 </div>
 
-                {/* Private lessons */}
+                {/* Private lessons. Hidden entirely for a coach who is not taking
+                    them: the fallback below invites an email about a lesson nobody is
+                    going to give, and "coming soon" is a promise the club cannot make
+                    for somebody who has stopped coaching. */}
+                {selected.takingPrivateLessons !== false && (
                 <div className="border border-border bg-muted/30 p-4">
                   <h4 className="mb-2 font-display text-lg tracking-wide text-foreground">
                     PRIVATE LESSONS
@@ -352,6 +356,7 @@ const Coaching = () => {
                     </>
                   )}
                 </div>
+                )}
               </div>
             </>
           )}
