@@ -15,6 +15,7 @@ import FindPlayers from "./pages/FindPlayers";
 import Community from "./pages/Community";
 import Gallery from "./pages/Gallery";
 import Events from "./pages/Events";
+import Preview from "./pages/Preview";
 import GiftCards from "./pages/GiftCards";
 import GiftThanks from "./pages/GiftThanks";
 import TvScreen from "./pages/TvScreen";
@@ -46,6 +47,9 @@ export const routes: RouteRecord[] = [
       // Venue hire: the space inventory and capacity figures behind the Travel
       // Portland listing. Not the Playtomic session feed — see Events.tsx.
       { path: "events", element: <Events /> },
+      // The neighbourhood preview evening. Printed in the North Peninsula Review as
+      // foundrypadel.com/preview and encoded in that ad's QR code: the path cannot move.
+      { path: "preview", element: <Preview /> },
       { path: "book", element: <Book /> },
       // Gift certificates. The checkout page is prerendered like any other; the
       // thank-you page is where Square sends the buyer back to, and reads its order

@@ -19,6 +19,7 @@ const ROUTES = [
   "/faq",
   "/contact",
   "/events",
+  "/preview",
   "/gift-cards",
   "/survey",
   "/privacy",

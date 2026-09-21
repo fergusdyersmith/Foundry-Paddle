@@ -17,7 +17,7 @@ import {
   maxNationalDigits,
 } from "@shared/countryDialCodes";
 
-export type StayInTouchSource = "home" | "memberships" | "contact";
+export type StayInTouchSource = "home" | "memberships" | "contact" | "preview";
 
 type Props = {
   source: StayInTouchSource;

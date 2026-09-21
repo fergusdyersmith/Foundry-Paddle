@@ -57,7 +57,7 @@ const interestPayloadSchema = z.object({
     },
     z.string().regex(E164_MOBILE_REGEX).optional(),
   ),
-  source: z.enum(["home", "memberships", "contact", "book"]).optional(),
+  source: z.enum(["home", "memberships", "contact", "book", "preview"]).optional(),
   // SMS opt-in consent captured at the form (10DLC). Recorded so the lead record
   // shows whether the person agreed to receive texts.
   sms_consent: z.boolean().optional(),
