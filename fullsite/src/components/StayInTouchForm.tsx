@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { generateChallenge } from "@/lib/interestWebhook";
@@ -25,6 +25,8 @@ type Props = {
   headingClassName?: string;
   subtitleClassName?: string;
 };
+
+const PRERENDER_CHALLENGE = { a: 3, b: 4, answer: 7 };
 
 const REGISTER_INTEREST_ENDPOINT = "/api/register-interest";
 const DEFAULT_COUNTRY_CODE = "US";
@@ -64,7 +66,13 @@ const StayInTouchForm = ({
   const [nationalDigits, setNationalDigits] = useState("");
   const [smsConsent, setSmsConsent] = useState(false);
   const [honeypot, setHoneypot] = useState("");
-  const [captcha, setCaptcha] = useState(generateChallenge);
+  // The question is random, and this component is prerendered: a sum drawn during the
+  // build and another drawn in the browser never match, which failed hydration on every
+  // page carrying this form (React errors 418/423/425, and a full client re-render).
+  // So the first render is the same fixed sum on both sides, and the real one is drawn
+  // once mounted. The sum shown and the answer checked always move together.
+  const [captcha, setCaptcha] = useState(PRERENDER_CHALLENGE);
+  useEffect(() => setCaptcha(generateChallenge()), []);
   const [captchaInput, setCaptchaInput] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
