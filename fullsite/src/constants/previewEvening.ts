@@ -41,10 +41,26 @@ export type PlannedSession = {
   bookUrl: string | null;
 };
 
+// Links from Monica, 21 Sep. Each was opened and read before it went in here: the
+// Playtomic page behind it names the session and the start time on the same line as
+// this entry, 20 places, $25. If a session is ever recreated in Playtomic it gets a NEW
+// id (a course edit there is a cancel and a recreate), and its link here goes dead.
 export const PREVIEW_SESSIONS: PlannedSession[] = [
-  { start: "17:00", end: "19:00", bookUrl: null },
-  { start: "18:00", end: "20:00", bookUrl: null },
-  { start: "19:00", end: "21:00", bookUrl: null },
+  {
+    start: "17:00",
+    end: "19:00",
+    bookUrl: "https://app.playtomic.com/tournaments/9c573b40-af16-40b1-b644-358ebd4a1362",
+  },
+  {
+    start: "18:00",
+    end: "20:00",
+    bookUrl: "https://app.playtomic.com/tournaments/d47eea86-da25-47da-9710-2301d42556c8",
+  },
+  {
+    start: "19:00",
+    end: "21:00",
+    bookUrl: "https://app.playtomic.com/tournaments/fe1392ee-fdd7-461b-b8cf-9cb8510791ef",
+  },
 ];
 
 /** How a Playtomic event is recognised as one of the preview sessions. Name them with

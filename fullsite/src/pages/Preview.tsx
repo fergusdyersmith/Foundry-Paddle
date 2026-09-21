@@ -8,6 +8,7 @@ import Seo from "@/components/Seo";
 import StayInTouchForm from "@/components/StayInTouchForm";
 import { GALLERY_IMAGE_DIR } from "@/data/gallery";
 import { GOOGLE_MAPS_URL } from "@/constants/location";
+import { PLAYTOMIC_APP_STORE_URL, PLAYTOMIC_PLAY_STORE_URL } from "@/constants/booking";
 import {
   PREVIEW_DATE,
   PREVIEW_DATE_LABEL,
@@ -271,10 +272,22 @@ const Preview = () => {
             <p className="mx-auto mt-10 max-w-2xl text-center font-body text-sm leading-relaxed text-muted-foreground">
               {anyBookable ? (
                 <>
-                  Booking happens on Playtomic, the app the club runs on. New to it? You will
-                  create a free account as you book, which takes about a minute, and it is the
-                  same account you would use to book a court afterwards. Rather talk to a
-                  person?{" "}
+                  {/* Playtomic's tournament page will not take a registration in the
+                      browser: on a phone it says "Open in app to register". Someone who
+                      has never heard of Playtomic needs to be told that before they tap,
+                      or the button looks broken. */}
+                  Booking is in Playtomic, the free app the club runs on. Tap your session,
+                  then choose "Open in app" to pay and hold your spot. New to it? Get the app
+                  for{" "}
+                  <a href={PLAYTOMIC_APP_STORE_URL} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                    iPhone
+                  </a>{" "}
+                  or{" "}
+                  <a href={PLAYTOMIC_PLAY_STORE_URL} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                    Android
+                  </a>
+                  , make a free account, then come back and tap your session again. It is the
+                  same app you would use to book a court afterwards. Rather talk to a person?{" "}
                 </>
               ) : (
                 <>Online booking for the evening is being set up. To hold a spot now, </>
