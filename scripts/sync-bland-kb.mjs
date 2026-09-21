@@ -183,6 +183,27 @@ async function main() {
   const withAliases = all.filter((e) => e.aliases?.length).length;
   console.log(`[kb] ${withAliases} of ${all.length} entries carry caller phrasings`);
 
+  // An alias key is matched to a row by its EXACT topic text, so renaming a topic in
+  // Kumi silently orphans every phrasing written for it. Nothing failed, nothing was
+  // logged, and the agent just quietly stopped being able to find that row.
+  //
+  // Four were dead when this check was added (2026-09-21). "Do you have a bar?" was the
+  // visible one: it answered out of the building-layout row, which mentions where the
+  // bar is but not that beer is $5, because the phrasings sat under the row's old name
+  // "Wine and Beer". "I need a fourth" and "can kids play" were dead the same way.
+  //
+  // This is the highest-leverage file in the pipeline (see renderEntry), so a key that
+  // reaches nothing is worth shouting about rather than counting.
+  const topics = new Set(all.map((e) => e.topic?.trim()));
+  const orphans = Object.keys(aliases).filter((k) => !topics.has(k.trim()));
+  if (orphans.length) {
+    console.warn(
+      `[kb] ${orphans.length} alias key(s) match no published topic, so their caller ` +
+        `phrasings reach nothing. Rename them to the row's current topic text:\n` +
+        orphans.map((k) => `       - ${k}`).join("\n"),
+    );
+  }
+
   const today = new Date().toISOString().slice(0, 10);
   const doc = renderDoc(all, { today });
 

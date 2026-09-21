@@ -92,19 +92,6 @@
       "cost of a clinic",
       "price of a group lesson"
     ],
-    "Kids / minimum age": [
-      "can kids play",
-      "how old do you have to be",
-      "is there a minimum age",
-      "can I bring my son",
-      "can I bring my daughter"
-    ],
-    "Wine and Beer": [
-      "do you have a bar",
-      "can I get a beer",
-      "do you serve alcohol",
-      "is there wine"
-    ],
     "Outside food": [
       "can I bring food",
       "can we bring snacks",
@@ -144,13 +131,6 @@
       "I need to cancel my court",
       "what if I can't make my booking",
       "do I get a refund on a booking"
-    ],
-    "Finding players / open matches / open play / WhatsApp community": [
-      "I don't have anyone to play with",
-      "can I find a partner",
-      "I need a fourth",
-      "playing on my own",
-      "how do I meet people"
     ],
     "Court layout and which courts are nicest": [
       "how many courts",
@@ -254,11 +234,6 @@
       "can I book online",
       "where do I reserve a court"
     ],
-    "How far ahead a non-member can book": [
-      "how far in advance can I book",
-      "can I book next week",
-      "booking window"
-    ],
     "Booking all four courts, or hiring the club for a private event": [
       "can I book the whole place",
       "rent all the courts",
@@ -337,7 +312,40 @@
       "can i book next week",
       "can non members book ahead",
       "do members get to book earlier",
-      "how far ahead do members book"
+      "how far ahead do members book",
+      "how far in advance can I book",
+      "can I book next week"
+    ],
+    "Coffee, beer and wine at the bar": [
+      "do you have a bar",
+      "can I get a beer",
+      "do you serve alcohol",
+      "is there wine",
+      "is there a bar",
+      "do you sell alcohol",
+      "can you get a drink"
+    ],
+    "Kids, juniors, and the minimum age": [
+      "can kids play",
+      "how old do you have to be",
+      "is there a minimum age",
+      "can I bring my son",
+      "can I bring my daughter"
+    ],
+    "Finding players / open matches / open play (/join and /community)": [
+      "I don't have anyone to play with",
+      "can I find a partner",
+      "I need a fourth",
+      "playing on my own",
+      "how do I meet people"
+    ],
+    "No-shows for matches and tournaments": [
+      "can I cancel a match",
+      "can I cancel a tournament",
+      "what if I cannot make a match I signed up for",
+      "if I make my match public can I still cancel",
+      "I need to drop out of a match",
+      "what happens if I do not show up"
     ]
   }
 }

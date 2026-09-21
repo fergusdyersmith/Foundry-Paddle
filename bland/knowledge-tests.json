@@ -268,8 +268,8 @@
     {
       "q": "How much is a private lesson?",
       "expect": [
-        "$85",
-        "$115",
+        "$125",
+        "$135",
         "an hour"
       ]
     },
@@ -439,6 +439,30 @@
         "Student and Longevity",
         "Regular",
         "Padelhead"
+      ]
+    },
+    {
+      "q": "When should I post an open match so it actually fills?",
+      "expect": [
+        "find-players",
+        "evening",
+        "level range"
+      ]
+    },
+    {
+      "q": "Nobody to play with, what do I do?",
+      "expect": [
+        "/join",
+        "open match",
+        "level"
+      ]
+    },
+    {
+      "q": "If I make my match public can I still cancel it?",
+      "expect": [
+        "24 hours",
+        "free",
+        "sub"
       ]
     }
   ]
