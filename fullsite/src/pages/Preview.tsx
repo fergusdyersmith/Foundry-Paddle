@@ -63,6 +63,21 @@ const expectations = [
   },
 ];
 
+const suppliers = [
+  {
+    role: "Brats by",
+    name: "Urban German Wursthaus",
+    src: "/preview/urban-german-wursthaus.png",
+    className: "h-14 w-auto",
+  },
+  {
+    role: "Beer by",
+    name: "Occidental Brewing Co.",
+    src: "/preview/occidental-brewing.png",
+    className: "h-11 w-auto",
+  },
+];
+
 const Preview = () => {
   const [events, setEvents] = useState<PadelEvent[]>([]);
   // Decided in the browser, never at build time: a prerendered "this has happened" would
@@ -331,7 +346,25 @@ const Preview = () => {
               <p className="mt-6 font-body text-xs tracking-[0.1em] uppercase text-muted-foreground">
                 Beer and wine for ages 21 and over
               </p>
-              <p className="mt-3 font-body text-sm text-secondary-foreground">
+              {/* The suppliers' marks, in the page's cream on nothing, the way the Foundry
+                  lockup sits on this page. Their own colours are in the partner band. */}
+              <div className="mt-8 flex flex-wrap items-center gap-x-10 gap-y-6">
+                {suppliers.map((s) => (
+                  <div key={s.name} className="flex items-center gap-4">
+                    <span className="font-body text-[10px] tracking-[0.2em] uppercase text-muted-foreground">
+                      {s.role}
+                    </span>
+                    <img
+                      src={s.src}
+                      alt={s.name}
+                      className={s.className}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </div>
+                ))}
+              </div>
+              <p className="mt-4 font-body text-sm text-secondary-foreground">
                 Both from our neighbors down the hill in St. Johns.
               </p>
             </div>
