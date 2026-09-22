@@ -11,11 +11,13 @@
 export const PREVIEW_DATE = "2026-10-10";
 export const PREVIEW_DATE_LABEL = "Saturday, October 10";
 
-export const PREVIEW_PRICE = "$25";
+// $25 until 22 September. The Playtomic sessions carry their own price and had to be
+// changed there separately; this is only what the page says.
+export const PREVIEW_PRICE = "$20";
 export const PREVIEW_INCLUDES = [
   "Racket and balls",
-  "A brat",
-  "One drink: beer, wine or non-alcoholic",
+  "A brat from Urban German Wursthaus",
+  "One drink: Occidental Brewing beer, wine or non-alcoholic",
 ] as const;
 
 /** Places per session. Said on the page as a plain limit; the live "spots left" count

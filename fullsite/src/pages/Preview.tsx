@@ -331,6 +331,9 @@ const Preview = () => {
               <p className="mt-6 font-body text-xs tracking-[0.1em] uppercase text-muted-foreground">
                 Beer and wine for ages 21 and over
               </p>
+              <p className="mt-3 font-body text-sm text-secondary-foreground">
+                Both from our neighbors down the hill in St. Johns.
+              </p>
             </div>
             <div className="aspect-[4/3] overflow-hidden border border-border">
               <Photo
