@@ -67,13 +67,13 @@ const suppliers = [
   {
     role: "Brats by",
     name: "Urban German Wursthaus",
-    src: "/preview/urban-german-wursthaus.png",
+    src: "/preview-evening/urban-german-wursthaus.png",
     className: "h-14 w-auto",
   },
   {
     role: "Beer by",
     name: "Occidental Brewing Co.",
-    src: "/preview/occidental-brewing.png",
+    src: "/preview-evening/occidental-brewing.png",
     className: "h-11 w-auto",
   },
 ];
