@@ -281,7 +281,7 @@ const Juniors = () => {
                 ))}
               </div>
               <p className="mt-8 font-body text-xs tracking-[0.1em] uppercase text-muted-foreground">
-                Please, only children enrolled in the clinic on court
+                Please, only children enrolled in the clinic in attendance
               </p>
             </div>
             <div>
