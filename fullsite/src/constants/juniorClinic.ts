@@ -16,11 +16,13 @@ import type { PlannedSession } from "@/constants/previewEvening";
 export const JUNIOR_PRICE = "$10";
 export const JUNIOR_COACH = "Diego Valeri";
 
-/** Doors at a quarter to: an hour of padel plus fifteen minutes of settling in. */
-export const JUNIOR_SESSION_TIMES: { start: string; end: string; label: string }[] = [
-  { start: "09:45", end: "11:00", label: "9:45 to 11 AM" },
-  { start: "10:45", end: "12:00", label: "10:45 AM to noon" },
+/** One session per age group (Monica, 25 Sep), ninety minutes each. */
+export const JUNIOR_SESSION_TIMES: { start: string; end: string; label: string; ages: string }[] = [
+  { start: "09:00", end: "10:30", label: "9 to 10:30 AM", ages: "Ages 10 to 13" },
+  { start: "10:30", end: "12:00", label: "10:30 AM to noon", ages: "Ages 14 and up" },
 ];
+
+export const JUNIOR_BLURB = "Diego Valeri will be there, on court, coaching both sessions.";
 
 export type JuniorDay = {
   /** YYYY-MM-DD, club local time. */
@@ -59,7 +61,7 @@ export const JUNIOR_TITLE_PATTERN = /junior|jr\b|kids/i;
 
 export const JUNIOR_AGE_RULES = [
   {
-    heading: "Ages 10 to 14",
+    heading: "Ages 10 to 13",
     body: "A parent or guardian stays for the full session. There is Wi-Fi and a workspace, so bring the laptop.",
   },
   {

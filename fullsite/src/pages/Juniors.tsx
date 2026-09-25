@@ -9,6 +9,7 @@ import { GOOGLE_MAPS_URL } from "@/constants/location";
 import { PLAYTOMIC_APP_STORE_URL, PLAYTOMIC_PLAY_STORE_URL } from "@/constants/booking";
 import {
   JUNIOR_AGE_RULES,
+  JUNIOR_BLURB,
   JUNIOR_COACH,
   JUNIOR_DAYS,
   JUNIOR_PRICE,
@@ -151,8 +152,8 @@ const Juniors = () => {
               SCHOOL'S OUT. COURTS ARE OPEN.
             </h1>
             <p className="mx-auto mt-6 max-w-xl font-body text-base text-secondary-foreground">
-              An hour of padel with {JUNIOR_COACH} on the days Portland schools are closed, for kids
-              who have never held a racket and kids who have. Racket and balls provided.
+              Padel for kids on the days Portland schools are closed, for kids who have never
+              held a racket and kids who have. Racket and balls provided. {JUNIOR_BLURB}
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <a
@@ -172,8 +173,7 @@ const Juniors = () => {
           <div className="text-center">
             <h2 className={sectionHeading}>PICK A DAY AND A TIME</h2>
             <p className="mx-auto mt-5 max-w-2xl font-body text-base leading-relaxed text-secondary-foreground">
-              Two sessions each day. Doors open fifteen minutes before the coaching starts, so
-              there is time to get shoes on and find a racket.
+              Two sessions each day, one for each age group. {JUNIOR_BLURB}
             </p>
           </div>
 
@@ -210,7 +210,10 @@ const Juniors = () => {
                         : null;
                     return (
                       <div key={s.start} className="flex flex-col border-t border-border pt-5 md:border-l md:border-t-0 md:pl-6 md:pt-0">
-                        <p className="font-display text-2xl text-foreground">{label}</p>
+                        <span className="font-body text-xs tracking-[0.2em] uppercase text-primary">
+                          {JUNIOR_SESSION_TIMES[j]?.ages}
+                        </span>
+                        <p className="mt-1 font-display text-2xl text-foreground">{label}</p>
                         {spots && <p className="mt-1 font-body text-xs text-secondary-foreground">{spots}</p>}
                         <div className="mt-4">
                           {s.full ? (
@@ -287,7 +290,7 @@ const Juniors = () => {
               </h2>
               <ul className="mt-8 space-y-4">
                 {[
-                  "An hour of coaching with " + JUNIOR_COACH,
+                  "Ninety minutes on court, coached by " + JUNIOR_COACH,
                   "Racket and balls included",
                   "Just bring court shoes and water",
                 ].map((item) => (
