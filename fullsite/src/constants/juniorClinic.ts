@@ -13,7 +13,7 @@
  */
 import type { PlannedSession } from "@/constants/previewEvening";
 
-export const JUNIOR_PRICE = "$10";
+export const JUNIOR_PRICE = "$15"; // $10 until 25 September
 export const JUNIOR_COACH = "Diego Valeri";
 
 /** One session per age group (Monica, 25 Sep), ninety minutes each. */
