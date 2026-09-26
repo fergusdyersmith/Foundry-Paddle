@@ -35,8 +35,10 @@ const PHONE_DISPLAY = "(971) 378-7499";
 const PHONE_TEL = "+19713787499";
 const sectionHeading = "font-display text-4xl sm:text-5xl text-foreground";
 
-/** How many closure days to show at once. The full list is a school year long. */
-const DAYS_SHOWN = 4;
+/** How many days to show at once. One, for now: the club has not committed to every
+ *  closure day in public (the line came off the flyers on 25 September), so the page lists
+ *  the next date only until more sessions are actually created. Raise this when they are. */
+const DAYS_SHOWN = 1;
 
 function todayInPortland(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(new Date());
@@ -95,7 +97,7 @@ const Juniors = () => {
     <main className="bg-background min-h-screen">
       <Seo
         title={`Junior Padel Clinic with ${JUNIOR_COACH} | Foundry Padel, St. Johns`}
-        description={`Padel for kids on days Portland schools are closed. ${JUNIOR_PRICE} a session with ${JUNIOR_COACH}, racket and balls included. Ages 10 and up. Next: ${next?.label ?? "see dates"}.`}
+        description={`Padel for kids on a day off school. ${JUNIOR_PRICE} a session with ${JUNIOR_COACH}, racket and balls included. Ages 10 and up. Next: ${next?.label ?? "see dates"}.`}
         path="/juniors"
       />
       <Head>
@@ -104,7 +106,7 @@ const Juniors = () => {
             "@context": "https://schema.org",
             "@type": "SportsEvent",
             name: `Junior Padel Clinic with ${JUNIOR_COACH}`,
-            description: "A padel clinic for kids on days Portland Public Schools are closed. Racket and balls provided.",
+            description: "A padel clinic for kids on a day off school. Racket and balls provided.",
             startDate: `${JUNIOR_DAYS[0].date}T${JUNIOR_SESSION_TIMES[0].start}:00-07:00`,
             eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
             eventStatus: "https://schema.org/EventScheduled",
@@ -152,8 +154,8 @@ const Juniors = () => {
               SCHOOL'S OUT. COURTS ARE OPEN.
             </h1>
             <p className="mx-auto mt-6 max-w-xl font-body text-base text-secondary-foreground">
-              Padel for kids on the days Portland schools are closed, for kids who have never
-              held a racket and kids who have. Racket and balls provided. {JUNIOR_BLURB}
+              Padel for kids on a day off school, for kids who have never held a racket and
+              kids who have. Racket and balls provided. {JUNIOR_BLURB}
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <a
@@ -197,7 +199,7 @@ const Juniors = () => {
                 >
                   <div>
                     <span className="font-body text-xs tracking-[0.2em] uppercase text-muted-foreground">
-                      {i === 0 ? "Next up" : "Then"} · {day.reason}
+                      {i === 0 ? "Next up" : "Then"} · No school: {day.reason.toLowerCase()}
                     </span>
                     <p className="mt-2 font-display text-3xl leading-none text-foreground">{day.label.toUpperCase()}</p>
                     <p className="mt-2 font-body text-sm text-secondary-foreground">{JUNIOR_PRICE} per child, per session</p>
@@ -254,7 +256,7 @@ const Juniors = () => {
               <>Online booking is being set up. To hold a spot now, </>
             )}
             <a href={`tel:${PHONE_TEL}`} className="whitespace-nowrap text-primary hover:underline">call {PHONE_DISPLAY}</a>.
-            {" "}Every day Portland Public Schools are closed to students is a clinic day; the next few are listed above.
+
           </p>
         </div>
       </section>
