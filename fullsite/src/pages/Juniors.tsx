@@ -290,7 +290,7 @@ const Juniors = () => {
               </h2>
               <ul className="mt-8 space-y-4">
                 {[
-                  "Ninety minutes on court, coached by " + JUNIOR_COACH,
+                  "Ninety minutes on court, coached by Timbers legend " + JUNIOR_COACH,
                   "Racket and balls included",
                   "Just bring court shoes and water",
                 ].map((item) => (

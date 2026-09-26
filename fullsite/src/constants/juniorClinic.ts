@@ -22,7 +22,7 @@ export const JUNIOR_SESSION_TIMES: { start: string; end: string; label: string; 
   { start: "10:30", end: "12:00", label: "10:30 AM to noon", ages: "Ages 14 and up" },
 ];
 
-export const JUNIOR_BLURB = "Diego Valeri will be there, on court, coaching both sessions.";
+export const JUNIOR_BLURB = "Timbers legend Diego Valeri will be there, on court, coaching both sessions.";
 
 export type JuniorDay = {
   /** YYYY-MM-DD, club local time. */
