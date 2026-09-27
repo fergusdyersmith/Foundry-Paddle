@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { motion } from "framer-motion";
 import { Instagram, Facebook, Mail, MapPin, Clock, Car } from "lucide-react";
 import { GOOGLE_MAPS_EMBED_SRC, GOOGLE_MAPS_URL } from "@/constants/location";
@@ -24,14 +25,14 @@ const Contact = () => {
       />
       <section className="py-20 px-6">
         <div className="mx-auto max-w-4xl text-center">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
+          <div data-enter style={{ "--enter-y": "30px", "--enter-duration": "0.8s" } as CSSProperties}>
             <h1 className="font-display text-6xl sm:text-8xl text-foreground mb-4">CONTACT</h1>
             <div className="flex items-center justify-center gap-4 mb-6">
               <div className="h-px w-16 bg-primary" />
               <span className="font-body text-sm tracking-[0.2em] uppercase text-primary">Get In Touch</span>
               <div className="h-px w-16 bg-primary" />
             </div>
-          </motion.div>
+          </div>
         </div>
       </section>
 

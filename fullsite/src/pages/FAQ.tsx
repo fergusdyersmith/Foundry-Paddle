@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -76,14 +77,14 @@ const FAQ = () => {
       />
       <section className="py-20 px-6">
         <div className="mx-auto max-w-4xl text-center">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
+          <div data-enter style={{ "--enter-y": "30px", "--enter-duration": "0.8s" } as CSSProperties}>
             <h1 className="font-display text-6xl sm:text-8xl text-foreground mb-4">FAQ</h1>
             <div className="flex items-center justify-center gap-4 mb-6">
               <div className="h-px w-16 bg-primary" />
               <span className="font-body text-sm tracking-[0.2em] uppercase text-primary">First-Timer Friendly</span>
               <div className="h-px w-16 bg-primary" />
             </div>
-          </motion.div>
+          </div>
         </div>
       </section>
 

@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { motion } from "framer-motion";
 import { formatUsd, ratesOn } from "@shared/rates";
 import { Link } from "react-router-dom";
@@ -62,7 +63,7 @@ const Index = () => {
           <div className="court-line h-full" />
         </div>
         <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 pt-10">
-          <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, ease: [0.25, 0.46, 0.45, 0.94] }} className="mb-4 text-center">
+          <div data-enter style={{ "--enter-y": "40px", "--enter-duration": "1s", animationTimingFunction: "cubic-bezier(0.25, 0.46, 0.45, 0.94)" } as CSSProperties} className="mb-4 text-center">
             {/* New-brand lockup, composed from the kit's separate monogram +
                 wordmark files so the gap between them is ours to tune (the
                 delivered stacked file has a much larger built-in gap). */}
@@ -77,8 +78,8 @@ const Index = () => {
               alt="Foundry Padel"
               className="mx-auto mt-[clamp(1.75rem,3vw,3rem)] w-[clamp(16rem,28vw,28rem)]"
             />
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.6 }} className="mt-[clamp(2rem,5vh,3.5rem)] flex flex-col items-center gap-4 sm:flex-row">
+          </div>
+          <div data-enter style={{ "--enter-y": "20px", "--enter-duration": "0.8s", "--enter-delay": "0.6s" } as CSSProperties} className="mt-[clamp(2rem,5vh,3.5rem)] flex flex-col items-center gap-4 sm:flex-row">
             <Link
               to={BOOK_PAGE_PATH}
               className="bg-primary px-7 py-3 font-display text-sm tracking-widest text-primary-foreground shadow-[0_0_30px_-10px_hsl(var(--primary)/0.6)] transition-all hover:brightness-110"
@@ -92,7 +93,7 @@ const Index = () => {
             <Link to="/the-sport" className="border border-foreground/40 bg-background/60 px-7 py-3 font-display text-sm tracking-widest text-foreground backdrop-blur-sm transition-all hover:border-foreground hover:bg-background/80">
               NEW TO PADEL? START HERE
             </Link>
-          </motion.div>
+          </div>
         </div>
       </section>
 

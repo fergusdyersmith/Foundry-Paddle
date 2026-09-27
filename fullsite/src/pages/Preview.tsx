@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Head } from "vite-react-ssg";
@@ -165,7 +166,7 @@ const Preview = () => {
           <div className="hero-gradient absolute inset-0" />
         </div>
         <div className="relative z-10 mx-auto max-w-3xl px-6 pt-24 text-center">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
+          <div data-enter style={{ "--enter-y": "30px", "--enter-duration": "0.8s" } as CSSProperties}>
             <span className="font-body text-sm tracking-[0.2em] uppercase text-primary">
               Neighborhood preview evening
             </span>
@@ -188,7 +189,7 @@ const Preview = () => {
                 PICK A SESSION · {PREVIEW_PRICE}
               </a>
             </div>
-          </motion.div>
+          </div>
         </div>
       </section>
 

@@ -1,5 +1,5 @@
+import type { CSSProperties } from "react";
 import { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ArrowRight, ChevronDown, ChevronUp, RotateCcw } from "lucide-react";
 import {
@@ -73,7 +73,7 @@ const SkillSurvey = () => {
       {/* Header */}
       <section className="px-6 pt-20 pb-10">
         <div className="mx-auto max-w-3xl text-center">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
+          <div data-enter style={{ "--enter-y": "30px", "--enter-duration": "0.8s" } as CSSProperties}>
             <h1 className="font-display text-6xl sm:text-8xl text-foreground mb-4">SKILL SURVEY</h1>
             <div className="mb-6 flex items-center justify-center gap-4">
               <div className="h-px w-16 bg-primary" />
@@ -85,7 +85,7 @@ const SkillSurvey = () => {
               we'll show your Kumi Level and an estimated Playtomic level. It's the same skill
               tree our coaches use, and your answers stay in this browser.
             </p>
-          </motion.div>
+          </div>
         </div>
       </section>
 

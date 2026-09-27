@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { motion } from "framer-motion";
 import BookCTA from "@/components/BookCTA";
 import FindPlayersCTA from "@/components/FindPlayersCTA";
@@ -130,14 +131,14 @@ const TheSport = () => {
       {/* Hero */}
       <section className="py-20 px-6">
         <div className="mx-auto max-w-4xl text-center">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
+          <div data-enter style={{ "--enter-y": "30px", "--enter-duration": "0.8s" } as CSSProperties}>
             <h1 className="font-display text-6xl sm:text-8xl text-foreground mb-4">THE SPORT</h1>
             <div className="flex items-center justify-center gap-4 mb-8">
               <div className="h-px w-16 bg-primary" />
               <span className="font-body text-sm tracking-[0.2em] uppercase text-primary">World's Fastest Growing Racquet Sport</span>
               <div className="h-px w-16 bg-primary" />
             </div>
-          </motion.div>
+          </div>
         </div>
       </section>
 

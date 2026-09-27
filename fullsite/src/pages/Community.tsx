@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { motion } from "framer-motion";
 import { Head } from "vite-react-ssg";
 import { Link } from "react-router-dom";
@@ -42,7 +43,7 @@ const Community = () => {
       {/* Hero */}
       <section className="py-20 px-6">
         <div className="mx-auto max-w-4xl text-center">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
+          <div data-enter style={{ "--enter-y": "30px", "--enter-duration": "0.8s" } as CSSProperties}>
             <h1 className="font-display text-6xl sm:text-8xl text-foreground mb-4">THE COMMUNITY</h1>
             <div className="flex items-center justify-center gap-4 mb-6">
               <div className="h-px w-16 bg-primary" />
@@ -53,7 +54,7 @@ const Community = () => {
               Our WhatsApp community is where Foundry players find games. Post a match,
               claim an empty spot, or just see what is happening this week.
             </p>
-          </motion.div>
+          </div>
         </div>
       </section>
 

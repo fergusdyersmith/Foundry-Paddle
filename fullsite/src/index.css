@@ -99,6 +99,22 @@
   width: 1px;
 }
 
+/* First-paint entrance for page heroes. Pages are prerendered, so a framer-motion
+   `initial`/`animate` pair meant the hero arrived visible in the HTML, vanished when React
+   hydrated, then faded in: a flash on every page load. A CSS animation carries its own
+   starting state in the markup, so the first paint is already hidden and the only thing
+   the visitor sees is the entrance. Timing and distance are set inline per element. */
+[data-enter] {
+  animation: enter var(--enter-duration, 0.8s) ease-out var(--enter-delay, 0s) both;
+}
+@keyframes enter {
+  from { opacity: 0; transform: translateY(var(--enter-y, 30px)); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-enter] { animation: none; }
+}
+
 .hero-gradient {
   background: linear-gradient(
     to top,

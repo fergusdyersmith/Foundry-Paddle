@@ -1,6 +1,6 @@
+import type { CSSProperties } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { Award, ExternalLink, Globe, Loader2, Mail, Target } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -101,7 +101,7 @@ const Coaching = () => {
       {/* Header */}
       <section className="px-6 pt-20 pb-12">
         <div className="mx-auto max-w-4xl text-center">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
+          <div data-enter style={{ "--enter-y": "30px", "--enter-duration": "0.8s" } as CSSProperties}>
             <h1 className="font-display text-6xl sm:text-8xl text-foreground mb-4">COACHING</h1>
             <div className="mb-6 flex items-center justify-center gap-4">
               <div className="h-px w-16 bg-primary" />
@@ -114,7 +114,7 @@ const Coaching = () => {
               RPP-certified coaches for every level, from your first rally to tournament play.
               Tap a coach to see their upcoming sessions and how to book.
             </p>
-          </motion.div>
+          </div>
         </div>
       </section>
 

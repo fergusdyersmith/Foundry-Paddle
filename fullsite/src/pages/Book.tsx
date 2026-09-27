@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -128,10 +129,8 @@ const Book = () => {
       {/* Header + ways to play */}
       <section className="py-20 px-6">
         <div className="mx-auto max-w-4xl">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+          <div
+            data-enter style={{ "--enter-y": "30px", "--enter-duration": "0.8s" } as CSSProperties}
             className="text-center"
           >
             <h1 className="font-display text-6xl sm:text-8xl text-foreground mb-4">BOOK A COURT</h1>
@@ -153,12 +152,10 @@ const Book = () => {
               Racket rentals are <span className="text-foreground font-semibold">$5</span> ($10 for
               a high-end demo racket), and balls are for sale at the club. No partner needed.
             </p>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
+          <div
+            data-enter style={{ "--enter-y": "20px", "--enter-duration": "0.6s", "--enter-delay": "0.2s" } as CSSProperties}
             className="mt-12 grid gap-3 sm:grid-cols-3"
           >
             {WAYS_TO_PLAY.map((w) => (
@@ -175,7 +172,7 @@ const Book = () => {
                 </span>
               </button>
             ))}
-          </motion.div>
+          </div>
         </div>
       </section>
 

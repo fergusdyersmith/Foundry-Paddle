@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Check, Star } from "lucide-react";
@@ -192,7 +193,7 @@ const Memberships = () => {
       {/* Hero */}
       <section className="py-20 px-6">
         <div className="mx-auto max-w-4xl text-center">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
+          <div data-enter style={{ "--enter-y": "30px", "--enter-duration": "0.8s" } as CSSProperties}>
             {/* MEMBERSHIPS is the longest single-word heading on the site and has no
                 space to wrap at, so a fixed text-6xl overflows narrow phones. Every
                 other hero either wraps (BOOK A COURT, SKILL SURVEY) or is short
@@ -213,7 +214,7 @@ const Memberships = () => {
                 the live count from the club's own roster, so the scarcity is checkable
                 and goes stale on its own if sales stop. */}
             <FoundingMemberBar />
-          </motion.div>
+          </div>
         </div>
       </section>
 

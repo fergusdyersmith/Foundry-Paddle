@@ -1,5 +1,5 @@
+import type { CSSProperties } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { motion } from "framer-motion";
 import BookCTA from "@/components/BookCTA";
 import Seo from "@/components/Seo";
 import {
@@ -114,7 +114,7 @@ const Gallery = () => {
       {/* Hero */}
       <section className="py-20 px-6">
         <div className="mx-auto max-w-4xl text-center">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
+          <div data-enter style={{ "--enter-y": "30px", "--enter-duration": "0.8s" } as CSSProperties}>
             <h1 className="font-display text-6xl sm:text-8xl text-foreground mb-4">GALLERY</h1>
             <div className="flex items-center justify-center gap-4 mb-6">
               <div className="h-px w-16 bg-primary" />
@@ -124,7 +124,7 @@ const Gallery = () => {
             <p className="font-body text-base text-secondary-foreground max-w-xl mx-auto">
               Tournament nights at 8613 N Crawford — the courts, the rallies, and the people who fill the place. Every photo here was taken inside the club.
             </p>
-          </motion.div>
+          </div>
         </div>
       </section>
 

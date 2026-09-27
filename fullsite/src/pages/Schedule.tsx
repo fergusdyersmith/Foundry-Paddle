@@ -1,6 +1,6 @@
+import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
 import {
   addDays,
   addMonths,
@@ -90,10 +90,8 @@ const Schedule = () => {
       <section className="px-6 py-16">
         <div className="mx-auto max-w-6xl">
           {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+          <div
+            data-enter style={{ "--enter-y": "30px", "--enter-duration": "0.8s" } as CSSProperties}
             className="mb-12 text-center"
           >
             <h1 className="mb-4 font-display text-6xl text-foreground sm:text-8xl">
@@ -106,7 +104,7 @@ const Schedule = () => {
               </span>
               <div className="h-px w-16 bg-primary" />
             </div>
-          </motion.div>
+          </div>
 
           {/* Month nav + live indicator */}
           <div className="mb-6 flex items-center justify-between">

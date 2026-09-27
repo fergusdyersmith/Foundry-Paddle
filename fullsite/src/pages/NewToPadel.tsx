@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { motion } from "framer-motion";
 import { formatUsd, ratesOn } from "@shared/rates";
 import { Link } from "react-router-dom";
@@ -84,7 +85,7 @@ const NewToPadel = () => {
           <div className="hero-gradient absolute inset-0" />
         </div>
         <div className="relative z-10 mx-auto max-w-3xl px-6 pt-24 text-center">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
+          <div data-enter style={{ "--enter-y": "30px", "--enter-duration": "0.8s" } as CSSProperties}>
             <span className="font-body text-sm tracking-[0.2em] uppercase text-primary">
               First play {formatUsd(rates.perPlayer90)} · No experience needed
             </span>
@@ -104,7 +105,7 @@ const NewToPadel = () => {
                 BOOK YOUR FIRST PLAY: {formatUsd(rates.perPlayer90)}
               </Link>
             </div>
-          </motion.div>
+          </div>
         </div>
       </section>
 

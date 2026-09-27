@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
@@ -120,10 +121,8 @@ export default function GiftCards() {
 
       <section className="py-16 px-6">
         <div className="mx-auto max-w-3xl text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+          <div
+            data-enter style={{ "--enter-y": "16px", "--enter-duration": "0.5s" } as CSSProperties}
           >
             <h1 className="font-display text-[clamp(2.25rem,11vw,3.75rem)] leading-none sm:text-7xl text-foreground mb-4">
               GIFT CERTIFICATES
@@ -139,7 +138,7 @@ export default function GiftCards() {
               Delivered by email within minutes, with a printable certificate you can hand
               over. Redeemed in the Playtomic promo code field at checkout.
             </p>
-          </motion.div>
+          </div>
         </div>
       </section>
 

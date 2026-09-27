@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -167,10 +168,8 @@ const FindPlayers = () => {
       {/* Hero */}
       <section className="px-6 py-20">
         <div className="mx-auto max-w-4xl text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+          <div
+            data-enter style={{ "--enter-y": "30px", "--enter-duration": "0.8s" } as CSSProperties}
           >
             <h1 className="mb-4 font-display text-6xl text-foreground sm:text-8xl">FIND PLAYERS</h1>
             <div className="mb-6 flex items-center justify-center gap-4">
@@ -194,7 +193,7 @@ const FindPlayers = () => {
             <p className="mt-4 font-body text-xs text-muted-foreground">
               Takes about a minute. Free, and you can stop them any time.
             </p>
-          </motion.div>
+          </div>
         </div>
       </section>
 
