@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import { fileURLToPath, pathToFileURL } from "url";
 import { existsSync } from "fs";
+import { createHash } from "crypto";
 import { z } from "zod";
 import { createChatRouter } from "./server/chat.js";
 import { createVoiceRouter } from "./server/voice.js";
@@ -822,7 +823,7 @@ function shiftDate(date, days) {
 function applyKumiTournamentInfo(
   events,
   tournaments,
-  { isOver = () => false, today = null } = {},
+  { isOver = () => false, today = null, hidden = [] } = {},
 ) {
   const byId = new Map();
   const byTitleDate = new Map();
@@ -867,10 +868,25 @@ function applyKumiTournamentInfo(
     if (key) byTitleDate.set(key, info);
   }
 
-  const hidden = new Set();
+  // PRIVATE ON PURPOSE, AND NOT JUST ON PLAYTOMIC. Kumi's feed names the private events a
+  // person has decided stay off the public website (a private party, a court hire) by the
+  // sha256 of their tournament id, because the feed is public and a private id is a join
+  // link. Without it this gate cannot tell a party from the club's own programme waiting
+  // for its release day, and showed "Christy's Birthday" (9 Oct 2026) as MEMBERS FIRST,
+  // id and all, for the five days before its release date. The overdue rule below would
+  // only have caught it after that. See app/services/tournament_release.py in padelclublist.
+  const keepOff = new Set(hidden || []);
+  const fingerprint = (id) =>
+    createHash("sha256").update(String(id).trim().toLowerCase()).digest("hex");
+
+  const dropped = new Set();
   for (const e of events) {
     if (e.booking_type !== "TOURNAMENT") continue;
     const urlId = (String(e.book_url || "").match(/tournaments\/([0-9a-f-]+)/) || [])[1];
+    if (keepOff.size && [urlId, e.id].some((id) => id && keepOff.has(fingerprint(id)))) {
+      dropped.add(e);
+      continue;
+    }
     const key = `${(e.title || "").trim().toLowerCase()}|${e.date}|${e.start_time}`;
 
     const match = (urlId && byId.get(urlId)) || byTitleDate.get(key);
@@ -904,7 +920,7 @@ function applyKumiTournamentInfo(
       // is rare and monitored, while "hidden on purpose" is a routine club workflow. A
       // badge reading MEMBERS FIRST with no date was no use to a visitor anyway.
       if (overdue) {
-        hidden.add(e);
+        dropped.add(e);
         continue;
       }
       e.opens_on = opens;
@@ -912,7 +928,7 @@ function applyKumiTournamentInfo(
   }
   // Filtered at the end rather than spliced mid-loop, so the pass over `events` is not
   // mutating the thing it is iterating.
-  return hidden.size ? events.filter((e) => !hidden.has(e)) : events;
+  return dropped.size ? events.filter((e) => !dropped.has(e)) : events;
 }
 
 async function getEvents({ from = null, to = null, includePast = false } = {}) {
@@ -959,9 +975,11 @@ async function getEvents({ from = null, to = null, includePast = false } = {}) {
     // Reassigned, not just mutated: this now also DROPS events (a private hire kept
     // private past its own release date). Ignoring the return would have left them on
     // the calendar and made the whole gate a no-op.
-    events = applyKumiTournamentInfo(events, (await fetchKumiTournaments()).tournaments || [], {
+    const kumiTournaments = await fetchKumiTournaments();
+    events = applyKumiTournamentInfo(events, kumiTournaments.tournaments || [], {
       isOver,
       today: nowParts.date,
+      hidden: kumiTournaments.hidden || [],
     });
   } catch (error) {
     // Fails OPEN: prices go, links stay. Kumi being unreachable must not take every

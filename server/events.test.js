@@ -538,7 +538,7 @@ describe("a tournament the club has not opened yet is not linked", () => {
 
   it("is wired into getEvents with the same isOver the past filter uses", () => {
     const src = readFileSync(new URL("../server.js", import.meta.url), "utf8");
-    expect(src).toMatch(/applyKumiTournamentInfo\(events, \(await fetchKumiTournaments\(\)\)\.tournaments \|\| \[\], \{\s*isOver,\s*today: nowParts\.date,\s*\}\)/);
+    expect(src).toMatch(/applyKumiTournamentInfo\(events, kumiTournaments\.tournaments \|\| \[\], \{\s*isOver,\s*today: nowParts\.date,\s*hidden: kumiTournaments\.hidden \|\| \[\],\s*\}\)/);
   });
 
   it("fails open: a Kumi outage takes prices, never links", () => {
@@ -613,6 +613,44 @@ describe("the day a members-first tournament opens to everyone", () => {
     const [e] = T.applyKumiTournamentInfo([t("2026-09-10")], feed, { isOver, today: "2026-08-29" });
     expect(e.opens_on).toBeUndefined();
     expect(e.book_url).toContain(ID);
+  });
+
+  // Christy's Birthday, 9 Oct 2026: a private party, on the public schedule as MEMBERS
+  // FIRST (id and all) because it looked exactly like the club's unreleased programme.
+  // Kumi now names such events by sha256 of the tournament id; this is the real pair.
+  const BDAY = "cf3e8e38-cd36-402c-ae25-4a51733ac63b";
+  const BDAY_FP = "030c88856e1da9d58b6e3f0e55e55826c5c4c6b86e173fa8931f2ac1311ef30a";
+  const party = () => ({
+    id: BDAY, title: "Christy's Birthday", date: "2026-10-09", start_time: "18:00",
+    end_time: "19:30", booking_type: "TOURNAMENT", signed_up: 0,
+    book_url: `https://app.playtomic.com/tournaments/${BDAY}`,
+  });
+
+  it("drops a private party Kumi marks hidden, even before its release day", () => {
+    const out = T.applyKumiTournamentInfo([party(), t("2026-10-09")], [], {
+      isOver, today: "2026-09-27", hidden: [BDAY_FP],
+    });
+    expect(out.map((e) => e.title)).toEqual(["Midday Social 1.5+"]);
+    expect(JSON.stringify(out)).not.toContain(BDAY);
+  });
+
+  it("matches on the event id when the join link has already been stripped", () => {
+    const e = { ...party(), book_url: null };
+    const out = T.applyKumiTournamentInfo([e], [], { isOver, today: "2026-09-27", hidden: [BDAY_FP] });
+    expect(out).toHaveLength(0);
+  });
+
+  it("keeps the club's unreleased programme when the list is empty or missing", () => {
+    expect(T.applyKumiTournamentInfo([party()], [], { isOver, today: "2026-09-27", hidden: [] })).toHaveLength(1);
+    expect(T.applyKumiTournamentInfo([party()], [], { isOver, today: "2026-09-27" })).toHaveLength(1);
+  });
+
+  it("hashes ids exactly as Kumi does (sha256 of the id), or nothing ever matches", () => {
+    // If this breaks, the party is back on the schedule: fix whichever side moved.
+    const out = T.applyKumiTournamentInfo([party()], [], {
+      isOver, today: "2026-09-27", hidden: ["not-a-real-fingerprint"],
+    });
+    expect(out).toHaveLength(1);
   });
 
   it("reads its window from one constant, tied to the cron that does the releasing", () => {
