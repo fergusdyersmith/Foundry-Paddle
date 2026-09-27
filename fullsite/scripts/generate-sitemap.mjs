@@ -21,6 +21,7 @@ const ROUTES = [
   "/events",
   "/preview",
   "/juniors",
+  "/open",
   "/gift-cards",
   "/survey",
   "/privacy",

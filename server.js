@@ -10,6 +10,7 @@ import { createNotifier } from "./server/notify.js";
 import { createLinkSender } from "./server/smslink.js";
 import { createCallPoller } from "./server/callpoller.js";
 import { createTransferRouter } from "./server/transfer.js";
+import { createOpenRouter } from "./server/open.js";
 import { formatUsd, ratesOn } from "./shared/rates.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -1621,6 +1622,16 @@ app.use(
 // webhook started working, every call produced two identical "Call finished"
 // cards twenty seconds apart, from the webhook and then the poller.
 const notifier = createNotifier();
+
+// The December open's registration. Records to Slack and Klaviyo, then releases the
+// Playtomic link; see server/open.js. OPEN_PLAYTOMIC_URL is unset until the tournament
+// exists in Playtomic, and the page says "registration opens soon" until it is.
+app.use(
+  createOpenRouter({
+    klaviyo: KLAVIYO_API_KEY ? klaviyo : null,
+    listId: KLAVIYO_INTEREST_LIST_ID,
+  }),
+);
 
 // One observation buffer, served by /api/voice/_recent and written by both the
 // AI tool endpoints and the ring group. Checking "did that call work" should
