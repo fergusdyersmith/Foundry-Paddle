@@ -15,19 +15,31 @@ export const OPEN_DATES_LABEL = "December 5 and 6, 2026";
 export const OPEN_DATE_START = "2026-12-05";
 export const OPEN_DATE_END = "2026-12-06";
 
+/** Two tiers and a hard close (Jack, 27 Sep): no "late" price, because it teaches people
+ *  that registering late is normal. No member discount: a tournament is its own thing. */
 export const OPEN_TIERS = [
-  { key: "early", label: "Early bird", price: 75, from: "2026-09-27", until: "October 31", membersEligible: false },
-  { key: "regular", label: "Regular", price: 100, from: "2026-11-01", until: "November 22", membersEligible: true },
-  { key: "late", label: "Late", price: 125, from: "2026-11-23", until: "December 4", membersEligible: true },
+  { key: "early", label: "Early bird", price: 75, from: "2026-09-27", until: "October 31" },
+  { key: "regular", label: "Regular", price: 100, from: "2026-11-01", until: "November 27" },
 ] as const;
-export const OPEN_MEMBER_DISCOUNT = 0.25;
+export const OPEN_CLOSES = "2026-11-28";
+export const OPEN_CLOSES_LABEL = "Friday, November 27";
 export const OPEN_CAPACITY = 100;
+/** The size of the pool is still being decided (28 Sep); no figure in public until it is. */
+export const OPEN_PRIZE_POOL: string | null = null;
 
 export const OPEN_INCLUDES = [
   "Two days of padel: Saturday round robin, Sunday double elimination",
   "A tournament t-shirt",
-  "An Urban German brat and one drink ticket (Occidental beer or wine)",
-  "Prizes for the finalists and runners-up in every level",
+  "All food and drinks, both days",
+  OPEN_PRIZE_POOL ? `A ${OPEN_PRIZE_POOL} prize pool across the three levels` : "Prizes for the finalists and runners-up in every level",
+] as const;
+
+export const OPEN_SUPPLIERS = [
+  { role: "Beer by", name: "Occidental Brewing", src: "/preview-evening/occidental-brewing.png" },
+  { role: "Brats by", name: "Urban German Wursthaus", src: "/preview-evening/urban-german-wursthaus.png" },
+  { role: "Oregon wine by", name: "Scambiare Cellars", src: null },
+  { role: "Oregon wine by", name: "Conur Wines", src: null },
+  { role: "Balls by", name: "Wilson", src: null },
 ] as const;
 
 export type OpenLevel = { key: "beginner" | "intermediate" | "advanced"; label: string; rating: string; blurb: string };

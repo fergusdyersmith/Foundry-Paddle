@@ -21,24 +21,27 @@ export const LEVELS = ["beginner", "intermediate", "advanced"];
 export const SHIRT_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
 
 /** Price tiers by date, club local time. `from` is inclusive; the first tier whose
- *  `from` is on or before today wins, so keep them in ascending date order. */
+ *  `from` is on or before today wins, so keep them in ascending date order.
+ *
+ *  Two tiers and a hard close, not three (Jack, 27 Sep): a "late" price teaches people
+ *  that registering late is normal. No member discount either: a tournament is a
+ *  separate thing from a membership. */
 export const DEFAULT_TIERS = [
-  { key: "early", label: "Early bird", price: 75, from: "2026-09-27", membersEligible: false },
-  { key: "regular", label: "Regular", price: 100, from: "2026-11-01", membersEligible: true },
-  { key: "late", label: "Late", price: 125, from: "2026-11-23", membersEligible: true },
+  { key: "early", label: "Early bird", price: 75, from: "2026-09-27" },
+  { key: "regular", label: "Regular", price: 100, from: "2026-11-01" },
 ];
-export const MEMBER_DISCOUNT = 0.25;
+/** First day registration is closed. */
+export const DEFAULT_CLOSES = "2026-11-28";
 
 export function todayInClub(now = new Date(), timeZone = "America/Los_Angeles") {
   return new Intl.DateTimeFormat("en-CA", { timeZone }).format(now);
 }
 
-/** Which tier applies today, and what a member would pay for it. */
-export function currentTier(tiers = DEFAULT_TIERS, today = todayInClub()) {
+/** Which tier applies today, or closed:true once registration has shut. */
+export function currentTier(tiers = DEFAULT_TIERS, today = todayInClub(), closes = DEFAULT_CLOSES) {
   let tier = tiers[0];
   for (const t of tiers) if (t.from <= today) tier = t;
-  const memberPrice = tier.membersEligible ? Math.round(tier.price * (1 - MEMBER_DISCOUNT)) : null;
-  return { ...tier, memberPrice };
+  return { ...tier, closed: today >= closes };
 }
 
 const E164 = /^\+[1-9]\d{6,14}$/;
@@ -51,7 +54,9 @@ export const registrationSchema = z.object({
   level: z.enum(LEVELS),
   // Their own Playtomic rating, if they know it. Free text so "about 2.5" is fine.
   rating: z.string().trim().max(20).optional().or(z.literal("")),
-  member: z.boolean().optional(),
+  // The email on their Playtomic account, when it differs: the club adds paid players
+  // to the Playtomic tournament by hand, and this is how they are found.
+  playtomicEmail: z.string().trim().email().max(255).optional().or(z.literal("")),
   notes: z.string().trim().max(500).optional().or(z.literal("")),
   // Anti-spam: the honeypot must be empty and the arithmetic must be right, exactly as
   // the interest form does it.
@@ -62,8 +67,8 @@ export function buildSlackText(r, tier) {
   const bits = [
     `*New open registration*  ${escapeSlack(r.name)}`,
     `Level: *${r.level}*${r.rating ? ` (rating ${escapeSlack(r.rating)})` : ""}`,
-    `Shirt: ${r.shirt}  ·  ${r.member ? "MEMBER" : "non-member"}  ·  tier: ${tier.label} $${tier.price}`,
-    `${escapeSlack(r.email)}  ·  ${escapeSlack(r.phone)}`,
+    `Shirt: ${r.shirt}  ·  tier: ${tier.label} $${tier.price}`,
+    `${escapeSlack(r.email)}${r.playtomicEmail && r.playtomicEmail !== r.email ? ` (Playtomic: ${escapeSlack(r.playtomicEmail)})` : ""}  ·  ${escapeSlack(r.phone)}`,
   ];
   if (r.notes) bits.push(`_${escapeSlack(r.notes)}_`);
   return bits.join("\n");
@@ -87,6 +92,7 @@ export function createOpenRouter({
   channel = process.env.OPEN_SLACK_CHANNEL || "#club-ops",
   bookUrl = process.env.OPEN_PLAYTOMIC_URL || null,
   tiers = DEFAULT_TIERS,
+  closes = DEFAULT_CLOSES,
   fetchImpl = (...args) => fetch(...args),
   now = () => new Date(),
 } = {}) {
@@ -109,7 +115,7 @@ export function createOpenRouter({
     const properties = {
       open_dec_2026_level: r.level,
       open_dec_2026_shirt: r.shirt,
-      open_dec_2026_member: Boolean(r.member),
+      open_dec_2026_playtomic_email: r.playtomicEmail || null,
       open_dec_2026_tier: tier.key,
       open_dec_2026_rating: r.rating || null,
       open_dec_2026_notes: r.notes || null,
@@ -145,8 +151,8 @@ export function createOpenRouter({
   // exists yet. Prices are also in the page's constants for the prerender; this is the
   // live answer.
   router.get("/api/open/status", (req, res) => {
-    const tier = currentTier(tiers, todayInClub(now()));
-    res.json({ tier: tier.key, label: tier.label, price: tier.price, memberPrice: tier.memberPrice, bookable: Boolean(bookUrl) });
+    const tier = currentTier(tiers, todayInClub(now()), closes);
+    res.json({ tier: tier.key, label: tier.label, price: tier.price, closed: tier.closed, closes, bookable: Boolean(bookUrl) });
   });
 
   router.post("/api/open/register", async (req, res) => {
@@ -159,12 +165,16 @@ export function createOpenRouter({
       name: sanitize(parsed.data.name, 80),
       phone: sanitize(parsed.data.phone, 30),
       rating: sanitize(parsed.data.rating || "", 20),
+      playtomicEmail: sanitize(parsed.data.playtomicEmail || "", 255),
       notes: sanitize(parsed.data.notes || "", 500),
     };
     if (!E164.test(normalizePhone(r.phone) || "")) {
       return res.status(400).json({ error: "That phone number does not look right. Include the area code." });
     }
-    const tier = currentTier(tiers, todayInClub(now()));
+    const tier = currentTier(tiers, todayInClub(now()), closes);
+    if (tier.closed) {
+      return res.status(410).json({ error: "Registration has closed. Call the club if you think there is still a place." });
+    }
 
     const outcomes = await Promise.allSettled([postSlack(buildSlackText(r, tier)), recordKlaviyo(r, tier)]);
     const recorded = outcomes.some((o) => o.status === "fulfilled" && o.value === true);
@@ -182,8 +192,7 @@ export function createOpenRouter({
       bookUrl,
       tier: tier.key,
       price: tier.price,
-      memberPrice: tier.memberPrice,
-      pay: r.member && tier.memberPrice != null ? tier.memberPrice : tier.price,
+      pay: tier.price,
     });
   });
 

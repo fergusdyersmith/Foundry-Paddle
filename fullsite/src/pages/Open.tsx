@@ -10,14 +10,17 @@ import { PLAYTOMIC_APP_STORE_URL, PLAYTOMIC_PLAY_STORE_URL } from "@/constants/b
 import {
   OPEN_BRACKETS_URL,
   OPEN_CAPACITY,
+  OPEN_CLOSES,
+  OPEN_CLOSES_LABEL,
   OPEN_DATES_LABEL,
   OPEN_DATE_END,
   OPEN_DATE_START,
   OPEN_INCLUDES,
   OPEN_LEVELS,
-  OPEN_MEMBER_DISCOUNT,
   OPEN_NAME,
+  OPEN_PRIZE_POOL,
   OPEN_SCHEDULE,
+  OPEN_SUPPLIERS,
   OPEN_STREAM_LABEL,
   OPEN_STREAM_URL,
   OPEN_TIERS,
@@ -42,8 +45,8 @@ const field =
   "w-full border border-border bg-secondary px-5 py-4 font-body text-sm tracking-widest text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors";
 const label = "mb-2 block font-body text-xs tracking-[0.2em] uppercase text-muted-foreground";
 
-type Status = { tier: string; label: string; price: number; memberPrice: number | null; bookable: boolean };
-type Registered = { bookUrl: string | null; price: number; memberPrice: number | null; pay: number; tier: string };
+type Status = { tier: string; label: string; price: number; closed: boolean; bookable: boolean };
+type Registered = { bookUrl: string | null; price: number; pay: number; tier: string };
 type Bracket = { level: string; stage: string; updated?: string; rows: string[][] };
 
 function todayInPortland(): string {
@@ -62,7 +65,7 @@ const Open = () => {
   const [today, setToday] = useState<string | null>(null);
   const [brackets, setBrackets] = useState<Bracket[] | null>(null);
 
-  const [form, setForm] = useState({ name: "", email: "", phone: "", shirt: "", level: "", rating: "", member: false, notes: "", website: "" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", shirt: "", level: "", rating: "", playtomicEmail: "", notes: "", website: "" });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<Registered | null>(null);
@@ -75,8 +78,8 @@ const Open = () => {
 
   const tier = useMemo(() => tierFor(today ?? OPEN_TIERS[0].from), [today]);
   const price = status?.price ?? tier.price;
-  const memberPrice = status ? status.memberPrice : tier.membersEligible ? Math.round(tier.price * (1 - OPEN_MEMBER_DISCOUNT)) : null;
   const isOver = today != null && today > OPEN_DATE_END;
+  const isClosed = status?.closed ?? (today != null && today >= OPEN_CLOSES);
 
   const set = (k: keyof typeof form) => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
@@ -111,7 +114,7 @@ const Open = () => {
     <main className="bg-background min-h-screen">
       <Seo
         title={`${OPEN_NAME}: two-day padel tournament, ${OPEN_DATES_LABEL} | Foundry Padel`}
-        description={`A two-day padel tournament for beginners, intermediate and advanced players in St. Johns, Portland. Round robin Saturday, double elimination Sunday, ${OPEN_CAPACITY} players, prizes in every level. Entry from $${OPEN_TIERS[0].price}.`}
+        description={`A two-day padel tournament for beginners, intermediate and advanced players at Foundry Padel, Portland. Round robin Saturday, double elimination Sunday, prizes in every level, all food and drinks included. Entry from $${OPEN_TIERS[0].price}; registration closes ${OPEN_CLOSES_LABEL}.`}
         path="/open"
       />
       <Head>
@@ -147,12 +150,12 @@ const Open = () => {
         </div>
         <div className="relative z-10 mx-auto max-w-3xl px-6 pt-24 text-center">
           <div data-enter style={{ "--enter-y": "30px" } as CSSProperties}>
-            <span className="font-body text-sm tracking-[0.2em] uppercase text-primary">Two days · three levels · {OPEN_CAPACITY} players</span>
+            <span className="font-body text-sm tracking-[0.2em] uppercase text-primary">Two days · three levels · {OPEN_PRIZE_POOL ? `${OPEN_PRIZE_POOL} in prizes` : "prizes in every level"}</span>
             <h1 className="mt-4 font-display text-6xl sm:text-8xl leading-none text-foreground">{OPEN_NAME.toUpperCase()}</h1>
             <p className="mt-6 font-display text-2xl sm:text-3xl tracking-wide text-foreground">{OPEN_DATES_LABEL.toUpperCase()}</p>
             <p className="mx-auto mt-4 max-w-xl font-body text-base text-secondary-foreground">
               Round robin on Saturday, double elimination on Sunday, in beginner, intermediate and
-              advanced draws. Prizes in every level, a shirt on your back, a brat and a beer in your hand.
+              advanced draws. {OPEN_PRIZE_POOL ? `A ${OPEN_PRIZE_POOL} prize pool` : "Prizes in every level"}, a shirt on your back, and all the food and drink you want, both days.
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <a href="#register" className="bg-primary px-10 py-4 font-display text-lg tracking-widest text-primary-foreground shadow-[0_0_40px_-8px_hsl(var(--primary)/0.7)] transition-all hover:brightness-110">
@@ -166,24 +169,21 @@ const Open = () => {
       {/* Price tiers */}
       <section className="px-6 py-16">
         <div className="mx-auto max-w-4xl">
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="mx-auto grid max-w-2xl gap-4 sm:grid-cols-2">
             {OPEN_TIERS.map((t) => {
-              const current = t.key === (status?.tier ?? tier.key);
+              const current = !isClosed && t.key === (status?.tier ?? tier.key);
               const past = today != null && t.key !== tier.key && t.from < tier.from;
               return (
                 <div key={t.key} className={`border p-6 text-center ${current ? "border-primary bg-secondary" : "border-border"} ${past ? "opacity-50" : ""}`}>
                   <p className="font-body text-xs tracking-[0.2em] uppercase text-muted-foreground">{t.label}{current ? " · now" : ""}</p>
                   <p className="mt-2 font-display text-5xl text-foreground">${t.price}</p>
                   <p className="mt-2 font-body text-xs text-secondary-foreground">until {t.until}</p>
-                  <p className="mt-1 font-body text-xs text-secondary-foreground">
-                    {t.membersEligible ? `Members $${Math.round(t.price * (1 - OPEN_MEMBER_DISCOUNT))}` : "No member discount"}
-                  </p>
                 </div>
               );
             })}
           </div>
           <p className="mx-auto mt-6 max-w-2xl text-center font-body text-sm text-muted-foreground">
-            Foundry members take {Math.round(OPEN_MEMBER_DISCOUNT * 100)}% off the regular and late prices. Entry is capped at {OPEN_CAPACITY} players across all levels.
+            Registration closes {OPEN_CLOSES_LABEL}. Entry is capped at {OPEN_CAPACITY} players across all levels, and the price is the same for members and non-members.
           </p>
         </div>
       </section>
@@ -202,12 +202,18 @@ const Open = () => {
               <p className="font-display text-2xl text-foreground">THIS ONE HAS BEEN PLAYED</p>
               <p className="mt-4 font-body text-base text-secondary-foreground">Thanks to everyone who came. The next one will be here first.</p>
             </div>
+          ) : isClosed ? (
+            <div className="mt-12 border border-border p-10 text-center">
+              <p className="font-display text-2xl text-foreground">REGISTRATION HAS CLOSED</p>
+              <p className="mt-4 font-body text-base text-secondary-foreground">
+                The draws are being made. If you think there is still a place, <a href={`tel:${PHONE_TEL}`} className="text-primary hover:underline">call {PHONE_DISPLAY}</a>.
+              </p>
+            </div>
           ) : done ? (
             <div className="mt-12 border border-primary bg-secondary p-10 text-center">
               <p className="font-display text-3xl text-foreground">YOU'RE ON THE LIST</p>
               <p className="mt-4 font-body text-base text-secondary-foreground">
-                Your place is held once you pay on Playtomic. Your entry is <span className="text-foreground">${done.pay}</span>
-                {done.memberPrice != null && form.member ? " (member price)" : ""}.
+                Your place is held once you pay. Your entry is <span className="text-foreground">${done.pay}</span>.
               </p>
               {done.bookUrl ? (
                 <a href={done.bookUrl} target="_blank" rel="noopener noreferrer" className="mt-8 inline-flex items-center gap-2 bg-primary px-10 py-4 font-display text-lg tracking-widest text-primary-foreground transition-all hover:brightness-110">
@@ -222,7 +228,7 @@ const Open = () => {
                 Playtomic registers in its app. New to it? Get it for{" "}
                 <a href={PLAYTOMIC_APP_STORE_URL} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">iPhone</a> or{" "}
                 <a href={PLAYTOMIC_PLAY_STORE_URL} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Android</a>, make a free account, then come back and tap the button again.
-                {form.member ? " Your member discount applies at checkout." : ""}
+
               </p>
             </div>
           ) : (
@@ -259,10 +265,7 @@ const Open = () => {
 
               <div className="grid gap-5 sm:grid-cols-2">
                 <div><label className={label} htmlFor="o-rating">Your Playtomic rating (if you know it)</label><input id="o-rating" className={field} value={form.rating} onChange={set("rating")} placeholder="e.g. 2.5" inputMode="decimal" /></div>
-                <label className="flex items-center gap-3 self-end pb-4 font-body text-sm text-foreground">
-                  <input type="checkbox" checked={form.member} onChange={(e) => setForm((f) => ({ ...f, member: e.target.checked }))} className="h-4 w-4 accent-[hsl(var(--primary))]" />
-                  I'm a Foundry member{memberPrice != null ? ` (pay $${memberPrice})` : ""}
-                </label>
+                <div><label className={label} htmlFor="o-pemail">Email on your Playtomic account, if different</label><input id="o-pemail" type="email" className={field} value={form.playtomicEmail} onChange={set("playtomicEmail")} autoComplete="off" placeholder="So we can add you to the event" /></div>
               </div>
               <div><label className={label} htmlFor="o-notes">Anything we should know</label><textarea id="o-notes" className={`${field} min-h-[5rem]`} value={form.notes} onChange={set("notes")} placeholder="Playing up a level, a partner you want to be drawn with, dietary needs" /></div>
               {/* Honeypot: hidden from people, filled by bots. */}
@@ -270,7 +273,7 @@ const Open = () => {
 
               {error && <p className="font-body text-sm text-primary">{error}</p>}
               <button type="submit" disabled={submitting} className="w-full bg-primary px-8 py-4 font-display text-lg tracking-widest text-primary-foreground transition-all hover:brightness-110 disabled:opacity-60">
-                {submitting ? "SAVING" : `CONTINUE TO PAYMENT · $${form.member && memberPrice != null ? memberPrice : price}`}
+                {submitting ? "SAVING" : `CONTINUE TO PAYMENT · $${price}`}
               </button>
               <p className="text-center font-body text-xs text-muted-foreground">
                 Rather talk to a person? <a href={`tel:${PHONE_TEL}`} className="whitespace-nowrap text-primary hover:underline">Call {PHONE_DISPLAY}</a>.
@@ -306,9 +309,13 @@ const Open = () => {
                   <li key={item} className="flex items-start gap-3 font-body text-base text-foreground"><Check size={20} className="mt-0.5 shrink-0 text-primary" />{item}</li>
                 ))}
               </ul>
-              <div className="mt-8 flex flex-wrap items-center gap-x-10 gap-y-6">
-                <div className="flex items-center gap-4"><span className="font-body text-[10px] tracking-[0.2em] uppercase text-muted-foreground">Brats by</span><img src="/preview-evening/urban-german-wursthaus.png" alt="Urban German Wursthaus" className="h-14 w-auto" loading="lazy" /></div>
-                <div className="flex items-center gap-4"><span className="font-body text-[10px] tracking-[0.2em] uppercase text-muted-foreground">Beer by</span><img src="/preview-evening/occidental-brewing.png" alt="Occidental Brewing Co." className="h-11 w-auto" loading="lazy" /></div>
+              <div className="mt-8 flex flex-wrap items-center gap-x-8 gap-y-5">
+                {OPEN_SUPPLIERS.map((s) => (
+                  <div key={s.name} className="flex items-center gap-3">
+                    <span className="font-body text-[10px] tracking-[0.2em] uppercase text-muted-foreground">{s.role}</span>
+                    {s.src ? <img src={s.src} alt={s.name} className="h-11 w-auto" loading="lazy" /> : <span className="font-display text-lg text-foreground">{s.name}</span>}
+                  </div>
+                ))}
               </div>
               <p className="mt-4 font-body text-xs tracking-[0.1em] uppercase text-muted-foreground">Beer and wine for ages 21 and over</p>
             </div>
@@ -388,7 +395,7 @@ const Open = () => {
           </div>
           <div className="border border-border p-10 text-center">
             <h2 className="font-display text-3xl text-foreground">FIND US</h2>
-            <p className="mt-4 font-body text-base text-secondary-foreground">8613 N Crawford St, Portland, OR 97203<br />In St. Johns, next to Cathedral Park</p>
+            <p className="mt-4 font-body text-base text-secondary-foreground">Foundry Padel, Portland<br />8613 N Crawford St, Portland, OR 97203</p>
             <div className="mt-8 flex flex-col items-center justify-center gap-4">
               <a href={GOOGLE_MAPS_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 border border-primary px-8 py-3 font-display tracking-widest text-primary transition-colors hover:bg-primary hover:text-primary-foreground"><MapPin size={18} /> GET DIRECTIONS</a>
               <a href={`tel:${PHONE_TEL}`} className="inline-flex items-center gap-2 border border-border px-8 py-3 font-display tracking-widest text-foreground transition-colors hover:border-primary"><Phone size={18} /> {PHONE_DISPLAY}</a>
