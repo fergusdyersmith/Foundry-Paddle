@@ -27,6 +27,7 @@ const primaryLinks: FooterNavLink[] = [
   { label: "Book a Court", path: BOOK_PAGE_PATH },
   { label: "Find Players", path: "/find-players" },
   { label: "Coaching", path: "/coaching" },
+  { label: "Juniors", path: "/juniors" },
   { label: "Private Events", path: "/events" },
   { label: "Gift Certificates", path: "/gift-cards" },
 ];
