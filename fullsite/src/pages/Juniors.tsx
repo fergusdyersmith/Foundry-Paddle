@@ -144,10 +144,13 @@ const Juniors = () => {
       <section className="relative flex min-h-[78vh] w-full items-center overflow-hidden">
         <div className="absolute inset-0">
           <Photo
-            name="drill-overhead-with-basket"
-            dir={GALLERY_IMAGE_DIR}
-            alt="A player lines up an overhead during a coaching drill, ball basket courtside at Foundry Padel"
-            className="h-full w-full object-cover"
+            name="hero-juniors"
+            alt={`${JUNIOR_COACH} lines up an overhead on court at Foundry Padel`}
+            width={1067}
+            height={1600}
+            // A portrait frame in a wide hero: a desktop shows only a strip of it, so hold
+            // the strip on his face and racket rather than dead centre.
+            className="h-full w-full object-cover object-[50%_18%]"
             priority
           />
           <div className="absolute inset-0 bg-background/60" />
