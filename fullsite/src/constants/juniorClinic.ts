@@ -16,10 +16,11 @@ import type { PlannedSession } from "@/constants/previewEvening";
 export const JUNIOR_PRICE = "$15"; // $10 until 25 September
 export const JUNIOR_COACH = "Diego Valeri";
 
-/** One session per age group (Monica, 25 Sep), ninety minutes each. */
-export const JUNIOR_SESSION_TIMES: { start: string; end: string; label: string; ages: string }[] = [
-  { start: "09:00", end: "10:30", label: "9 to 10:30 AM", ages: "Ages 10 to 13" },
-  { start: "10:30", end: "12:00", label: "10:30 AM to noon", ages: "Ages 14 and up" },
+/** One session per age group (Monica, 25 Sep), ninety minutes each. `group` is what the
+ *  next-dates signup sends; server/juniors.js AGE_GROUPS accepts exactly these. */
+export const JUNIOR_SESSION_TIMES: { start: string; end: string; label: string; ages: string; group: string }[] = [
+  { start: "09:00", end: "10:30", label: "9 to 10:30 AM", ages: "Ages 10 to 13", group: "10-13" },
+  { start: "10:30", end: "12:00", label: "10:30 AM to noon", ages: "Ages 14 and up", group: "14+" },
 ];
 
 export const JUNIOR_BLURB = "Timbers legend Diego Valeri will be there, on court, coaching both sessions.";
@@ -39,7 +40,15 @@ export type JuniorDay = {
 };
 
 export const JUNIOR_DAYS: JuniorDay[] = [
-  { date: "2026-10-09", label: "Friday, October 9", reason: "Statewide inservice day", bookUrls: [null, null] },
+  {
+    date: "2026-10-09",
+    label: "Friday, October 9",
+    reason: "Statewide inservice day",
+    bookUrls: [
+      "https://app.playtomic.com/tournaments/44e6a014-edb0-43a0-a137-37af36007c7f",
+      "https://app.playtomic.com/tournaments/6d700fbc-a871-4bd7-8a84-0f6b54f04848",
+    ],
+  },
   { date: "2026-10-29", label: "Thursday, October 29", reason: "Staff day", bookUrls: [null, null] },
   { date: "2026-10-30", label: "Friday, October 30", reason: "Staff day", bookUrls: [null, null] },
   { date: "2026-11-23", label: "Monday, November 23", reason: "Conference day", bookUrls: [null, null] },

@@ -15,12 +15,13 @@ export type PreviewSession = {
 };
 
 /** Tag a Playtomic link so sign-ups from this page can be told from ones staff sent by
- *  hand (the same reasoning as PLAYTOMIC_MEMBERSHIP_URLS in constants/booking.ts). */
-export function withCampaign(url: string): string {
+ *  hand (the same reasoning as PLAYTOMIC_MEMBERSHIP_URLS in constants/booking.ts). The
+ *  campaign names the page, so a junior sign-up is not counted as a preview evening one. */
+export function withCampaign(url: string, campaign: string): string {
   try {
     const u = new URL(url);
     u.searchParams.set("utm_source", "website");
-    u.searchParams.set("utm_campaign", "preview-evening");
+    u.searchParams.set("utm_campaign", campaign);
     return u.toString();
   } catch {
     return url;
@@ -44,6 +45,7 @@ export function mergePreviewSessions(
   events: PadelEvent[],
   date: string,
   titlePattern: RegExp,
+  campaign: string,
 ): PreviewSession[] {
   const live = events.filter((e) => e.date === date && titlePattern.test(e.title));
   const used = new Set<PadelEvent>();
@@ -53,7 +55,7 @@ export function mergePreviewSessions(
     const url = pasted ?? e?.book_url ?? null;
     const capacity = e?.capacity ?? null;
     return {
-      bookUrl: url ? withCampaign(url) : null,
+      bookUrl: url ? withCampaign(url, campaign) : null,
       spotsLeft: e && capacity != null && capacity > 0 ? Math.max(0, capacity - e.signed_up) : null,
       full,
       waitlistUrl: full && e?.waitlist?.url ? e.waitlist.url : null,

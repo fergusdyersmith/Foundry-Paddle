@@ -11,6 +11,7 @@ import { createLinkSender } from "./server/smslink.js";
 import { createCallPoller } from "./server/callpoller.js";
 import { createTransferRouter } from "./server/transfer.js";
 import { createOpenRouter } from "./server/open.js";
+import { createJuniorsRouter } from "./server/juniors.js";
 import { formatUsd, ratesOn } from "./shared/rates.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -1628,6 +1629,15 @@ const notifier = createNotifier();
 // exists in Playtomic, and the page says "registration opens soon" until it is.
 app.use(
   createOpenRouter({
+    klaviyo: KLAVIYO_API_KEY ? klaviyo : null,
+    listId: KLAVIYO_INTEREST_LIST_ID,
+  }),
+);
+
+// The junior clinic's list for parents who cannot make the date on show. Records to
+// Slack and Klaviyo the same way; see server/juniors.js.
+app.use(
+  createJuniorsRouter({
     klaviyo: KLAVIYO_API_KEY ? klaviyo : null,
     listId: KLAVIYO_INTEREST_LIST_ID,
   }),

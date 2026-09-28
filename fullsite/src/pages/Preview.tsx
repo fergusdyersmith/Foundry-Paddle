@@ -104,7 +104,7 @@ const Preview = () => {
   }, []);
 
   const sessions = useMemo(
-    () => mergePreviewSessions(PREVIEW_SESSIONS, events, PREVIEW_DATE, PREVIEW_TITLE_PATTERN),
+    () => mergePreviewSessions(PREVIEW_SESSIONS, events, PREVIEW_DATE, PREVIEW_TITLE_PATTERN, "preview-evening"),
     [events],
   );
   const anyBookable = sessions.some((s) => s.bookUrl && !s.full);

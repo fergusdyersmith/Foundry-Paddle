@@ -5,6 +5,7 @@ import { mergePreviewSessions, withCampaign } from "./previewEvening";
 
 const DATE = "2026-10-10";
 const PATTERN = /preview/i;
+const CAMPAIGN = "preview-evening";
 
 const planned: PlannedSession[] = [
   { start: "17:00", end: "19:00", bookUrl: null },
@@ -30,13 +31,13 @@ const event = (over: Partial<PadelEvent>): PadelEvent => ({
 
 describe("mergePreviewSessions", () => {
   it("shows every planned time with no link when Playtomic has nothing yet", () => {
-    const out = mergePreviewSessions(planned, [], DATE, PATTERN);
+    const out = mergePreviewSessions(planned, [], DATE, PATTERN, CAMPAIGN);
     expect(out.map((s) => s.start)).toEqual(["17:00", "18:00", "19:00"]);
     expect(out.every((s) => s.bookUrl === null && s.spotsLeft === null && !s.full)).toBe(true);
   });
 
   it("takes the link and the places left from the matching live session", () => {
-    const out = mergePreviewSessions(planned, [event({ signed_up: 5 })], DATE, PATTERN);
+    const out = mergePreviewSessions(planned, [event({ signed_up: 5 })], DATE, PATTERN, CAMPAIGN);
     expect(out[0].bookUrl).toContain("https://app.playtomic.com/tournaments/abc");
     expect(out[0].spotsLeft).toBe(11);
     expect(out[1].bookUrl).toBeNull();
@@ -48,6 +49,7 @@ describe("mergePreviewSessions", () => {
       [event({ title: "Saturday Social" }), event({ date: "2026-10-11" })],
       DATE,
       PATTERN,
+      CAMPAIGN,
     );
     expect(out.every((s) => s.bookUrl === null)).toBe(true);
   });
@@ -55,7 +57,7 @@ describe("mergePreviewSessions", () => {
   it("keeps booking open from a pasted link while the event is still private", () => {
     // Unreleased: the feed strips book_url until five days out. The paper lands before that.
     const pasted = [{ ...planned[0], bookUrl: "https://app.playtomic.com/tournaments/pasted" }, ...planned.slice(1)];
-    const out = mergePreviewSessions(pasted, [event({ book_url: null, booking_open: false })], DATE, PATTERN);
+    const out = mergePreviewSessions(pasted, [event({ book_url: null, booking_open: false })], DATE, PATTERN, CAMPAIGN);
     expect(out[0].bookUrl).toContain("/tournaments/pasted");
   });
 
@@ -65,6 +67,7 @@ describe("mergePreviewSessions", () => {
       [event({ id: "e4", start_time: "20:00", end_time: "22:00" })],
       DATE,
       PATTERN,
+      CAMPAIGN,
     );
     expect(out.map((s) => s.start)).toEqual(["17:00", "18:00", "19:00", "20:00"]);
     expect(out[3].bookUrl).not.toBeNull();
@@ -76,6 +79,7 @@ describe("mergePreviewSessions", () => {
       [event({ signed_up: 16, waitlist: { url: "https://app.playtomic.com/w/1", queued: 2 } })],
       DATE,
       PATTERN,
+      CAMPAIGN,
     );
     expect(out[0].full).toBe(true);
     expect(out[0].spotsLeft).toBe(0);
@@ -85,13 +89,18 @@ describe("mergePreviewSessions", () => {
 
 describe("withCampaign", () => {
   it("tags the link without disturbing what Playtomic put on it", () => {
-    const u = new URL(withCampaign("https://app.playtomic.com/tournaments/abc?foo=1"));
+    const u = new URL(withCampaign("https://app.playtomic.com/tournaments/abc?foo=1", "juniors"));
     expect(u.searchParams.get("foo")).toBe("1");
     expect(u.searchParams.get("utm_source")).toBe("website");
-    expect(u.searchParams.get("utm_campaign")).toBe("preview-evening");
+    expect(u.searchParams.get("utm_campaign")).toBe("juniors");
+  });
+
+  it("tags merged sessions with the campaign it was given", () => {
+    const out = mergePreviewSessions(planned, [event({})], DATE, PATTERN, "juniors");
+    expect(new URL(out[0].bookUrl!).searchParams.get("utm_campaign")).toBe("juniors");
   });
 
   it("hands back something it cannot parse rather than throwing", () => {
-    expect(withCampaign("not a url")).toBe("not a url");
+    expect(withCampaign("not a url", CAMPAIGN)).toBe("not a url");
   });
 });

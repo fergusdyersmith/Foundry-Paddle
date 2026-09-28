@@ -1,10 +1,11 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties, FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Head } from "vite-react-ssg";
 import { Check, MapPin, Phone } from "lucide-react";
 import Photo from "@/components/Photo";
 import Seo from "@/components/Seo";
+import SmsConsentCheckbox from "@/components/SmsConsentCheckbox";
 import { GALLERY_IMAGE_DIR } from "@/data/gallery";
 import { GOOGLE_MAPS_URL } from "@/constants/location";
 import { PLAYTOMIC_APP_STORE_URL, PLAYTOMIC_PLAY_STORE_URL } from "@/constants/booking";
@@ -35,6 +36,9 @@ import type { PadelEvent } from "@/types/events";
 const PHONE_DISPLAY = "(971) 378-7499";
 const PHONE_TEL = "+19713787499";
 const sectionHeading = "font-display text-4xl sm:text-5xl text-foreground";
+const field =
+  "w-full border border-border bg-secondary px-5 py-4 font-body text-sm tracking-widest text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors";
+const fieldLabel = "mb-2 block font-body text-xs tracking-[0.2em] uppercase text-muted-foreground";
 
 /** How many days to show at once. One, for now: the club has not committed to every
  *  closure day in public (the line came off the flyers on 25 September), so the page lists
@@ -87,6 +91,7 @@ const Juniors = () => {
           eventsByDate[day.date] ?? [],
           day.date,
           JUNIOR_TITLE_PATTERN,
+          "juniors",
         ),
       })),
     [upcoming, eventsByDate],
@@ -184,7 +189,8 @@ const Juniors = () => {
             <div className="mx-auto mt-12 max-w-2xl border border-border p-10 text-center">
               <p className="font-display text-2xl text-foreground">NO DATES ON THE CALENDAR YET</p>
               <p className="mt-4 font-body text-base text-secondary-foreground">
-                The next school closure days have not been scheduled. Call us and we will let you know.
+                The next days off school have not been scheduled yet. Leave your details below and we
+                will let you know.
               </p>
             </div>
           ) : (
@@ -262,6 +268,8 @@ const Juniors = () => {
         </div>
       </section>
 
+      <NextDatesSignup nextLabel={next?.label ?? null} />
+
       {/* Ages and what to bring */}
       <section className="px-6 pb-8">
         <div className="mx-auto max-w-5xl">
@@ -338,5 +346,115 @@ const Juniors = () => {
     </main>
   );
 };
+
+/**
+ * The list for parents who cannot make the date on show. The page lists one day at a time,
+ * so without this the only way to hear about the next one was to call. Records to Slack and
+ * Klaviyo; see server/juniors.js.
+ */
+function NextDatesSignup({ nextLabel }: { nextLabel: string | null }) {
+  const [form, setForm] = useState({ name: "", email: "", phone: "", notes: "", website: "" });
+  const [ages, setAges] = useState<string[]>([]);
+  const [smsConsent, setSmsConsent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+
+  const set = (k: keyof typeof form) => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const toggleAge = (group: string) =>
+    setAges((a) => (a.includes(group) ? a.filter((g) => g !== group) : [...a, group]));
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!form.name.trim() || !form.email.trim() || ages.length === 0) {
+      setError("A name, an email and at least one age group are needed.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const phone = form.phone.trim();
+      const res = await fetch("/api/juniors/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        // Consent travels only with a number, as on the stay-in-touch form.
+        body: JSON.stringify({ ...form, phone, ages, ...(phone ? { smsConsent } : {}) }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(json.error || "Something went wrong. Please try again.");
+        return;
+      }
+      setDone(true);
+    } catch {
+      setError("We could not reach the club. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <section id="next-dates" className="scroll-mt-24 px-6 pb-20">
+      <div className="mx-auto max-w-2xl">
+        <div className="section-divider mb-16" />
+        <h2 className={`${sectionHeading} text-center`}>HEAR ABOUT THE NEXT DATES</h2>
+        <p className="mx-auto mt-5 max-w-xl text-center font-body text-base leading-relaxed text-secondary-foreground">
+          {nextLabel ? `Can't make ${nextLabel}? ` : ""}Leave your details and we will tell you when the
+          next junior clinic is on the calendar.
+        </p>
+
+        {done ? (
+          <div className="mt-12 border border-primary bg-secondary p-10 text-center">
+            <p className="font-display text-3xl text-foreground">YOU'RE ON THE LIST</p>
+            <p className="mt-4 font-body text-base text-secondary-foreground">
+              We will be in touch as soon as the next dates are set.
+            </p>
+          </div>
+        ) : (
+          <form onSubmit={submit} className="mt-12 space-y-5" noValidate>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div><label className={fieldLabel} htmlFor="j-name">Parent's name</label><input id="j-name" className={field} value={form.name} onChange={set("name")} autoComplete="name" /></div>
+              <div><label className={fieldLabel} htmlFor="j-email">Email</label><input id="j-email" type="email" className={field} value={form.email} onChange={set("email")} autoComplete="email" /></div>
+            </div>
+
+            <fieldset>
+              <legend className={fieldLabel}>Your kids' ages</legend>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {JUNIOR_SESSION_TIMES.map((t) => (
+                  <label key={t.group} className={`flex cursor-pointer items-center gap-4 border p-4 transition-colors ${ages.includes(t.group) ? "border-primary bg-secondary" : "border-border hover:border-primary/60"}`}>
+                    <input type="checkbox" checked={ages.includes(t.group)} onChange={() => toggleAge(t.group)} className="peer sr-only" />
+                    {/* Both can be ticked, so the tick has to show, not just the border. */}
+                    <span className={`flex h-5 w-5 shrink-0 items-center justify-center border peer-focus-visible:ring-2 peer-focus-visible:ring-primary ${ages.includes(t.group) ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground"}`}>
+                      {ages.includes(t.group) && <Check size={14} strokeWidth={3} />}
+                    </span>
+                    <span>
+                      <span className="block font-display text-xl text-foreground">{t.ages.toUpperCase()}</span>
+                      <span className="block font-body text-xs tracking-[0.15em] uppercase text-primary">{t.label}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
+            <div><label className={fieldLabel} htmlFor="j-phone">Mobile, if you would like a text too</label><input id="j-phone" type="tel" className={field} value={form.phone} onChange={set("phone")} autoComplete="tel" placeholder="(503) 555-0142" /></div>
+            {form.phone.trim() && <SmsConsentCheckbox id="j-sms-consent" checked={smsConsent} onChange={setSmsConsent} />}
+            <div><label className={fieldLabel} htmlFor="j-notes">Anything we should know</label><textarea id="j-notes" className={`${field} min-h-[5rem]`} value={form.notes} onChange={set("notes")} placeholder="How many kids, which days off suit you" /></div>
+            {/* Honeypot: hidden from people, filled by bots. */}
+            <div className="hidden" aria-hidden="true"><input tabIndex={-1} autoComplete="off" value={form.website} onChange={set("website")} /></div>
+
+            {error && <p className="font-body text-sm text-primary">{error}</p>}
+            <button type="submit" disabled={submitting} className="w-full bg-primary px-8 py-4 font-display text-lg tracking-widest text-primary-foreground transition-all hover:brightness-110 disabled:opacity-60">
+              {submitting ? "SAVING" : "LET ME KNOW"}
+            </button>
+            <p className="text-center font-body text-xs leading-relaxed text-muted-foreground">
+              This also puts you on the club's email list. Unsubscribe any time. Rather talk to a person?{" "}
+              <a href={`tel:${PHONE_TEL}`} className="whitespace-nowrap text-primary hover:underline">Call {PHONE_DISPLAY}</a>.
+            </p>
+          </form>
+        )}
+      </div>
+    </section>
+  );
+}
 
 export default Juniors;
