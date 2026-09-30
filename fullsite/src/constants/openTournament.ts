@@ -33,7 +33,7 @@ export const OPEN_CAPACITY = 100;
 export const OPEN_PRIZE_POOL: string | null = "$3,500";
 
 export const OPEN_INCLUDES = [
-  "Two days of padel: Saturday round robin, Sunday double elimination",
+  "Two days of padel: Saturday round robin, Sunday single-elimination bracket",
   "A tournament t-shirt",
   // Vouchers, not a free-for-all (Ryan and Monica, 28 Sep): players eat and drink a lot.
   "A brat and a drink on us each day, by voucher at check-in",
@@ -59,7 +59,7 @@ export const SHIRT_SIZES = ["XS", "S", "M", "L", "XL", "XXL"] as const;
 
 export const OPEN_SCHEDULE = [
   { day: "Saturday, December 5", what: "Round robin in every level. Everybody plays several matches; results seed Sunday's bracket." },
-  { day: "Sunday, December 6", what: "Double elimination by level. Lose once and you are still in. Finals in the afternoon, prizes after." },
+  { day: "Sunday, December 6", what: "Single-elimination bracket by level, seeded by Saturday's results. Finals in the afternoon, prizes after." },
 ] as const;
 
 /** Where the brackets come from once the tournament is under way. A JSON file the club

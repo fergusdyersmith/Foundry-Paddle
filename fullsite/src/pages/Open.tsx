@@ -128,7 +128,7 @@ const Open = () => {
     <main className="bg-background min-h-screen">
       <Seo
         title={`${OPEN_NAME}: two-day padel tournament, ${OPEN_DATES_LABEL} | Foundry Padel`}
-        description={`A two-day padel tournament for beginners, intermediate and advanced players at Foundry Padel, Portland. Round robin Saturday, double elimination Sunday, ${OPEN_PRIZE_POOL ?? "prizes"} in prizes, a brat and a drink each day included. Entry from $${OPEN_TIERS[0].price}; registration closes ${OPEN_CLOSES_LABEL}.`}
+        description={`A two-day padel tournament for beginners, intermediate and advanced players at Foundry Padel, Portland. Round robin Saturday, single-elimination bracket Sunday, ${OPEN_PRIZE_POOL ?? "prizes"} in prizes, a brat and a drink each day included. Entry from $${OPEN_TIERS[0].price}; registration closes ${OPEN_CLOSES_LABEL}.`}
         path="/open"
       />
       <Head>
@@ -137,7 +137,7 @@ const Open = () => {
             "@context": "https://schema.org",
             "@type": "SportsEvent",
             name: OPEN_NAME,
-            description: "A two-day padel tournament for beginners, intermediate and advanced players. Round robin Saturday, double elimination Sunday.",
+            description: "A two-day padel tournament for beginners, intermediate and advanced players. Round robin Saturday, single-elimination bracket Sunday.",
             startDate: `${OPEN_DATE_START}T09:00:00-08:00`,
             endDate: `${OPEN_DATE_END}T18:00:00-08:00`,
             eventAttendanceMode: "https://schema.org/MixedEventAttendanceMode",
@@ -169,7 +169,7 @@ const Open = () => {
             <h1 className="mt-4 font-display text-6xl sm:text-8xl leading-none text-foreground">{OPEN_NAME.toUpperCase()}</h1>
             <p className="mt-6 font-display text-2xl sm:text-3xl tracking-wide text-foreground">{OPEN_DATES_LABEL.toUpperCase()}</p>
             <p className="mx-auto mt-4 max-w-xl font-body text-base text-secondary-foreground">
-              Round robin on Saturday, double elimination on Sunday, in beginner, intermediate and
+              Round robin on Saturday, a single-elimination bracket on Sunday, in beginner, intermediate and
               advanced draws. {OPEN_PRIZE_POOL ? `${OPEN_PRIZE_POOL} in prizes` : "Prizes in every level"}, a shirt on your back, and a brat and a drink on us each day. {OPEN_HOST_LINE}
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
