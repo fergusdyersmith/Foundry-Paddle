@@ -30,11 +30,13 @@ import {
 } from "@/constants/openTournament";
 
 /**
- * The December open. The page has one job the others do not: collect who is playing
- * (name, phone, email, shirt size, the level they want) BEFORE showing the Playtomic
- * link that takes payment. Playtomic knows a rating; it does not know a shirt size or
- * that a 3.0 wants to play advanced. The registration goes to the server, which records
- * it and hands back the link and today's price; see server/open.js.
+ * The December open. The page has one job the others do not: ask which level someone
+ * wants to play (and, if they will say, their shirt size and partner) BEFORE showing the
+ * Playtomic link that takes payment. Playtomic knows a rating; it does not know that a
+ * 3.0 wants to play advanced. Only the level is required: Playtomic collects name, phone
+ * and email at payment, so asking here again was friction for nothing (30 Sep). The
+ * registration goes to the server, which records it and hands back the link and today's
+ * price; see server/open.js.
  *
  * Below the form: the format, the levels, what the entry covers, the suppliers, and a
  * brackets section that fills from a JSON file the club updates over the weekend.
@@ -88,8 +90,8 @@ const Open = () => {
   async function submit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!form.name || !form.email || !form.phone || !form.shirt || !form.level) {
-      setError("Name, email, phone, shirt size and level are all needed.");
+    if (!form.level) {
+      setError("Pick the level you want to play.");
       return;
     }
     setSubmitting(true);
@@ -197,7 +199,7 @@ const Open = () => {
           <div className="section-divider mb-16" />
           <h2 className={`${sectionHeading} text-center`}>REGISTER</h2>
           <p className="mx-auto mt-5 max-w-xl text-center font-body text-base leading-relaxed text-secondary-foreground">
-            Tell us who you are and where you want to play, and we will send you straight to Playtomic to pay and hold your place.
+            Pick the level you want to play and we will send you straight to Playtomic to pay and hold your place. Everything else is optional.
           </p>
 
           {isOver ? (
@@ -236,19 +238,6 @@ const Open = () => {
             </div>
           ) : (
             <form onSubmit={submit} className="mt-12 space-y-5" noValidate>
-              <div className="grid gap-5 sm:grid-cols-2">
-                <div><label className={label} htmlFor="o-name">Name</label><input id="o-name" className={field} value={form.name} onChange={set("name")} autoComplete="name" /></div>
-                <div><label className={label} htmlFor="o-email">Email</label><input id="o-email" type="email" className={field} value={form.email} onChange={set("email")} autoComplete="email" /></div>
-                <div><label className={label} htmlFor="o-phone">Mobile</label><input id="o-phone" type="tel" className={field} value={form.phone} onChange={set("phone")} autoComplete="tel" placeholder="(503) 555-0142" /></div>
-                <div>
-                  <label className={label} htmlFor="o-shirt">T-shirt size</label>
-                  <select id="o-shirt" className={field} value={form.shirt} onChange={set("shirt")}>
-                    <option value="">Choose</option>
-                    {SHIRT_SIZES.map((s) => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-              </div>
-
               <fieldset>
                 <legend className={label}>Level you want to play</legend>
                 <div className="grid gap-3 sm:grid-cols-3">
@@ -267,17 +256,26 @@ const Open = () => {
               </fieldset>
 
               <div className="grid gap-5 sm:grid-cols-2">
-                <div><label className={label} htmlFor="o-rating">Your Playtomic rating (if you know it)</label><input id="o-rating" className={field} value={form.rating} onChange={set("rating")} placeholder="e.g. 2.5" inputMode="decimal" /></div>
-                <div><label className={label} htmlFor="o-pemail">Email on your Playtomic account, if different</label><input id="o-pemail" type="email" className={field} value={form.playtomicEmail} onChange={set("playtomicEmail")} autoComplete="off" placeholder="So we can add you to the event" /></div>
+                <div>
+                  <label className={label} htmlFor="o-shirt">T-shirt size <span className="normal-case tracking-normal">(optional)</span></label>
+                  <select id="o-shirt" className={field} value={form.shirt} onChange={set("shirt")}>
+                    <option value="">Choose</option>
+                    {SHIRT_SIZES.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className={label} htmlFor="o-partner">Your partner <span className="normal-case tracking-normal">(optional)</span></label>
+                  <input id="o-partner" className={field} value={form.partner} onChange={set("partner")} autoComplete="off" placeholder="Their name, and have them register too" />
+                </div>
               </div>
-              <div>
-                <label className={label} htmlFor="o-partner">Your partner</label>
-                <input id="o-partner" className={field} value={form.partner} onChange={set("partner")} autoComplete="off" placeholder="Their name, and have them register too" />
-                <p className="mt-2 font-body text-xs leading-relaxed text-muted-foreground">
-                  We recommend entering with a partner. Signing up on your own? Leave this blank and we will match you with someone at your level.
-                </p>
+              <p className="font-body text-xs leading-relaxed text-muted-foreground">
+                We recommend entering with a partner. On your own? Leave it blank and we will match you with someone at your level.
+              </p>
+              <div className="grid gap-5 sm:grid-cols-2">
+                <div><label className={label} htmlFor="o-pemail">Email on your Playtomic account <span className="normal-case tracking-normal">(optional)</span></label><input id="o-pemail" type="email" className={field} value={form.playtomicEmail} onChange={set("playtomicEmail")} autoComplete="email" placeholder="So we can match this to your booking" /></div>
+                <div><label className={label} htmlFor="o-rating">Your Playtomic rating <span className="normal-case tracking-normal">(optional)</span></label><input id="o-rating" className={field} value={form.rating} onChange={set("rating")} placeholder="e.g. 2.5" inputMode="decimal" /></div>
               </div>
-              <div><label className={label} htmlFor="o-notes">Anything we should know</label><textarea id="o-notes" className={`${field} min-h-[5rem]`} value={form.notes} onChange={set("notes")} placeholder="Playing up a level, dietary needs, anything else" /></div>
+              <div><label className={label} htmlFor="o-notes">Anything we should know <span className="normal-case tracking-normal">(optional)</span></label><textarea id="o-notes" className={`${field} min-h-[5rem]`} value={form.notes} onChange={set("notes")} placeholder="Playing up a level, dietary needs, anything else" /></div>
               {/* Honeypot: hidden from people, filled by bots. */}
               <div className="hidden" aria-hidden="true"><input tabIndex={-1} autoComplete="off" value={form.website} onChange={set("website")} /></div>
 

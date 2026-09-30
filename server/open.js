@@ -46,31 +46,35 @@ export function currentTier(tiers = DEFAULT_TIERS, today = todayInClub(), closes
 
 const E164 = /^\+[1-9]\d{6,14}$/;
 
+// Only the level is required (30 Sep): Playtomic collects name, phone and email at
+// payment, so asking again here was friction for nothing. The rest is welcome, and the
+// club chases a missing shirt size after the booking.
+const opt = (schema) => schema.optional().or(z.literal(""));
 export const registrationSchema = z.object({
-  name: z.string().trim().min(2).max(80),
-  email: z.string().trim().email().max(255),
-  phone: z.string().trim().min(7).max(30),
-  shirt: z.enum(SHIRT_SIZES),
   level: z.enum(LEVELS),
+  shirt: z.enum(SHIRT_SIZES).optional().or(z.literal("")),
+  name: opt(z.string().trim().max(80)),
+  email: opt(z.string().trim().email().max(255)),
+  phone: opt(z.string().trim().max(30)),
   // Their own Playtomic rating, if they know it. Free text so "about 2.5" is fine.
-  rating: z.string().trim().max(20).optional().or(z.literal("")),
-  // The email on their Playtomic account, when it differs: the club adds paid players
-  // to the Playtomic tournament by hand, and this is how they are found.
-  playtomicEmail: z.string().trim().email().max(255).optional().or(z.literal("")),
+  rating: opt(z.string().trim().max(20)),
+  // The email on their Playtomic account: how this form's answers get matched to the
+  // booking Playtomic takes.
+  playtomicEmail: opt(z.string().trim().email().max(255)),
   // Their partner, if they are entering as a pair. Free text; the club pairs the rest.
-  partner: z.string().trim().max(80).optional().or(z.literal("")),
-  notes: z.string().trim().max(500).optional().or(z.literal("")),
+  partner: opt(z.string().trim().max(80)),
+  notes: opt(z.string().trim().max(500)),
   // Anti-spam: the honeypot must be empty and the arithmetic must be right, exactly as
   // the interest form does it.
   website: z.string().max(0).optional(),
 });
 
 export function buildSlackText(r, tier) {
+  const who = [r.name, r.playtomicEmail || r.email, r.phone].filter(Boolean).map(escapeSlack).join("  ·  ");
   const bits = [
-    `*New open registration*  ${escapeSlack(r.name)}`,
+    `*New open registration*  ${who || "(no name given; match by the Playtomic booking)"}`,
     `Level: *${r.level}*${r.rating ? ` (rating ${escapeSlack(r.rating)})` : ""}`,
-    `Shirt: ${r.shirt}  ·  tier: ${tier.label} $${tier.price}  ·  partner: ${r.partner ? escapeSlack(r.partner) : "needs one"}`,
-    `${escapeSlack(r.email)}${r.playtomicEmail && r.playtomicEmail !== r.email ? ` (Playtomic: ${escapeSlack(r.playtomicEmail)})` : ""}  ·  ${escapeSlack(r.phone)}`,
+    `Shirt: ${r.shirt || "not given"}  ·  tier: ${tier.label} $${tier.price}  ·  partner: ${r.partner ? escapeSlack(r.partner) : "needs one"}`,
   ];
   if (r.notes) bits.push(`_${escapeSlack(r.notes)}_`);
   return bits.join("\n");
@@ -113,10 +117,12 @@ export function createOpenRouter({
   }
 
   async function recordKlaviyo(r, tier) {
-    if (!klaviyo) return false;
+    // Klaviyo keys on an email; with none given, Slack is the record.
+    const email = r.playtomicEmail || r.email;
+    if (!klaviyo || !email) return false;
     const properties = {
       open_dec_2026_level: r.level,
-      open_dec_2026_shirt: r.shirt,
+      open_dec_2026_shirt: r.shirt || null,
       open_dec_2026_playtomic_email: r.playtomicEmail || null,
       open_dec_2026_tier: tier.key,
       open_dec_2026_rating: r.rating || null,
@@ -125,8 +131,9 @@ export function createOpenRouter({
       open_dec_2026_registered_at: now().toISOString(),
       signup_source: "open-dec-2026",
     };
-    const attrs = { email: r.email, properties, first_name: r.name.split(" ")[0] };
-    const phone = normalizePhone(r.phone);
+    const attrs = { email, properties };
+    if (r.name) attrs.first_name = r.name.split(" ")[0];
+    const phone = r.phone ? normalizePhone(r.phone) : null;
     if (phone) attrs.phone_number = phone;
     const create = await klaviyo("POST", "/profiles", { data: { type: "profile", attributes: attrs } });
     if (create.status === 409) {
@@ -141,7 +148,7 @@ export function createOpenRouter({
           type: "profile-subscription-bulk-create-job",
           attributes: {
             custom_source: "December open registration",
-            profiles: { data: [{ type: "profile", attributes: { email: r.email, subscriptions: { email: { marketing: { consent: "SUBSCRIBED" } } } } }] },
+            profiles: { data: [{ type: "profile", attributes: { email, subscriptions: { email: { marketing: { consent: "SUBSCRIBED" } } } } }] },
           },
           relationships: { list: { data: { type: "list", id: listId } } },
         },
@@ -161,18 +168,18 @@ export function createOpenRouter({
   router.post("/api/open/register", async (req, res) => {
     const parsed = registrationSchema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({ error: "Please check the form: every field except notes is required." });
+      return res.status(400).json({ error: "Please pick the level you want to play." });
     }
     const r = {
       ...parsed.data,
-      name: sanitize(parsed.data.name, 80),
-      phone: sanitize(parsed.data.phone, 30),
+      name: sanitize(parsed.data.name || "", 80),
+      phone: sanitize(parsed.data.phone || "", 30),
       rating: sanitize(parsed.data.rating || "", 20),
       playtomicEmail: sanitize(parsed.data.playtomicEmail || "", 255),
       partner: sanitize(parsed.data.partner || "", 80),
       notes: sanitize(parsed.data.notes || "", 500),
     };
-    if (!E164.test(normalizePhone(r.phone) || "")) {
+    if (r.phone && !E164.test(normalizePhone(r.phone) || "")) {
       return res.status(400).json({ error: "That phone number does not look right. Include the area code." });
     }
     const tier = currentTier(tiers, todayInClub(now()), closes);

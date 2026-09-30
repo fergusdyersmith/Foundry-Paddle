@@ -78,6 +78,17 @@ describe("POST /api/open/register", () => {
     expect((await call(a, "POST", "/api/open/register", { ...good, website: "spam" })).status).toBe(400);
   });
 
+  it("needs only a level: Playtomic collects the rest at payment", async () => {
+    const slack = []; const kl = [];
+    const a = app({ slackToken: "x", bookUrl: "u", fetchImpl: async (u, init) => { slack.push(JSON.parse(init.body)); return { json: async () => ({ ok: true }) }; },
+      klaviyo: async (m, p, b) => { kl.push([m, p, b]); return { status: 201, json: {} }; } });
+    const r = await call(a, "POST", "/api/open/register", { level: "beginner" });
+    expect(r.status).toBe(200); expect(r.json.bookUrl).toBe("u");
+    expect(slack[0].text).toContain("match by the Playtomic booking"); expect(slack[0].text).toContain("Shirt: not given");
+    expect(kl.length).toBe(0);            // no email, so nothing to key a Klaviyo profile on
+    expect((await call(a, "POST", "/api/open/register", { shirt: "M" })).status).toBe(400);
+  });
+
   it("keeps Slack markup out of what a registrant typed", () => {
     const t = buildSlackText({ ...good, name: "<!channel> Sam", notes: "" }, currentTier(DEFAULT_TIERS, "2026-10-01"));
     expect(t).not.toContain("<!channel>"); expect(t).toContain("&lt;!channel&gt;");
