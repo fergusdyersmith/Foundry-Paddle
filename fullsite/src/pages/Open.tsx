@@ -15,6 +15,8 @@ import {
   OPEN_DATES_LABEL,
   OPEN_DATE_END,
   OPEN_DATE_START,
+  OPEN_HOST,
+  OPEN_HOST_LINE,
   OPEN_INCLUDES,
   OPEN_LEVELS,
   OPEN_NAME,
@@ -65,7 +67,7 @@ const Open = () => {
   const [today, setToday] = useState<string | null>(null);
   const [brackets, setBrackets] = useState<Bracket[] | null>(null);
 
-  const [form, setForm] = useState({ name: "", email: "", phone: "", shirt: "", level: "", rating: "", playtomicEmail: "", notes: "", website: "" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", shirt: "", level: "", rating: "", playtomicEmail: "", partner: "", notes: "", website: "" });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<Registered | null>(null);
@@ -136,7 +138,7 @@ const Open = () => {
               address: { "@type": "PostalAddress", streetAddress: "8613 N Crawford St", addressLocality: "Portland", addressRegion: "OR", postalCode: "97203", addressCountry: "US" },
             },
             offers: OPEN_TIERS.map((t) => ({ "@type": "Offer", name: t.label, price: t.price, priceCurrency: "USD", url: "https://www.foundrypadel.com/open" })),
-            organizer: { "@type": "Organization", name: "Foundry Padel", url: "https://www.foundrypadel.com" },
+            organizer: { "@type": "Person", name: OPEN_HOST },
           })}
         </script>
       </Head>
@@ -183,7 +185,7 @@ const Open = () => {
             })}
           </div>
           <p className="mx-auto mt-6 max-w-2xl text-center font-body text-sm text-muted-foreground">
-            Registration closes {OPEN_CLOSES_LABEL}. Entry is capped at {OPEN_CAPACITY} players across all levels, and the price is the same for members and non-members.
+            Registration closes {OPEN_CLOSES_LABEL}. Entry is capped at {OPEN_CAPACITY} players across all levels. {OPEN_HOST_LINE}
           </p>
         </div>
       </section>
@@ -267,7 +269,14 @@ const Open = () => {
                 <div><label className={label} htmlFor="o-rating">Your Playtomic rating (if you know it)</label><input id="o-rating" className={field} value={form.rating} onChange={set("rating")} placeholder="e.g. 2.5" inputMode="decimal" /></div>
                 <div><label className={label} htmlFor="o-pemail">Email on your Playtomic account, if different</label><input id="o-pemail" type="email" className={field} value={form.playtomicEmail} onChange={set("playtomicEmail")} autoComplete="off" placeholder="So we can add you to the event" /></div>
               </div>
-              <div><label className={label} htmlFor="o-notes">Anything we should know</label><textarea id="o-notes" className={`${field} min-h-[5rem]`} value={form.notes} onChange={set("notes")} placeholder="Playing up a level, a partner you want to be drawn with, dietary needs" /></div>
+              <div>
+                <label className={label} htmlFor="o-partner">Your partner</label>
+                <input id="o-partner" className={field} value={form.partner} onChange={set("partner")} autoComplete="off" placeholder="Their name, and have them register too" />
+                <p className="mt-2 font-body text-xs leading-relaxed text-muted-foreground">
+                  We recommend entering with a partner. Signing up on your own? Leave this blank and we will match you with someone at your level.
+                </p>
+              </div>
+              <div><label className={label} htmlFor="o-notes">Anything we should know</label><textarea id="o-notes" className={`${field} min-h-[5rem]`} value={form.notes} onChange={set("notes")} placeholder="Playing up a level, dietary needs, anything else" /></div>
               {/* Honeypot: hidden from people, filled by bots. */}
               <div className="hidden" aria-hidden="true"><input tabIndex={-1} autoComplete="off" value={form.website} onChange={set("website")} /></div>
 
@@ -299,7 +308,7 @@ const Open = () => {
                 ))}
               </div>
               <p className="mt-6 font-body text-sm leading-relaxed text-secondary-foreground">
-                Register in the level you want. Once we see how many players are in each, we finalise the three draws and let everyone know before the weekend.
+                Enter with a partner if you have one; if not, we pair singles by level. Once we see how many players are in each level, we finalise the three draws and let everyone know before the weekend.
               </p>
             </div>
             <div>
@@ -396,6 +405,7 @@ const Open = () => {
           <div className="border border-border p-10 text-center">
             <h2 className="font-display text-3xl text-foreground">FIND US</h2>
             <p className="mt-4 font-body text-base text-secondary-foreground">Foundry Padel, Portland<br />8613 N Crawford St, Portland, OR 97203</p>
+            <p className="mt-4 font-body text-xs leading-relaxed text-muted-foreground">{OPEN_HOST_LINE}</p>
             <div className="mt-8 flex flex-col items-center justify-center gap-4">
               <a href={GOOGLE_MAPS_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 border border-primary px-8 py-3 font-display tracking-widest text-primary transition-colors hover:bg-primary hover:text-primary-foreground"><MapPin size={18} /> GET DIRECTIONS</a>
               <a href={`tel:${PHONE_TEL}`} className="inline-flex items-center gap-2 border border-border px-8 py-3 font-display tracking-widest text-foreground transition-colors hover:border-primary"><Phone size={18} /> {PHONE_DISPLAY}</a>

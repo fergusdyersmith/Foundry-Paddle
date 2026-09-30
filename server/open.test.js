@@ -4,7 +4,7 @@ import { buildSlackText, createOpenRouter, currentTier, DEFAULT_CLOSES, DEFAULT_
 
 const good = {
   name: "Sam Rivera", email: "sam@example.com", phone: "(503) 555-0142", shirt: "M",
-  level: "intermediate", rating: "3.0", playtomicEmail: "sam.plays@example.com", notes: "Happy to play up.",
+  level: "intermediate", rating: "3.0", playtomicEmail: "sam.plays@example.com", partner: "Alex Chen", notes: "Happy to play up.",
 };
 
 function app(deps) {
@@ -43,7 +43,7 @@ describe("POST /api/open/register", () => {
     expect(r.status).toBe(200);
     expect(r.json).toMatchObject({ ok: true, bookUrl: "https://app.playtomic.com/tournaments/abc", tier: "early", price: 75, pay: 75 });
     expect(slack[0].channel).toBe("#t");
-    expect(slack[0].text).toContain("Sam Rivera"); expect(slack[0].text).toContain("intermediate"); expect(slack[0].text).toContain("sam.plays@example.com");
+    expect(slack[0].text).toContain("Sam Rivera"); expect(slack[0].text).toContain("intermediate"); expect(slack[0].text).toContain("sam.plays@example.com"); expect(slack[0].text).toContain("partner: Alex Chen");
     expect(kl[0][2].data.attributes.properties.open_dec_2026_shirt).toBe("M");
     expect(kl[0][2].data.attributes.phone_number).toBe("+15035550142");
     expect(kl[1][1]).toBe("/profile-subscription-bulk-create-jobs");

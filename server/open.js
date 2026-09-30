@@ -57,6 +57,8 @@ export const registrationSchema = z.object({
   // The email on their Playtomic account, when it differs: the club adds paid players
   // to the Playtomic tournament by hand, and this is how they are found.
   playtomicEmail: z.string().trim().email().max(255).optional().or(z.literal("")),
+  // Their partner, if they are entering as a pair. Free text; the club pairs the rest.
+  partner: z.string().trim().max(80).optional().or(z.literal("")),
   notes: z.string().trim().max(500).optional().or(z.literal("")),
   // Anti-spam: the honeypot must be empty and the arithmetic must be right, exactly as
   // the interest form does it.
@@ -67,7 +69,7 @@ export function buildSlackText(r, tier) {
   const bits = [
     `*New open registration*  ${escapeSlack(r.name)}`,
     `Level: *${r.level}*${r.rating ? ` (rating ${escapeSlack(r.rating)})` : ""}`,
-    `Shirt: ${r.shirt}  ·  tier: ${tier.label} $${tier.price}`,
+    `Shirt: ${r.shirt}  ·  tier: ${tier.label} $${tier.price}  ·  partner: ${r.partner ? escapeSlack(r.partner) : "needs one"}`,
     `${escapeSlack(r.email)}${r.playtomicEmail && r.playtomicEmail !== r.email ? ` (Playtomic: ${escapeSlack(r.playtomicEmail)})` : ""}  ·  ${escapeSlack(r.phone)}`,
   ];
   if (r.notes) bits.push(`_${escapeSlack(r.notes)}_`);
@@ -118,6 +120,7 @@ export function createOpenRouter({
       open_dec_2026_playtomic_email: r.playtomicEmail || null,
       open_dec_2026_tier: tier.key,
       open_dec_2026_rating: r.rating || null,
+      open_dec_2026_partner: r.partner || null,
       open_dec_2026_notes: r.notes || null,
       open_dec_2026_registered_at: now().toISOString(),
       signup_source: "open-dec-2026",
@@ -166,6 +169,7 @@ export function createOpenRouter({
       phone: sanitize(parsed.data.phone, 30),
       rating: sanitize(parsed.data.rating || "", 20),
       playtomicEmail: sanitize(parsed.data.playtomicEmail || "", 255),
+      partner: sanitize(parsed.data.partner || "", 80),
       notes: sanitize(parsed.data.notes || "", 500),
     };
     if (!E164.test(normalizePhone(r.phone) || "")) {

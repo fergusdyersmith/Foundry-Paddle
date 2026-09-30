@@ -11,6 +11,10 @@
  */
 
 export const OPEN_NAME = "The Foundry Open";
+/** Not a club programme: organised and hosted by Ryan Chin at Foundry Padel. Said on the
+ *  page and the flyer so nobody reads membership benefits into it. */
+export const OPEN_HOST = "Ryan Chin";
+export const OPEN_HOST_LINE = "Organized and hosted by Ryan Chin at Foundry Padel. Not an official Foundry Padel event; membership benefits do not apply.";
 export const OPEN_DATES_LABEL = "December 5 and 6, 2026";
 export const OPEN_DATE_START = "2026-12-05";
 export const OPEN_DATE_END = "2026-12-06";
@@ -31,7 +35,7 @@ export const OPEN_INCLUDES = [
   "Two days of padel: Saturday round robin, Sunday double elimination",
   "A tournament t-shirt",
   "All food and drinks, both days",
-  OPEN_PRIZE_POOL ? `A ${OPEN_PRIZE_POOL} prize pool across the three levels` : "Prizes for the finalists and runners-up in every level",
+  OPEN_PRIZE_POOL ? `${OPEN_PRIZE_POOL} in prizes: cash for the advanced draw, goods for beginner and intermediate` : "Prizes in every level: cash for the advanced draw, goods for beginner and intermediate",
 ] as const;
 
 export const OPEN_SUPPLIERS = [
