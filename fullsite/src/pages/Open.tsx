@@ -69,7 +69,8 @@ const Open = () => {
   const [today, setToday] = useState<string | null>(null);
   const [brackets, setBrackets] = useState<Bracket[] | null>(null);
 
-  const [form, setForm] = useState({ name: "", email: "", phone: "", shirt: "", level: "", rating: "", playtomicEmail: "", partner: "", notes: "", website: "" });
+  // No rating field: Playtomic shows the club a player's rating once they book.
+  const [form, setForm] = useState({ shirt: "", level: "", playtomicEmail: "", partner: "", notes: "", website: "" });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<Registered | null>(null);
@@ -271,10 +272,7 @@ const Open = () => {
               <p className="font-body text-xs leading-relaxed text-muted-foreground">
                 We recommend entering with a partner. On your own? Leave it blank and we will match you with someone at your level.
               </p>
-              <div className="grid gap-5 sm:grid-cols-2">
-                <div><label className={label} htmlFor="o-pemail">Email on your Playtomic account <span className="normal-case tracking-normal">(optional)</span></label><input id="o-pemail" type="email" className={field} value={form.playtomicEmail} onChange={set("playtomicEmail")} autoComplete="email" placeholder="So we can match this to your booking" /></div>
-                <div><label className={label} htmlFor="o-rating">Your Playtomic rating <span className="normal-case tracking-normal">(optional)</span></label><input id="o-rating" className={field} value={form.rating} onChange={set("rating")} placeholder="e.g. 2.5" inputMode="decimal" /></div>
-              </div>
+              <div><label className={label} htmlFor="o-pemail">Email on your Playtomic account <span className="normal-case tracking-normal">(optional)</span></label><input id="o-pemail" type="email" className={field} value={form.playtomicEmail} onChange={set("playtomicEmail")} autoComplete="email" placeholder="So we can match this to your booking" /></div>
               <div><label className={label} htmlFor="o-notes">Anything we should know <span className="normal-case tracking-normal">(optional)</span></label><textarea id="o-notes" className={`${field} min-h-[5rem]`} value={form.notes} onChange={set("notes")} placeholder="Playing up a level, dietary needs, anything else" /></div>
               {/* Honeypot: hidden from people, filled by bots. */}
               <div className="hidden" aria-hidden="true"><input tabIndex={-1} autoComplete="off" value={form.website} onChange={set("website")} /></div>
