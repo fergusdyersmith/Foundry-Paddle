@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useReducedMotion } from "framer-motion";
 import { partnerLogoFiles } from "virtual:partner-logos";
 
@@ -21,7 +22,13 @@ function LogoSlide({ file, alt }: { file: string; alt: string }) {
 }
 
 export function PartnerLogoBand() {
-  const reduceMotion = useReducedMotion();
+  // The page is prerendered without knowing the viewer's motion preference, so the
+  // first client render must match that (the marquee) and only switch to the static
+  // grid once mounted. Reading the preference during hydration swapped the whole
+  // subtree for reduced-motion viewers and threw React 418/423 on every home load.
+  const prefersReduced = useReducedMotion();
+  const [reduceMotion, setReduceMotion] = useState(false);
+  useEffect(() => setReduceMotion(Boolean(prefersReduced)), [prefersReduced]);
 
   if (partnerLogoFiles.length === 0) return null;
 
