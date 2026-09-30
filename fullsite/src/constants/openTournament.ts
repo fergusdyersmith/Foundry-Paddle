@@ -35,7 +35,8 @@ export const OPEN_PRIZE_POOL: string | null = "$3,500";
 export const OPEN_INCLUDES = [
   "Two days of padel: Saturday round robin, Sunday double elimination",
   "A tournament t-shirt",
-  "All food and drinks, both days",
+  // Vouchers, not a free-for-all (Ryan and Monica, 28 Sep): players eat and drink a lot.
+  "A brat and a drink on us each day, by voucher at check-in",
   OPEN_PRIZE_POOL ? `${OPEN_PRIZE_POOL} in prizes across the three levels` : "Prizes in every level",
 ] as const;
 

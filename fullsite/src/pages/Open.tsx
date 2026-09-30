@@ -119,7 +119,7 @@ const Open = () => {
     <main className="bg-background min-h-screen">
       <Seo
         title={`${OPEN_NAME}: two-day padel tournament, ${OPEN_DATES_LABEL} | Foundry Padel`}
-        description={`A two-day padel tournament for beginners, intermediate and advanced players at Foundry Padel, Portland. Round robin Saturday, double elimination Sunday, ${OPEN_PRIZE_POOL ?? "prizes"} in prizes, all food and drinks included. Entry from $${OPEN_TIERS[0].price}; registration closes ${OPEN_CLOSES_LABEL}.`}
+        description={`A two-day padel tournament for beginners, intermediate and advanced players at Foundry Padel, Portland. Round robin Saturday, double elimination Sunday, ${OPEN_PRIZE_POOL ?? "prizes"} in prizes, a brat and a drink each day included. Entry from $${OPEN_TIERS[0].price}; registration closes ${OPEN_CLOSES_LABEL}.`}
         path="/open"
       />
       <Head>
@@ -161,7 +161,7 @@ const Open = () => {
             <p className="mt-6 font-display text-2xl sm:text-3xl tracking-wide text-foreground">{OPEN_DATES_LABEL.toUpperCase()}</p>
             <p className="mx-auto mt-4 max-w-xl font-body text-base text-secondary-foreground">
               Round robin on Saturday, double elimination on Sunday, in beginner, intermediate and
-              advanced draws. {OPEN_PRIZE_POOL ? `${OPEN_PRIZE_POOL} in prizes` : "Prizes in every level"}, a shirt on your back, and all the food and drink you want, both days. {OPEN_HOST_LINE}
+              advanced draws. {OPEN_PRIZE_POOL ? `${OPEN_PRIZE_POOL} in prizes` : "Prizes in every level"}, a shirt on your back, and a brat and a drink on us each day. {OPEN_HOST_LINE}
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <a href="#register" className="bg-primary px-10 py-4 font-display text-lg tracking-widest text-primary-foreground shadow-[0_0_40px_-8px_hsl(var(--primary)/0.7)] transition-all hover:brightness-110">
