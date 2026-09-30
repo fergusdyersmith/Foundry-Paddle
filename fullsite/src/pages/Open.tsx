@@ -116,7 +116,7 @@ const Open = () => {
     <main className="bg-background min-h-screen">
       <Seo
         title={`${OPEN_NAME}: two-day padel tournament, ${OPEN_DATES_LABEL} | Foundry Padel`}
-        description={`A two-day padel tournament for beginners, intermediate and advanced players at Foundry Padel, Portland. Round robin Saturday, double elimination Sunday, prizes in every level, all food and drinks included. Entry from $${OPEN_TIERS[0].price}; registration closes ${OPEN_CLOSES_LABEL}.`}
+        description={`A two-day padel tournament for beginners, intermediate and advanced players at Foundry Padel, Portland. Round robin Saturday, double elimination Sunday, ${OPEN_PRIZE_POOL ?? "prizes"} in prizes, all food and drinks included. Entry from $${OPEN_TIERS[0].price}; registration closes ${OPEN_CLOSES_LABEL}.`}
         path="/open"
       />
       <Head>
@@ -138,7 +138,8 @@ const Open = () => {
               address: { "@type": "PostalAddress", streetAddress: "8613 N Crawford St", addressLocality: "Portland", addressRegion: "OR", postalCode: "97203", addressCountry: "US" },
             },
             offers: OPEN_TIERS.map((t) => ({ "@type": "Offer", name: t.label, price: t.price, priceCurrency: "USD", url: "https://www.foundrypadel.com/open" })),
-            organizer: { "@type": "Person", name: OPEN_HOST },
+            organizer: { "@type": "Organization", name: "Foundry Padel", url: "https://www.foundrypadel.com" },
+            director: { "@type": "Person", name: OPEN_HOST },
           })}
         </script>
       </Head>
@@ -157,7 +158,7 @@ const Open = () => {
             <p className="mt-6 font-display text-2xl sm:text-3xl tracking-wide text-foreground">{OPEN_DATES_LABEL.toUpperCase()}</p>
             <p className="mx-auto mt-4 max-w-xl font-body text-base text-secondary-foreground">
               Round robin on Saturday, double elimination on Sunday, in beginner, intermediate and
-              advanced draws. {OPEN_PRIZE_POOL ? `A ${OPEN_PRIZE_POOL} prize pool` : "Prizes in every level"}, a shirt on your back, and all the food and drink you want, both days.
+              advanced draws. {OPEN_PRIZE_POOL ? `${OPEN_PRIZE_POOL} in prizes` : "Prizes in every level"}, a shirt on your back, and all the food and drink you want, both days. {OPEN_HOST_LINE}
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <a href="#register" className="bg-primary px-10 py-4 font-display text-lg tracking-widest text-primary-foreground shadow-[0_0_40px_-8px_hsl(var(--primary)/0.7)] transition-all hover:brightness-110">
@@ -185,7 +186,7 @@ const Open = () => {
             })}
           </div>
           <p className="mx-auto mt-6 max-w-2xl text-center font-body text-sm text-muted-foreground">
-            Registration closes {OPEN_CLOSES_LABEL}. Entry is capped at {OPEN_CAPACITY} players across all levels. {OPEN_HOST_LINE}
+            Registration closes {OPEN_CLOSES_LABEL}. Entry is capped at {OPEN_CAPACITY} players across all levels.
           </p>
         </div>
       </section>
@@ -405,7 +406,6 @@ const Open = () => {
           <div className="border border-border p-10 text-center">
             <h2 className="font-display text-3xl text-foreground">FIND US</h2>
             <p className="mt-4 font-body text-base text-secondary-foreground">Foundry Padel, Portland<br />8613 N Crawford St, Portland, OR 97203</p>
-            <p className="mt-4 font-body text-xs leading-relaxed text-muted-foreground">{OPEN_HOST_LINE}</p>
             <div className="mt-8 flex flex-col items-center justify-center gap-4">
               <a href={GOOGLE_MAPS_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 border border-primary px-8 py-3 font-display tracking-widest text-primary transition-colors hover:bg-primary hover:text-primary-foreground"><MapPin size={18} /> GET DIRECTIONS</a>
               <a href={`tel:${PHONE_TEL}`} className="inline-flex items-center gap-2 border border-border px-8 py-3 font-display tracking-widest text-foreground transition-colors hover:border-primary"><Phone size={18} /> {PHONE_DISPLAY}</a>

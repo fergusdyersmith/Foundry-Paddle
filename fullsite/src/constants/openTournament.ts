@@ -11,10 +11,10 @@
  */
 
 export const OPEN_NAME = "The Foundry Open";
-/** Not a club programme: organised and hosted by Ryan Chin at Foundry Padel. Said on the
- *  page and the flyer so nobody reads membership benefits into it. */
+/** A Foundry event with Ryan Chin as its face: he directs it and is on the floor both
+ *  days. Named on the page and the flyer for that reason, and no other. */
 export const OPEN_HOST = "Ryan Chin";
-export const OPEN_HOST_LINE = "Organized and hosted by Ryan Chin at Foundry Padel. Not an official Foundry Padel event; membership benefits do not apply.";
+export const OPEN_HOST_LINE = "Hosted by Ryan Chin, on the floor running it both days.";
 export const OPEN_DATES_LABEL = "December 5 and 6, 2026";
 export const OPEN_DATE_START = "2026-12-05";
 export const OPEN_DATE_END = "2026-12-06";
@@ -28,14 +28,15 @@ export const OPEN_TIERS = [
 export const OPEN_CLOSES = "2026-11-28";
 export const OPEN_CLOSES_LABEL = "Friday, November 27";
 export const OPEN_CAPACITY = 100;
-/** The size of the pool is still being decided (28 Sep); no figure in public until it is. */
-export const OPEN_PRIZE_POOL: string | null = null;
+/** The headline figure only (Jake, 30 Sep): how it splits across levels stays off the page
+ *  and the flyer until sign-ups show what to expect. Raise it when sponsor money lands. */
+export const OPEN_PRIZE_POOL: string | null = "$3,500";
 
 export const OPEN_INCLUDES = [
   "Two days of padel: Saturday round robin, Sunday double elimination",
   "A tournament t-shirt",
   "All food and drinks, both days",
-  OPEN_PRIZE_POOL ? `${OPEN_PRIZE_POOL} in prizes: cash for the advanced draw, goods for beginner and intermediate` : "Prizes in every level: cash for the advanced draw, goods for beginner and intermediate",
+  OPEN_PRIZE_POOL ? `${OPEN_PRIZE_POOL} in prizes across the three levels` : "Prizes in every level",
 ] as const;
 
 export const OPEN_SUPPLIERS = [
