@@ -95,7 +95,9 @@ export function createOpenRouter({
   klaviyo = null,
   listId = process.env.KLAVIYO_INTEREST_LIST_ID,
   slackToken = process.env.SLACK_BOT_TOKEN,
-  channel = process.env.OPEN_SLACK_CHANNEL || "#club-ops",
+  // The same channel the receptionist's bot already posts to, unless told otherwise:
+  // a channel the bot is not in returns channel_not_found and the record is lost.
+  channel = process.env.OPEN_SLACK_CHANNEL || process.env.SLACK_CHANNEL || "#front-desk",
   bookUrl = process.env.OPEN_PLAYTOMIC_URL || null,
   tiers = DEFAULT_TIERS,
   closes = DEFAULT_CLOSES,
@@ -193,12 +195,17 @@ export function createOpenRouter({
       if (o.status === "rejected") console.error("[open] record failed:", o.reason?.message || o.reason);
     }
     if (!recorded) {
-      // Neither record took, so nobody at the club knows this person exists. Handing
-      // out the payment link now would take their money for a place nobody has written
-      // down. Refuse, and say so plainly.
-      return res.status(502).json({ error: "We could not save your registration. Nothing has been charged; please try again in a minute or call the club." });
+      // Neither record took. This used to refuse the link, on the theory that a place
+      // nobody had written down should not be paid for. Wrong priority (30 Sep, after
+      // a real registration bounced): Playtomic itself records who paid, and the form's
+      // answers are a convenience the club can chase later. A sign-up must never fail
+      // because Slack or Klaviyo did. Log it loudly and carry on.
+      console.error("[open] registration NOT recorded anywhere; link released regardless", {
+        level: r.level, shirt: r.shirt || null, email: r.playtomicEmail || r.email || null,
+      });
     }
     return res.json({
+      recorded,
       ok: true,
       bookUrl,
       tier: tier.key,

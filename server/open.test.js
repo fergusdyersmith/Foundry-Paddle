@@ -56,12 +56,13 @@ describe("POST /api/open/register", () => {
     expect(late.status).toBe(410); expect(late.json.bookUrl).toBeUndefined();
   });
 
-  it("refuses to hand out the link when nothing recorded the registration", async () => {
+  it("still hands out the link when nothing recorded the registration", async () => {
+    // A sign-up must never fail because Slack or Klaviyo did: Playtomic records who paid.
     const a = app({ slackToken: "x", fetchImpl: async () => ({ json: async () => ({ ok: false, error: "channel_not_found" }) }),
       klaviyo: async () => ({ status: 500, json: {} }), bookUrl: "u" });
     const r = await call(a, "POST", "/api/open/register", good);
-    expect(r.status).toBe(502);
-    expect(r.json.bookUrl).toBeUndefined();
+    expect(r.status).toBe(200);
+    expect(r.json).toMatchObject({ bookUrl: "u", recorded: false });
   });
 
   it("still releases the link when one of the two records took", async () => {
