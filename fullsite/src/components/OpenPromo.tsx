@@ -98,7 +98,7 @@ const OpenPromo = () => {
               <div className="mt-6 flex flex-1 items-end">
                 <Link
                   to={c.to}
-                  className="inline-flex items-center gap-2 bg-primary px-8 py-4 font-display text-base tracking-widest text-primary-foreground shadow-[0_0_30px_-10px_hsl(var(--primary)/0.6)] transition-all hover:brightness-110"
+                  className="inline-flex items-center gap-2 whitespace-nowrap bg-primary px-6 py-4 font-display text-sm tracking-widest text-primary-foreground shadow-[0_0_30px_-10px_hsl(var(--primary)/0.6)] transition-all hover:brightness-110 sm:px-8 sm:text-base"
                 >
                   {c.cta} <ArrowRight size={18} />
                 </Link>
