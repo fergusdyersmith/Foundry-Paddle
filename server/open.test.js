@@ -56,6 +56,28 @@ describe("POST /api/open/register", () => {
     expect(late.status).toBe(410); expect(late.json.bookUrl).toBeUndefined();
   });
 
+  it("appends a row to the organisers' sheet, in column order, with the secret", async () => {
+    const posts = [];
+    const a = app({
+      slackToken: null, klaviyo: null, bookUrl: "u", sheetUrl: "https://script.google.com/macros/s/X/exec", sheetSecret: "s3cret",
+      fetchImpl: async (url, init) => { posts.push([url, JSON.parse(init.body)]); return { ok: true, status: 200, json: async () => ({ ok: true }) }; },
+      now: () => new Date("2026-10-10T12:00:00-07:00"),
+    });
+    const r = await call(a, "POST", "/api/open/register", good);
+    expect(r.json).toMatchObject({ recorded: true, bookUrl: "u" });
+    expect(posts).toHaveLength(1);
+    expect(posts[0][0]).toBe("https://script.google.com/macros/s/X/exec");
+    expect(posts[0][1].secret).toBe("s3cret");
+    expect(posts[0][1].row).toEqual(["10/10/26, 12:00 PM", "Sam Rivera", "intermediate", "Alex Chen", "M", "sam.plays@example.com", "sam@example.com", "(503) 555-0142", "Early bird", 75, "Happy to play up."]);
+  });
+
+  it("treats a refused sheet row as a failed record, not a failed sign-up", async () => {
+    const a = app({ slackToken: null, klaviyo: null, bookUrl: "u", sheetUrl: "https://script.google.com/macros/s/X/exec",
+      fetchImpl: async () => ({ ok: true, status: 200, json: async () => ({ ok: false, error: "bad secret" }) }) });
+    const r = await call(a, "POST", "/api/open/register", good);
+    expect(r.status).toBe(200); expect(r.json).toMatchObject({ recorded: false, bookUrl: "u" });
+  });
+
   it("still hands out the link when nothing recorded the registration", async () => {
     // A sign-up must never fail because Slack or Klaviyo did: Playtomic records who paid.
     const a = app({ slackToken: "x", fetchImpl: async () => ({ json: async () => ({ ok: false, error: "channel_not_found" }) }),

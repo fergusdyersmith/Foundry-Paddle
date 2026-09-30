@@ -11,6 +11,9 @@
 //      the audit trail if anything else is down.
 //   2. A Klaviyo profile with the answers as properties, subscribed to the interest
 //      list: the mailing list for the event, and a roster that can be exported.
+//   3. A row in the organisers' Google Sheet (Ryan runs the draws from it), through a
+//      tiny Apps Script web app bound to the sheet: no Google credentials on this
+//      server, just the script's URL and a shared secret it checks.
 // Nothing here charges anyone. The worst a crafted request can do is post a bogus line
 // to Slack, which the escaping below keeps to text.
 import express from "express";
@@ -87,6 +90,8 @@ export function buildSlackText(r, tier) {
  * @param {string}   deps.slackToken   bot token; null disables Slack
  * @param {string}   deps.channel
  * @param {string|null} deps.bookUrl   the Playtomic tournament link, null until it exists
+ * @param {string|null} deps.sheetUrl  the Apps Script web app that appends a row; null disables
+ * @param {string|null} deps.sheetSecret  shared secret the script checks
  * @param {Array}    deps.tiers
  * @param {Function} deps.fetchImpl
  * @param {Function} deps.now
@@ -99,6 +104,8 @@ export function createOpenRouter({
   // a channel the bot is not in returns channel_not_found and the record is lost.
   channel = process.env.OPEN_SLACK_CHANNEL || process.env.SLACK_CHANNEL || "#front-desk",
   bookUrl = process.env.OPEN_PLAYTOMIC_URL || null,
+  sheetUrl = process.env.OPEN_SHEET_WEBHOOK || null,
+  sheetSecret = process.env.OPEN_SHEET_SECRET || null,
   tiers = DEFAULT_TIERS,
   closes = DEFAULT_CLOSES,
   fetchImpl = (...args) => fetch(...args),
@@ -159,6 +166,28 @@ export function createOpenRouter({
     return true;
   }
 
+  async function appendSheetRow(r, tier) {
+    if (!sheetUrl) return false;
+    // One flat row, in the sheet's column order. Apps Script answers a POST with a
+    // redirect to the result, which fetch follows; a non-2xx at the end is a failure.
+    const res = await fetchImpl(sheetUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        secret: sheetSecret || "",
+        row: [
+          new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", dateStyle: "short", timeStyle: "short" }).format(now()),
+          r.name || "", r.level, r.partner || "", r.shirt || "", r.playtomicEmail || "", r.email || "", r.phone || "",
+          tier.label, tier.price, r.notes || "",
+        ],
+      }),
+    });
+    if (!res.ok) throw new Error(`sheet ${res.status}`);
+    const json = await res.json().catch(() => ({}));
+    if (json.ok === false) throw new Error(`sheet ${json.error || "refused"}`);
+    return true;
+  }
+
   // What the page needs before anyone fills the form in: the tier and whether booking
   // exists yet. Prices are also in the page's constants for the prerender; this is the
   // live answer.
@@ -189,7 +218,7 @@ export function createOpenRouter({
       return res.status(410).json({ error: "Registration has closed. Call the club if you think there is still a place." });
     }
 
-    const outcomes = await Promise.allSettled([postSlack(buildSlackText(r, tier)), recordKlaviyo(r, tier)]);
+    const outcomes = await Promise.allSettled([postSlack(buildSlackText(r, tier)), recordKlaviyo(r, tier), appendSheetRow(r, tier)]);
     const recorded = outcomes.some((o) => o.status === "fulfilled" && o.value === true);
     for (const o of outcomes) {
       if (o.status === "rejected") console.error("[open] record failed:", o.reason?.message || o.reason);
@@ -199,7 +228,7 @@ export function createOpenRouter({
       // nobody had written down should not be paid for. Wrong priority (30 Sep, after
       // a real registration bounced): Playtomic itself records who paid, and the form's
       // answers are a convenience the club can chase later. A sign-up must never fail
-      // because Slack or Klaviyo did. Log it loudly and carry on.
+      // because Slack, Klaviyo or the sheet did. Log it loudly and carry on.
       console.error("[open] registration NOT recorded anywhere; link released regardless", {
         level: r.level, shirt: r.shirt || null, email: r.playtomicEmail || r.email || null,
       });
