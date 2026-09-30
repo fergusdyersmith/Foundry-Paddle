@@ -98,8 +98,8 @@ const Index = () => {
         </div>
       </section>
 
-      {/* The December open, while registration is open. Straight under the hero on
-          purpose: it is the one dated thing the club is selling right now. */}
+      {/* What is coming up, soonest first: the preview evening and the December open,
+          straight under the hero on purpose. Each card goes when its date passes. */}
       <OpenPromo />
 
       {/* Stats */}
