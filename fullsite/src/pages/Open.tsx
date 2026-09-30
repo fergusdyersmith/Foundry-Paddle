@@ -228,10 +228,10 @@ const Open = () => {
             </div>
           ) : done ? (
             <div className="mt-12 border border-primary bg-secondary p-10 text-center">
-              <p className="font-display text-3xl text-foreground">YOU'RE ON THE LIST</p>
+              <p className="font-display text-3xl text-foreground">ONE MORE STEP</p>
               <p className="mt-4 font-body text-base text-secondary-foreground">
-                Your place is held once you pay. Your entry is <span className="text-foreground">${done.pay}</span>
-                {done.tier === "early" ? ", the early-bird price, locked in when you pay" : ""}.
+                You are not in until you pay on Playtomic. Your entry is <span className="text-foreground">${done.pay}</span>
+                {done.tier === "early" ? ", the early-bird price, locked in the moment you pay" : ""}.
               </p>
               {done.bookUrl ? (
                 <a href={done.bookUrl} target="_blank" rel="noopener noreferrer" className="mt-8 inline-flex items-center gap-2 bg-primary px-10 py-4 font-display text-lg tracking-widest text-primary-foreground transition-all hover:brightness-110">
