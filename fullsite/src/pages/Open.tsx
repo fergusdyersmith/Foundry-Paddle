@@ -44,6 +44,8 @@ import {
 
 const PHONE_DISPLAY = "(971) 378-7499";
 const PHONE_TEL = "+19713787499";
+// Questions about the Open go to the club inbox, not the desk phone (Kelly, 30 Sep).
+const OPEN_EMAIL = "portland@foundrypadel.com";
 const sectionHeading = "font-display text-4xl sm:text-5xl text-foreground";
 const field =
   "w-full border border-border bg-secondary px-5 py-4 font-body text-sm tracking-widest text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors";
@@ -298,7 +300,7 @@ const Open = () => {
                 {submitting ? "SAVING" : isEarly ? `LOCK IN $${price} · CONTINUE TO PAYMENT` : `CONTINUE TO PAYMENT · $${price}`}
               </button>
               <p className="text-center font-body text-xs text-muted-foreground">
-                Rather talk to a person? <a href={`tel:${PHONE_TEL}`} className="whitespace-nowrap text-primary hover:underline">Call {PHONE_DISPLAY}</a>.
+                Questions? Email <a href={`mailto:${OPEN_EMAIL}`} className="whitespace-nowrap text-primary hover:underline">{OPEN_EMAIL}</a> or call <a href={`tel:${PHONE_TEL}`} className="whitespace-nowrap text-primary hover:underline">{PHONE_DISPLAY}</a>.
               </p>
             </form>
           )}
@@ -422,6 +424,7 @@ const Open = () => {
               <a href={GOOGLE_MAPS_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 border border-primary px-8 py-3 font-display tracking-widest text-primary transition-colors hover:bg-primary hover:text-primary-foreground"><MapPin size={18} /> GET DIRECTIONS</a>
               <a href={`tel:${PHONE_TEL}`} className="inline-flex items-center gap-2 border border-border px-8 py-3 font-display tracking-widest text-foreground transition-colors hover:border-primary"><Phone size={18} /> {PHONE_DISPLAY}</a>
             </div>
+            <p className="mt-6 font-body text-sm text-secondary-foreground">Questions about the Open: <a href={`mailto:${OPEN_EMAIL}`} className="text-primary hover:underline">{OPEN_EMAIL}</a></p>
           </div>
         </div>
       </section>
