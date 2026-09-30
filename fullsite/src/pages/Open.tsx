@@ -70,7 +70,7 @@ const Open = () => {
   const [brackets, setBrackets] = useState<Bracket[] | null>(null);
 
   // No rating field: Playtomic shows the club a player's rating once they book.
-  const [form, setForm] = useState({ shirt: "", level: "", playtomicEmail: "", partner: "", notes: "", website: "" });
+  const [form, setForm] = useState({ name: "", shirt: "", level: "", playtomicEmail: "", partner: "", notes: "", website: "" });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<Registered | null>(null);
@@ -269,6 +269,10 @@ const Open = () => {
               </fieldset>
 
               <div className="grid gap-5 sm:grid-cols-2">
+                <div>
+                  <label className={label} htmlFor="o-name">Your name <span className="normal-case tracking-normal">(optional)</span></label>
+                  <input id="o-name" className={field} value={form.name} onChange={set("name")} autoComplete="name" placeholder="As it appears on Playtomic" />
+                </div>
                 <div>
                   <label className={label} htmlFor="o-shirt">T-shirt size <span className="normal-case tracking-normal">(optional)</span></label>
                   <select id="o-shirt" className={field} value={form.shirt} onChange={set("shirt")}>
