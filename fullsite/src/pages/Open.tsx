@@ -128,7 +128,7 @@ const Open = () => {
     <main className="bg-background min-h-screen">
       <Seo
         title={`${OPEN_NAME}: two-day padel tournament, ${OPEN_DATES_LABEL} | Foundry Padel`}
-        description={`A two-day padel tournament for beginners, intermediate and advanced players at Foundry Padel, Portland. Round robin Saturday, single-elimination bracket Sunday, ${OPEN_PRIZE_POOL ?? "prizes"} in prizes, a brat and a drink each day included. Entry from $${OPEN_TIERS[0].price}; registration closes ${OPEN_CLOSES_LABEL}.`}
+        description={`A two-day padel tournament for beginners, intermediate and advanced players at Foundry Padel, Portland. Pool play Saturday, single-elimination bracket Sunday, everyone plays both days, ${OPEN_PRIZE_POOL ?? "prizes"} in prizes, a brat and a drink each day included. Entry from $${OPEN_TIERS[0].price}; registration closes ${OPEN_CLOSES_LABEL}.`}
         path="/open"
       />
       <Head>
@@ -137,7 +137,7 @@ const Open = () => {
             "@context": "https://schema.org",
             "@type": "SportsEvent",
             name: OPEN_NAME,
-            description: "A two-day padel tournament for beginners, intermediate and advanced players. Round robin Saturday, single-elimination bracket Sunday.",
+            description: "A two-day padel tournament for beginners, intermediate and advanced players. Pool play Saturday, single-elimination bracket Sunday. Everyone plays both days.",
             startDate: `${OPEN_DATE_START}T09:00:00-08:00`,
             endDate: `${OPEN_DATE_END}T18:00:00-08:00`,
             eventAttendanceMode: "https://schema.org/MixedEventAttendanceMode",
@@ -169,8 +169,8 @@ const Open = () => {
             <h1 className="mt-4 font-display text-6xl sm:text-8xl leading-none text-foreground">{OPEN_NAME.toUpperCase()}</h1>
             <p className="mt-6 font-display text-2xl sm:text-3xl tracking-wide text-foreground">{OPEN_DATES_LABEL.toUpperCase()}</p>
             <p className="mx-auto mt-4 max-w-xl font-body text-base text-secondary-foreground">
-              Round robin on Saturday, a single-elimination bracket on Sunday, in beginner, intermediate and
-              advanced draws. {OPEN_PRIZE_POOL ? `${OPEN_PRIZE_POOL} in prizes` : "Prizes in every level"}, a shirt on your back, and a brat and a drink on us each day. {OPEN_HOST_LINE}
+              Pool play on Saturday, a single-elimination bracket on Sunday, in beginner, intermediate and
+              advanced draws. Everyone plays both days, win or lose. {OPEN_PRIZE_POOL ? `${OPEN_PRIZE_POOL} in prizes` : "Prizes in every level"}, a shirt on your back, and a brat and a drink on us each day. {OPEN_HOST_LINE}
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <a href="#register" className="bg-primary px-10 py-4 font-display text-lg tracking-widest text-primary-foreground shadow-[0_0_40px_-8px_hsl(var(--primary)/0.7)] transition-all hover:brightness-110">
@@ -264,7 +264,7 @@ const Open = () => {
                   ))}
                 </div>
                 <p className="mt-3 font-body text-xs leading-relaxed text-muted-foreground">
-                  The ratings are a guide, not a rule. If you are a 3.0 who wants the advanced draw, pick advanced and say so below. We seed the brackets after Saturday's round robin anyway.
+                  The ratings are a guide, not a rule. If you are a 3.0 who wants the advanced draw, pick advanced and say so below. We seed the brackets after Saturday's pool play anyway.
                 </p>
               </fieldset>
 
