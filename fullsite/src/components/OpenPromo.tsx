@@ -14,6 +14,7 @@ import {
   PREVIEW_PRICE,
   PREVIEW_SESSION_CAPACITY,
 } from "@/constants/previewEvening";
+import { JUNIOR_COACH, JUNIOR_DAYS, JUNIOR_PRICE, JUNIOR_SESSION_TIMES } from "@/constants/juniorClinic";
 
 /**
  * The homepage's "coming up": the dated things the club is selling right now, soonest
@@ -39,6 +40,25 @@ const OpenPromo = () => {
   useEffect(() => setToday(todayInPortland()), []);
 
   const cards: Card[] = [];
+
+  // The junior clinic: the next scheduled day, until it has happened. Soonest of the
+  // three, so it leads.
+  const nextJunior = JUNIOR_DAYS.find((d) => today == null || d.date >= today);
+  if (nextJunior) {
+    cards.push({
+      key: "juniors",
+      to: "/juniors",
+      eyebrow: `${nextJunior.label} · no school · junior padel clinic`,
+      title: "Kids, come hit with Diego",
+      body: (
+        <>
+          {JUNIOR_SESSION_TIMES.map((t) => `${t.ages} ${t.label}`).join(", ")}. Coached by Timbers legend {JUNIOR_COACH}, racket and balls included.{" "}
+          <span className="text-foreground">{JUNIOR_PRICE} per child.</span>
+        </>
+      ),
+      cta: `BOOK A SESSION · ${JUNIOR_PRICE}`,
+    });
+  }
 
   // The preview evening, until the day after it happens.
   if (today == null || today <= PREVIEW_DATE) {
@@ -89,11 +109,11 @@ const OpenPromo = () => {
     <section aria-label="Coming up at Foundry Padel" className="border-y border-primary/40 bg-primary/10 px-6 py-10">
       <div className="mx-auto max-w-5xl">
         <p className="mb-6 font-body text-xs tracking-[0.2em] uppercase text-muted-foreground">Coming up</p>
-        <div className={`grid gap-6 ${cards.length > 1 ? "md:grid-cols-2" : ""}`}>
+        <div className={`grid gap-6 ${cards.length === 2 ? "md:grid-cols-2" : cards.length >= 3 ? "md:grid-cols-3" : ""}`}>
           {cards.map((c) => (
             <div key={c.key} className="flex flex-col border border-primary/40 bg-background/40 p-6">
               <p className="font-body text-xs tracking-[0.2em] uppercase text-primary">{c.eyebrow}</p>
-              <h2 className="mt-2 font-display text-3xl text-foreground">{c.title.toUpperCase()}</h2>
+              <h2 className="mt-2 font-display text-2xl text-foreground sm:text-3xl">{c.title.toUpperCase()}</h2>
               <p className="mt-2 font-body text-sm leading-relaxed text-secondary-foreground">{c.body}</p>
               <div className="mt-6 flex flex-1 items-end">
                 <Link
