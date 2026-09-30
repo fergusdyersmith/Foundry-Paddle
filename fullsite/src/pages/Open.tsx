@@ -85,6 +85,15 @@ const Open = () => {
   const price = status?.price ?? tier.price;
   const isOver = today != null && today > OPEN_DATE_END;
   const isClosed = status?.closed ?? (today != null && today >= OPEN_CLOSES);
+  const isEarly = (status?.tier ?? tier.key) === "early" && !isClosed;
+  // Days of early bird left, counted in the browser so the number is never a stale
+  // prerender. The regular tier starts on OPEN_TIERS[1].from.
+  const daysLeft = today
+    ? Math.max(0, Math.round((Date.parse(OPEN_TIERS[1].from) - Date.parse(today)) / 86400000))
+    : null;
+  const urgency = isEarly
+    ? `Early bird ends ${OPEN_TIERS[0].until}${daysLeft != null ? ` (${daysLeft} ${daysLeft === 1 ? "day" : "days"} left)` : ""}. After that it's $${OPEN_TIERS[1].price}.`
+    : null;
 
   const set = (k: keyof typeof form) => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
@@ -165,9 +174,10 @@ const Open = () => {
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <a href="#register" className="bg-primary px-10 py-4 font-display text-lg tracking-widest text-primary-foreground shadow-[0_0_40px_-8px_hsl(var(--primary)/0.7)] transition-all hover:brightness-110">
-                REGISTER · ${price}
+                {isEarly ? `LOCK IN EARLY BIRD · $${price}` : `REGISTER · $${price}`}
               </a>
             </div>
+            {urgency && <p className="mt-4 font-body text-sm tracking-[0.08em] uppercase text-primary">{urgency}</p>}
           </div>
         </div>
       </section>
@@ -198,9 +208,10 @@ const Open = () => {
       <section id="register" className="scroll-mt-24 px-6 pb-20">
         <div className="mx-auto max-w-2xl">
           <div className="section-divider mb-16" />
-          <h2 className={`${sectionHeading} text-center`}>REGISTER</h2>
+          <h2 className={`${sectionHeading} text-center`}>{isEarly ? "LOCK IN THE EARLY BIRD" : "REGISTER"}</h2>
           <p className="mx-auto mt-5 max-w-xl text-center font-body text-base leading-relaxed text-secondary-foreground">
             Pick the level you want to play and we will send you straight to Playtomic to pay and hold your place. Everything else is optional.
+            {urgency ? ` ${urgency}` : ""}
           </p>
 
           {isOver ? (
@@ -219,7 +230,8 @@ const Open = () => {
             <div className="mt-12 border border-primary bg-secondary p-10 text-center">
               <p className="font-display text-3xl text-foreground">YOU'RE ON THE LIST</p>
               <p className="mt-4 font-body text-base text-secondary-foreground">
-                Your place is held once you pay. Your entry is <span className="text-foreground">${done.pay}</span>.
+                Your place is held once you pay. Your entry is <span className="text-foreground">${done.pay}</span>
+                {done.tier === "early" ? ", the early-bird price, locked in when you pay" : ""}.
               </p>
               {done.bookUrl ? (
                 <a href={done.bookUrl} target="_blank" rel="noopener noreferrer" className="mt-8 inline-flex items-center gap-2 bg-primary px-10 py-4 font-display text-lg tracking-widest text-primary-foreground transition-all hover:brightness-110">
@@ -279,7 +291,7 @@ const Open = () => {
 
               {error && <p className="font-body text-sm text-primary">{error}</p>}
               <button type="submit" disabled={submitting} className="w-full bg-primary px-8 py-4 font-display text-lg tracking-widest text-primary-foreground transition-all hover:brightness-110 disabled:opacity-60">
-                {submitting ? "SAVING" : `CONTINUE TO PAYMENT · $${price}`}
+                {submitting ? "SAVING" : isEarly ? `LOCK IN $${price} · CONTINUE TO PAYMENT` : `CONTINUE TO PAYMENT · $${price}`}
               </button>
               <p className="text-center font-body text-xs text-muted-foreground">
                 Rather talk to a person? <a href={`tel:${PHONE_TEL}`} className="whitespace-nowrap text-primary hover:underline">Call {PHONE_DISPLAY}</a>.
