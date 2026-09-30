@@ -28,6 +28,7 @@ const primaryLinks: FooterNavLink[] = [
   { label: "Find Players", path: "/find-players" },
   { label: "Coaching", path: "/coaching" },
   { label: "Juniors", path: "/juniors" },
+  { label: "The Foundry Open", path: "/open" },
   { label: "Private Events", path: "/events" },
   { label: "Gift Certificates", path: "/gift-cards" },
 ];

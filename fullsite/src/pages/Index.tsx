@@ -9,6 +9,7 @@ import { PartnerLogoBand } from "@/components/PartnerLogoBand";
 import GalleryTeaser from "@/components/GalleryTeaser";
 import Photo from "@/components/Photo";
 import Seo from "@/components/Seo";
+import OpenPromo from "@/components/OpenPromo";
 import { BOOK_PAGE_PATH } from "@/constants/booking";
 import { HOURS_SENTENCE } from "@/constants/hours";
 import { GOOGLE_MAPS_URL } from "@/constants/location";
@@ -96,6 +97,10 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      {/* The December open, while registration is open. Straight under the hero on
+          purpose: it is the one dated thing the club is selling right now. */}
+      <OpenPromo />
 
       {/* Stats */}
       <section className="py-28 px-6">
