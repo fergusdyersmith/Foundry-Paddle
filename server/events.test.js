@@ -490,6 +490,24 @@ describe("a tournament the club has not opened yet is not linked", () => {
     expect(e.signed_up).toBe(4);
   });
 
+  it("takes the CURRENT name from the feed, because the booking keeps the old one", () => {
+    // 2026-10-01: the early-bird job renamed "Intermediate KOC 1.75 - 2.75 (Early Bird
+    // Discount)" to "Intermediate KOC 1.75 - 2.75" and repriced it; the schedule showed the
+    // new price under the old name, since only the price came from this feed.
+    const [e] = T.applyKumiTournamentInfo(
+      [tournament({ title: "Midday Social 1.5+ (Early Bird Discount)" })],
+      [feedRow({ price: "$30" })],
+      { isOver },
+    );
+    expect(e.title).toBe("Midday Social 1.5+");
+    expect(e.price).toBe("$30");
+  });
+
+  it("keeps the booking's name when the feed has no row for it", () => {
+    const [e] = T.applyKumiTournamentInfo([tournament()], [], { isOver });
+    expect(e.title).toBe("Midday Social 1.5+");
+  });
+
   it("drops the link and says booking is not open when it is missing from the feed", () => {
     const [e] = T.applyKumiTournamentInfo([tournament()], [], { isOver });
     expect(e.book_url).toBeNull();

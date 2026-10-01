@@ -853,6 +853,13 @@ function applyKumiTournamentInfo(
     if (t.is_waitlist) continue;
 
     const info = {
+      // THE NAME TOO, not only the price. Playtomic never renames the court booking a
+      // tournament already holds, so the bookings feed keeps the name the event was
+      // created with. The early-bird job renames "... (Early Bird Discount)" to "..." when
+      // the discount ends, and on 2026-10-01 the schedule showed the old early-bird title
+      // beside the new full price: the price came from this feed, the title from the stale
+      // booking. Kumi's feed reads Playtomic's tournament itself, so its name is current.
+      name: typeof t.name === "string" && t.name.trim() ? t.name.trim() : null,
       price: cleanPrice(t.price),
       capacity: Number.isFinite(t.max_players) ? t.max_players : null,
       registered: Number.isFinite(t.registered_count) ? t.registered_count : null,
@@ -891,7 +898,10 @@ function applyKumiTournamentInfo(
     }
     const key = `${(e.title || "").trim().toLowerCase()}|${e.date}|${e.start_time}`;
 
-    const match = (urlId && byId.get(urlId)) || byTitleDate.get(key);
+    const idMatch = urlId ? byId.get(urlId) : undefined;
+    const match = idMatch || byTitleDate.get(key);
+    // Only an id match can rename: a title+date match found it BY the old title.
+    if (idMatch?.name) e.title = idMatch.name;
     e.price = match?.price || null; // never show a court total as a player price
     e.capacity = match?.capacity ?? null;
     if (match?.registered != null) e.signed_up = match.registered;
