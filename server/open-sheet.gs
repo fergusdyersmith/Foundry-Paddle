@@ -2,9 +2,13 @@
 // Two callers, both POSTing JSON with the shared secret:
 //   1. The site's server, one body per registration: {secret, row: [...]}. Appends the row.
 //   2. Kumi's paid sync (padelclublist/scripts/open_paid_sync.py), every 15 minutes:
-//      {secret, action: "paid", paid: [{name, email, phone, level, seen}]}. Marks the
-//      matching row PAID (column L) and writes the Playtomic level (column M); a player
-//      who paid without ever filling in the form gets a row of their own.
+//      {secret, action: "paid", complete: true, paid: [{name, email, phone, level, seen}]}.
+//      Marks the matching row PAID (column L) and writes the Playtomic level (column M); a
+//      player who paid without ever filling in the form gets a row of their own. When the
+//      list is complete (the sync read the whole tournament), a row marked PAID whose
+//      player is no longer registered becomes CANCELLED; register again and it is PAID
+//      again. Without `complete` nothing is ever cancelled, so a partial read cannot
+//      cancel the whole sheet.
 // Nothing else reads or writes the sheet.
 //
 // Install (once, about two minutes):
@@ -29,7 +33,7 @@ function doPost(e) {
     }
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
     if (body.action === "paid") {
-      return out.setContent(JSON.stringify(markPaid(sheet, body.paid)));
+      return out.setContent(JSON.stringify(markPaid(sheet, body.paid, body.complete === true)));
     }
     if (!Array.isArray(body.row) || body.row.length === 0) {
       return out.setContent(JSON.stringify({ ok: false, error: "no row" }));
@@ -47,13 +51,14 @@ function doPost(e) {
 function norm(v) { return String(v == null ? "" : v).trim().toLowerCase(); }
 
 // Match each paid player to a form row by Playtomic email, then email, then name.
-function markPaid(sheet, paid) {
+function markPaid(sheet, paid, complete) {
   if (!Array.isArray(paid)) return { ok: false, error: "no paid list" };
   if (norm(sheet.getRange(1, COL.level + 1).getValue()) === "") {
     sheet.getRange(1, COL.level + 1).setValue("Playtomic level").setFontWeight("bold");
   }
   var data = sheet.getDataRange().getValues();
-  var marked = 0, appended = 0, already = 0;
+  var marked = 0, appended = 0, already = 0, cancelled = 0;
+  var matched = {};
   paid.forEach(function (p) {
     var em = norm(p.email), nm = norm(p.name), idx = -1;
     for (var i = 1; i < data.length && idx < 0; i++) {
@@ -63,16 +68,24 @@ function markPaid(sheet, paid) {
     }
     var level = p.level == null ? "" : String(p.level);
     if (idx >= 0) {
+      matched[idx] = true;
       if (norm(data[idx][COL.paid]).indexOf("paid") === 0) { already++; }
       else { sheet.getRange(idx + 1, COL.paid + 1).setValue("PAID"); marked++; }
       if (level && norm(data[idx][COL.level]) !== level) sheet.getRange(idx + 1, COL.level + 1).setValue(level);
     } else {
       var row = [p.seen || "", p.name || "", "", "", "", p.email || "", "", p.phone || "",
                  "(no form)", "", "Paid on Playtomic without the site form", "PAID", level];
-      sheet.appendRow(row); data.push(row); appended++;
+      sheet.appendRow(row); data.push(row); matched[data.length - 1] = true; appended++;
     }
   });
-  return { ok: true, marked: marked, appended: appended, already: already };
+  if (complete) {
+    for (var j = 1; j < data.length; j++) {
+      if (!matched[j] && norm(data[j][COL.paid]).indexOf("paid") === 0) {
+        sheet.getRange(j + 1, COL.paid + 1).setValue("CANCELLED"); cancelled++;
+      }
+    }
+  }
+  return { ok: true, marked: marked, appended: appended, already: already, cancelled: cancelled };
 }
 
 // A browser visit to the URL says the script is alive without touching the sheet.
