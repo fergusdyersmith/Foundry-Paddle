@@ -5,8 +5,9 @@
  *  of "4pm" would eventually disagree, and the disagreement would be a wrong price on a
  *  public page rather than a test failure.
  *
- *  The ladder between tiers is the PEAK side (a court discount and a monthly credit, both
- *  per tier). Off peak, clinics and tournaments are discounted the same on every tier
+ *  The ladder between tiers is the PEAK side (a court discount and, since 2026-10-01, a
+ *  tournament discount, both per tier). Off peak, clinics and tournaments are the same
+ *  on every tier
  *  (Jake, 2026-08-17), which is the only reason a single "members pay X" figure can be
  *  shown against a session at all.
  */
@@ -29,6 +30,28 @@ export const OFF_PEAK_LABELS = [
   "Monday to Friday, 6am–4pm and 10pm–midnight",
   "Saturday & Sunday, 4pm–midnight",
 ];
+
+/** What a member pays off PEAK on a tournament, by tier.
+ *
+ *  New on 2026-10-01, replacing the $25/$50 monthly credit. Each tier gets the same
+ *  percentage off a peak tournament that it already gets off a peak court booking, so a
+ *  tier is one number rather than a percentage plus a credit with its own rules.
+ *
+ *  The credit was not failing on cost, it was failing on delivery: Playtomic cannot split
+ *  one payment between wallet balance and card, so a balance smaller than the thing you
+ *  wanted to book could not be spent at all, and whatever was left expired monthly.
+ *
+ *  Student is absent on purpose. That tier is peak at standard rates.
+ *
+ *  Note this breaks the assumption below that one "members pay X" figure can stand for a
+ *  session: it can off peak, where every tier is the same, but a PEAK tournament is two
+ *  different prices. Anything showing a single member price must say which tier it means,
+ *  or show the range.
+ */
+export const PEAK_TOURNAMENT_MEMBER_DISCOUNT: Record<string, number> = {
+  regular: 0.25,
+  padelhead: 0.5,
+};
 
 /** What a member pays off peak, by booking type: half price on tournaments, a quarter off
  *  clinics, courses and lessons, and nothing at all for an open match. The same on all

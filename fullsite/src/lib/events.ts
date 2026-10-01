@@ -175,10 +175,16 @@ export function isPeakEvent(event: PadelEvent): boolean {
 /** What a member pays for this session — a price, "Free", or null when there is no single
  *  answer.
  *
- *  Null covers most of the schedule, and both cases are deliberate: at PEAK a member pays
- *  the same price and draws on their monthly credit, so a second line would repeat the
- *  first, and a session whose price we never got cannot have a fraction taken off it.
- *  Publishing a member price that some members do not get would be worse than none.
+ *  Null covers most of the schedule, and both cases are deliberate.
+ *
+ *  At PEAK there is no single answer any more. Until 2026-10-01 there genuinely was one
+ *  — everybody paid the same and Regular and Padelhead drew on a monthly credit — but
+ *  that credit is now a discount of 25% and 50% respectively, so a peak tournament has
+ *  two member prices and this returns neither. Showing one tier's price to all three
+ *  would be worse than showing none. Giving peak its own line (a range, or "from $X")
+ *  is a presentation decision nobody has made yet.
+ *
+ *  And a session whose price we never got cannot have a fraction taken off it.
  *
  *  "Free" is a real answer, not an empty one: off-peak open matches are covered by
  *  unlimited off-peak play on every tier. It still requires a published price to discount

@@ -26,9 +26,9 @@ const sharedBenefits = [
 // member pays for a session. One definition, so the page and the arithmetic agree.
 const peakWindows = { offPeak: OFF_PEAK_LABELS, peak: PEAK_LABELS };
 
-// Published pay-as-you-go rates. Members are measured against these, and a
-// member's monthly credit is spent at exactly these prices, so the page has to
-// carry them rather than send people to /book to work it out.
+// Published pay-as-you-go rates. Members are measured against these, and a member's
+// discount comes off exactly these prices, so the page has to carry them rather than
+// send people to /book to work it out.
 // A 90-minute court is $90 for up to four, which is exactly the $22.50 per-player rate
 // times four. That has to keep holding: a visitor divides one by the other, and when it
 // did not (a $60 court against a $22.50 spot) the page said a spot cost half as much as
@@ -67,8 +67,8 @@ const rateCard = [
 // demand lands differently. Corporate/partner seats sit outside the 100.
 // Every tier gets unlimited off-peak play, because those courts sit empty and
 // metering them costs more in complexity than it saves. The ladder is peak
-// access instead: a percentage off peak courts, a monthly credit, and a longer
-// booking window. That maps 1:1 onto what Playtomic configures once per
+// access instead: a percentage off peak courts, the same percentage off peak
+// tournaments, and a longer booking window. That maps 1:1 onto what Playtomic configures once per
 // membership and then never needs touching, which is the whole reason the
 // structure looks like this.
 //
@@ -76,8 +76,15 @@ const rateCard = [
 // now the SAME on every tier (Jake, 2026-08-17): the ladder is the peak side only.
 //                    peak                          off-peak
 //   Student          standard price                tournaments 50% off,
-//   Regular          $25 credit                    clinics and lessons 25% off,
-//   Padelhead        $50 credit                    on all three tiers
+//   Regular          tournaments 25% off           clinics and lessons 25% off,
+//   Padelhead        tournaments 50% off           on all three tiers
+//
+// The peak column was a $25/$50 monthly credit until 2026-10-01. It was replaced because
+// of how it SPENT, not what it cost: Playtomic cannot split one payment between wallet
+// balance and card, so a balance smaller than the thing you wanted could not be used at
+// all, and the remainder expired monthly. Seven of eighteen Padelhead wallets were
+// sitting on exactly that, and fifteen of twenty-three Regular members had never touched
+// theirs. A percentage comes off at checkout and cannot strand anything.
 //
 // Playtomic can discount an activity, but only by hand-pricing each session, so every
 // off-peak clinic on the schedule is a recurring manual job for staff.
@@ -99,7 +106,7 @@ const rateCard = [
 // Counted, at the $22.50 per-player rate:
 //   off-peak play   the whole rate, since it is free
 //   peak play       only the DISCOUNT, since they still pay the rest
-//   monthly credit  in full, received whether or not they play
+//   peak tournaments  only the DISCOUNT, on the number assumed below
 //   guest pass      one session at the guest rate
 //   t-shirt         one-off, counted in the first month
 //
@@ -110,12 +117,22 @@ const WEEKS_PER_MONTH = 52 / 12;   // 4.33, not 4 — the difference is a whole 
 const GUEST_PASS_VALUE = 22.5;
 const TSHIRT_VALUE = 25;
 
+// Peak tournaments a month, the figure the tournament discount is worth something ON.
+// TWO is deliberately conservative and close to observed: across the eight weeks to
+// 2026-10-01, Regular members averaged 2.3 peak tournament entries a month and Padelhead
+// 2.8. Claiming the tier's aspirational rate here would inflate the value figure the way
+// the hand-written ones did before they were computed.
+const PEAK_TOURNAMENTS_PER_MONTH = 2;
+
 function monthlyValue(t: {
-  offPeakPerWeek: number; peakPerWeek: number; peakDiscount: number; creditMonthly: number;
+  offPeakPerWeek: number; peakPerWeek: number; peakDiscount: number;
+  tournamentDiscount: number;
 }): number {
   const offPeak = t.offPeakPerWeek * WEEKS_PER_MONTH * SESSION_RATE;
   const peak = t.peakPerWeek * WEEKS_PER_MONTH * SESSION_RATE * t.peakDiscount;
-  return Math.round(offPeak + peak + t.creditMonthly + GUEST_PASS_VALUE + TSHIRT_VALUE);
+  const tournaments =
+    PEAK_TOURNAMENTS_PER_MONTH * SESSION_RATE * t.tournamentDiscount;
+  return Math.round(offPeak + peak + tournaments + GUEST_PASS_VALUE + TSHIRT_VALUE);
 }
 
 const tiers = [
@@ -125,12 +142,12 @@ const tiers = [
     price: "$100",
     period: "/mo",
     desc: "Play as much as you like, weekday daytime and weekend evenings.",
-    offPeakPerWeek: 2, peakPerWeek: 0, peakDiscount: 0, creditMonthly: 0,
+    offPeakPerWeek: 2, peakPerWeek: 0, peakDiscount: 0, tournamentDiscount: 0,
     playLine: "Playing twice a week, off-peak",
     features: [
       "For students, retirees, veterans and first responders",
       // Peak first, then off-peak, then the benefits that apply at any hour.
-      "Peak courts, clinics and events at standard rates",
+      "Peak courts, tournaments and clinics at standard rates",
       "Unlimited free off-peak play (your spot on a court)",
       "Off-peak tournaments at 50% off",
       "Off-peak clinics and lessons at 25% off",
@@ -146,11 +163,11 @@ const tiers = [
     price: "$150",
     period: "/mo",
     desc: "Unlimited off-peak, and a quarter off your share of every peak booking.",
-    offPeakPerWeek: 2, peakPerWeek: 2, peakDiscount: 0.25, creditMonthly: 25,
+    offPeakPerWeek: 2, peakPerWeek: 2, peakDiscount: 0.25, tournamentDiscount: 0.25,
     playLine: "Playing 2 off-peak + 2 peak a week",
     features: [
       "25% off your share of every peak court booking",
-      "$25/month credit for peak clinics, tournaments and events",
+      "25% off every peak tournament",
       "Unlimited free off-peak play (your spot on a court)",
       "Off-peak tournaments at 50% off",
       "Off-peak clinics and lessons at 25% off",
@@ -166,11 +183,11 @@ const tiers = [
     price: "$200",
     period: "/mo",
     desc: "For players playing 2 or more times per week.",
-    offPeakPerWeek: 2, peakPerWeek: 3, peakDiscount: 0.5, creditMonthly: 50,
+    offPeakPerWeek: 2, peakPerWeek: 3, peakDiscount: 0.5, tournamentDiscount: 0.5,
     playLine: "Playing 2 off-peak + 3 peak a week",
     features: [
       "50% off your share of every peak court booking",
-      "$50/month credit for peak clinics, tournaments and events",
+      "50% off every peak tournament",
       "Unlimited free off-peak play (your spot on a court)",
       "Off-peak tournaments at 50% off",
       "Off-peak clinics and lessons at 25% off",
@@ -187,7 +204,7 @@ const Memberships = () => {
     <main className="bg-background min-h-screen pt-24">
       <Seo
         title="Padel Memberships in Portland, From $100/mo | Foundry Padel"
-        description="Foundry Padel memberships from $100/mo, limited to 100 founding members: unlimited off-peak play, up to 50% off your share of peak courts, monthly credit for clinics and tournaments, and a longer booking window."
+        description="Foundry Padel memberships from $100/mo, limited to 100 founding members: unlimited off-peak play, up to 50% off your share of peak courts, up to 50% off peak tournaments, and a longer booking window."
         path="/memberships"
       />
       {/* Hero */}
@@ -270,7 +287,7 @@ const Memberships = () => {
             bookings and open matches</span>. Clinics, tournaments and events are priced per
             session, and every membership pays{" "}
             <span className="text-foreground font-semibold">less for them off-peak</span>. At
-            peak, Regular and Padelhead members pay with their monthly credit, and Student
+            peak, Regular and Padelhead members get a percentage off tournaments, and Student
             members pay the standard price. Each card below shows the discount for that tier.
           </p>
         </motion.div>
@@ -362,7 +379,7 @@ const Memberships = () => {
             effect on <span className="text-foreground font-semibold">1 September 2026</span>,
             on the play shown under each figure. Off-peak sessions count in full because
             they are free; peak sessions count only the discount, since you still pay the
-            rest. Your monthly credit, guest pass and t-shirt are included. Play more than
+            rest. Two peak tournaments a month, your guest pass and your t-shirt are included. Play more than
             that and the number goes up.
           </p>
           <p className="font-body text-xs leading-relaxed text-muted-foreground">
@@ -498,9 +515,8 @@ const Memberships = () => {
             <Link to="/coaching" className="text-primary underline underline-offset-2">
               Coaching
             </Link>
-            . Court time is charged in addition to the coach's rate. Members can put their
-            monthly credit towards clinics, tournaments and leagues, but not towards one-to-one
-            coaching.
+            . Court time is charged in addition to the coach's rate. The member tournament discount
+            applies to tournaments and leagues, not to clinics or one-to-one coaching.
           </p>
         </motion.div>
       </section>

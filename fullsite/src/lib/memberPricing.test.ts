@@ -26,7 +26,9 @@ function event(o: Partial<PadelEvent> = {}): PadelEvent {
 
 // The club prices clinics and tournaments by TIME, not by product: off peak they are
 // discounted the same on every tier, which is the only reason one "members pay X" figure
-// can be true. At peak everyone pays the same and members draw on their monthly credit.
+// can be true. At peak there are now TWO member prices (Regular 25% off a tournament,
+// Padelhead 50%, from 2026-10-01), so there is no single answer to show and this still
+// returns null -- same behaviour, different reason.
 describe("peak and off peak follow the windows printed on /memberships", () => {
   it("is peak on a weekday evening, 4pm to 10pm", () => {
     expect(isPeakEvent(event({ date: "2026-09-07", start_time: "16:00" }))).toBe(true); // Mon
