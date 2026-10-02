@@ -147,9 +147,9 @@ const tiers = [
     features: [
       "For students, retirees, veterans and first responders",
       // Peak first, then off-peak, then the benefits that apply at any hour.
-      "Peak courts, tournaments and clinics at standard rates",
+      "Peak courts, tournaments, clinics and events at standard rates",
       "Unlimited free off-peak play (your spot on a court)",
-      "Off-peak tournaments at 50% off",
+      "Off-peak tournaments and open play at 50% off",
       "Off-peak clinics and lessons at 25% off",
       "7-day booking window",
       "1 free guest pass/month (expires at month end)",
@@ -169,7 +169,7 @@ const tiers = [
       "25% off your share of every peak court booking",
       "25% off every peak tournament",
       "Unlimited free off-peak play (your spot on a court)",
-      "Off-peak tournaments at 50% off",
+      "Off-peak tournaments and open play at 50% off",
       "Off-peak clinics and lessons at 25% off",
       "10-day booking window",
       "1 free guest pass/month (expires at month end)",
@@ -187,9 +187,9 @@ const tiers = [
     playLine: "Playing 2 off-peak + 3 peak a week",
     features: [
       "50% off your share of every peak court booking",
-      "50% off every peak tournament",
+      "50% off every tournament, peak or off-peak",
       "Unlimited free off-peak play (your spot on a court)",
-      "Off-peak tournaments at 50% off",
+      "Off-peak open play at 50% off",
       "Off-peak clinics and lessons at 25% off",
       "12-day booking window",
       "1 free guest pass/month (expires at month end)",
