@@ -1,6 +1,76 @@
 import { describe, expect, it } from "vitest";
 import express from "express";
-import { buildSlackText, createJuniorsRouter } from "./juniors.js";
+import { buildRegistrationSlackText, buildSlackText, createJuniorsRouter } from "./juniors.js";
+
+const reg = {
+  name: "Sam Rivera", email: "sam@example.com", phone: "(503) 555-0142", smsConsent: true,
+  day: "2026-10-09", notes: "Josie has played tennis.",
+  children: [{ name: "Josie Rivera", age: 11, session: "10-13" }, { name: "Max Rivera", age: 14, session: "14+" }],
+};
+const DAYS = { "2026-10-09": "Friday, October 9" };
+
+async function callRegister(a, body) {
+  const srv = a.listen(0); const port = srv.address().port;
+  try {
+    const res = await fetch(`http://127.0.0.1:${port}/api/juniors/register`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+    });
+    return { status: res.status, json: await res.json() };
+  } finally { srv.close(); }
+}
+
+describe("POST /api/juniors/register", () => {
+  it("appends one sheet row per child, in column order, with the secret, and answers with the day", async () => {
+    const posts = [];
+    const fetchImpl = async (url, init) => { posts.push({ url, body: JSON.parse(init.body) }); return { ok: true, json: async () => ({ ok: true }) }; };
+    const a = app({ slackToken: null, klaviyo: null, days: DAYS, sheetUrl: "https://script.google.com/macros/s/X/exec", sheetSecret: "s3cret", fetchImpl, now: () => new Date("2026-10-02T17:00:00Z") });
+    const r = await callRegister(a, reg);
+    expect(r.status).toBe(200);
+    expect(r.json).toMatchObject({ ok: true, day: "2026-10-09", dayLabel: "Friday, October 9", children: 2 });
+    expect(posts).toHaveLength(2);
+    expect(posts[0].body.secret).toBe("s3cret");
+    expect(posts[0].body.row).toEqual([
+      "10/2/26, 10:00 AM", "Sam Rivera", "sam@example.com", "(503) 555-0142", "yes",
+      "Josie Rivera", "11", "Friday, October 9", "9 to 10:30 AM (ages 10 to 13)", "Josie has played tennis.", "",
+    ]);
+    expect(posts[1].body.row.slice(5, 9)).toEqual(["Max Rivera", "14", "Friday, October 9", "10:30 AM to noon (ages 14 and up)"]);
+  });
+
+  it("refuses a day the club has not opened", async () => {
+    const a = app({ slackToken: null, klaviyo: null, days: DAYS, sheetUrl: "https://x/exec", fetchImpl: async () => ({ ok: true, json: async () => ({ ok: true }) }) });
+    const r = await callRegister(a, { ...reg, day: "2026-10-29" });
+    expect(r.status).toBe(400);
+    expect(r.json.error).toMatch(/not open/);
+  });
+
+  it("needs at least one child with a name and a sensible age", async () => {
+    const a = app({ slackToken: null, klaviyo: null, days: DAYS });
+    expect((await callRegister(a, { ...reg, children: [] })).status).toBe(400);
+    expect((await callRegister(a, { ...reg, children: [{ name: "Kid", age: 3, session: "10-13" }] })).status).toBe(400);
+  });
+
+  it("fails loudly when nothing recorded it: the form is the signup", async () => {
+    const a = app({ slackToken: null, klaviyo: null, days: DAYS, sheetUrl: "https://x/exec", fetchImpl: async () => ({ ok: false, status: 500, json: async () => ({}) }) });
+    const r = await callRegister(a, reg);
+    expect(r.status).toBe(502);
+  });
+
+  it("still succeeds when only Slack took it", async () => {
+    const a = app({ slackToken: "t", klaviyo: null, days: DAYS, sheetUrl: "https://x/exec",
+      fetchImpl: async (url) => (/slack/.test(url) ? { json: async () => ({ ok: true }) } : { ok: false, status: 500, json: async () => ({}) }) });
+    const r = await callRegister(a, reg);
+    expect(r.status).toBe(200);
+  });
+
+  it("writes the Slack post with the day, the parent and each child's session", () => {
+    const t = buildRegistrationSlackText({ ...reg, name: "<!channel> Sam" }, "Friday, October 9");
+    expect(t).toContain("Friday, October 9");
+    expect(t).not.toContain("<!channel>");
+    expect(t).toContain("Josie Rivera (11, 9 AM)");
+    expect(t).toContain("Max Rivera (14, 10:30 AM)");
+    expect(t).toContain("Texts OK");
+  });
+});
 
 const good = {
   name: "Sam Rivera", email: "sam@example.com", phone: "(503) 555-0142", smsConsent: true,

@@ -8,12 +8,13 @@ import Seo from "@/components/Seo";
 import SmsConsentCheckbox from "@/components/SmsConsentCheckbox";
 import { GALLERY_IMAGE_DIR } from "@/data/gallery";
 import { GOOGLE_MAPS_URL } from "@/constants/location";
-import { PLAYTOMIC_APP_STORE_URL, PLAYTOMIC_PLAY_STORE_URL } from "@/constants/booking";
 import {
   JUNIOR_AGE_RULES,
   JUNIOR_BLURB,
   JUNIOR_COACH,
   JUNIOR_DAYS,
+  JUNIOR_FREE_LINE,
+  JUNIOR_PLACES,
   JUNIOR_PRICE,
   JUNIOR_SESSION_TIMES,
   JUNIOR_TITLE_PATTERN,
@@ -96,14 +97,13 @@ const Juniors = () => {
       })),
     [upcoming, eventsByDate],
   );
-  const anyBookable = days.some((d) => d.sessions.some((s) => s.bookUrl && !s.full));
   const next = upcoming[0];
 
   return (
     <main className="bg-background min-h-screen">
       <Seo
         title={`Junior Padel Clinic with ${JUNIOR_COACH} | Foundry Padel, St. Johns`}
-        description={`Padel for kids on a day off school. ${JUNIOR_PRICE} a session with ${JUNIOR_COACH}, racket and balls included. Ages 10 and up. Next: ${next?.label ?? "see dates"}.`}
+        description={`Padel for kids on a day off school, free: ${JUNIOR_PLACES} places covered by a sponsor. Coached by ${JUNIOR_COACH}, racket and balls included. Ages 10 and up. Next: ${next?.label ?? "see dates"}.`}
         path="/juniors"
       />
       <Head>
@@ -129,9 +129,10 @@ const Juniors = () => {
                 addressCountry: "US",
               },
             },
+            isAccessibleForFree: true,
             offers: {
               "@type": "Offer",
-              price: JUNIOR_PRICE.replace("$", ""),
+              price: "0",
               priceCurrency: "USD",
               url: "https://www.foundrypadel.com/juniors",
             },
@@ -168,10 +169,13 @@ const Juniors = () => {
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <a
-                href="#dates"
+                href="#signup"
                 className="bg-primary px-10 py-4 font-display text-lg tracking-widest text-primary-foreground shadow-[0_0_40px_-8px_hsl(var(--primary)/0.7)] transition-all hover:brightness-110"
               >
-                SEE THE DATES · {JUNIOR_PRICE}
+                SIGN UP · {JUNIOR_PRICE.toUpperCase()}
+              </a>
+              <a href="#dates" className="border border-border px-10 py-4 font-display text-lg tracking-widest text-foreground transition-colors hover:border-primary">
+                SEE THE DATES
               </a>
             </div>
           </div>
@@ -212,7 +216,7 @@ const Juniors = () => {
                       {i === 0 ? "Next up" : "Then"} · No school: {day.reason.toLowerCase()}
                     </span>
                     <p className="mt-2 font-display text-3xl leading-none text-foreground">{day.label.toUpperCase()}</p>
-                    <p className="mt-2 font-body text-sm text-secondary-foreground">{JUNIOR_PRICE} per child, per session</p>
+                    <p className="mt-2 font-body text-sm text-secondary-foreground">{JUNIOR_FREE_LINE}</p>
                   </div>
                   {sessions.map((s, j) => {
                     const label = JUNIOR_SESSION_TIMES[j]?.label ?? `${s.start} to ${s.end}`;
@@ -228,20 +232,14 @@ const Juniors = () => {
                         <p className="mt-1 font-display text-2xl text-foreground">{label}</p>
                         {spots && <p className="mt-1 font-body text-xs text-secondary-foreground">{spots}</p>}
                         <div className="mt-4">
+                          {/* The signup is the form below, not Playtomic: the clinic is free
+                              since 2 October. The feed still tells us when a session is full. */}
                           {s.full ? (
-                            s.waitlistUrl ? (
-                              <a href={s.waitlistUrl} target="_blank" rel="noopener noreferrer" className="inline-block border border-primary px-5 py-2.5 font-display text-sm tracking-widest text-primary transition-colors hover:bg-primary hover:text-primary-foreground">
-                                FULL · WAITLIST
-                              </a>
-                            ) : (
-                              <span className="inline-block border border-border px-5 py-2.5 font-display text-sm tracking-widest text-muted-foreground">FULL</span>
-                            )
-                          ) : s.bookUrl ? (
-                            <a href={s.bookUrl} target="_blank" rel="noopener noreferrer" className="inline-block bg-primary px-5 py-2.5 font-display text-sm tracking-widest text-primary-foreground transition-all hover:brightness-110">
-                              BOOK
-                            </a>
+                            <span className="inline-block border border-border px-5 py-2.5 font-display text-sm tracking-widest text-muted-foreground">FULL</span>
                           ) : (
-                            <span className="inline-block border border-border px-5 py-2.5 font-display text-sm tracking-widest text-muted-foreground">BOOKING OPENS SOON</span>
+                            <a href="#signup" className="inline-block bg-primary px-5 py-2.5 font-display text-sm tracking-widest text-primary-foreground transition-all hover:brightness-110">
+                              SIGN UP
+                            </a>
                           )}
                         </div>
                       </div>
@@ -253,23 +251,14 @@ const Juniors = () => {
           )}
 
           <p className="mx-auto mt-10 max-w-2xl text-center font-body text-sm leading-relaxed text-muted-foreground">
-            {anyBookable ? (
-              <>
-                Booking is in Playtomic, the free app the club runs on. Tap a session, then choose
-                "Open in app" to pay and hold the spot. New to it? Get the app for{" "}
-                <a href={PLAYTOMIC_APP_STORE_URL} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">iPhone</a>
-                {" "}or{" "}
-                <a href={PLAYTOMIC_PLAY_STORE_URL} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Android</a>
-                , make a free account in your own name, then come back and tap the session again. Rather talk to a person?{" "}
-              </>
-            ) : (
-              <>Online booking is being set up. To hold a spot now, </>
-            )}
+            Nothing to pay and no app needed: fill in the form below and the place is held for
+            your kid. Rather talk to a person?{" "}
             <a href={`tel:${PHONE_TEL}`} className="whitespace-nowrap text-primary hover:underline">call {PHONE_DISPLAY}</a>.
-
           </p>
         </div>
       </section>
+
+      <SignupForm days={upcoming} full={days.map((d) => d.sessions.map((s) => Boolean(s.full)))} />
 
       <NextDatesSignup nextLabel={next?.label ?? null} />
 
@@ -300,8 +289,9 @@ const Juniors = () => {
             </div>
             <div>
               <h2 className={sectionHeading}>
-                <span className="text-primary">{JUNIOR_PRICE}</span> AND THEY'RE SET
+                <span className="text-primary">{JUNIOR_PRICE.toUpperCase()}</span>, AND THEY'RE SET
               </h2>
+              <p className="mt-4 font-body text-sm text-secondary-foreground">{JUNIOR_FREE_LINE}</p>
               <ul className="mt-8 space-y-4">
                 {[
                   "Ninety minutes on court, coached by Timbers legend " + JUNIOR_COACH,
@@ -349,6 +339,174 @@ const Juniors = () => {
     </main>
   );
 };
+
+type Child = { name: string; age: string };
+
+/**
+ * The signup. Free since 2 October (a sponsor covers 100 places), so there is no payment
+ * step and no Playtomic: this form is the registration. One parent, one day, one row per
+ * child in the organisers' sheet; the age picks the session. Records to Slack, Klaviyo
+ * and the sheet shared with Monica; see server/juniors.js.
+ */
+function SignupForm({ days, full }: { days: JuniorDay[]; full: boolean[][] }) {
+  const [form, setForm] = useState({ name: "", email: "", phone: "", notes: "", website: "" });
+  const [day, setDay] = useState<string>(days[0]?.date ?? "");
+  const [children, setChildren] = useState<Child[]>([{ name: "", age: "" }]);
+  const [smsConsent, setSmsConsent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState<{ dayLabel: string; count: number } | null>(null);
+
+  // The page decides "today" after mount, so the day list can arrive after first render.
+  useEffect(() => {
+    if (!day && days[0]) setDay(days[0].date);
+  }, [days, day]);
+
+  const set = (k: keyof typeof form) => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const setChild = (i: number, k: keyof Child) => (e: { target: { value: string } }) =>
+    setChildren((cs) => cs.map((c, j) => (j === i ? { ...c, [k]: e.target.value } : c)));
+
+  /** Which session an age lands in, or null when the club wants a call first. */
+  const sessionFor = (age: number) => (age >= 14 ? "14+" : age >= 10 ? "10-13" : null);
+  const dayIndex = Math.max(0, days.findIndex((d) => d.date === day));
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!form.name.trim() || !form.email.trim() || !day) {
+      setError("Your name, an email and the day are needed.");
+      return;
+    }
+    const kids = children.filter((c) => c.name.trim() || c.age.trim());
+    if (kids.length === 0) {
+      setError("Add at least one child: name and age.");
+      return;
+    }
+    const payload = [];
+    for (const c of kids) {
+      const age = Number(c.age);
+      if (!c.name.trim() || !Number.isInteger(age)) {
+        setError("Each child needs a name and an age.");
+        return;
+      }
+      const session = sessionFor(age);
+      if (!session) {
+        setError(`Under 10 is case by case. Call ${PHONE_DISPLAY} and we will talk it through.`);
+        return;
+      }
+      const j = JUNIOR_SESSION_TIMES.findIndex((t) => t.group === session);
+      if (full[dayIndex]?.[j]) {
+        setError(`The ${JUNIOR_SESSION_TIMES[j].label} session is full that day. Call ${PHONE_DISPLAY} for the waitlist.`);
+        return;
+      }
+      payload.push({ name: c.name.trim(), age, session });
+    }
+    setSubmitting(true);
+    try {
+      const phone = form.phone.trim();
+      const res = await fetch("/api/juniors/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, phone, day, children: payload, ...(phone ? { smsConsent } : {}) }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(json.error || "Something went wrong. Please try again.");
+        return;
+      }
+      setDone({ dayLabel: json.dayLabel, count: payload.length });
+    } catch {
+      setError("We could not reach the club. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <section id="signup" className="scroll-mt-24 px-6 pb-20">
+      <div className="mx-auto max-w-2xl">
+        <div className="section-divider mb-16" />
+        <h2 className={`${sectionHeading} text-center`}>SIGN UP, IT'S FREE</h2>
+        <p className="mx-auto mt-5 max-w-xl text-center font-body text-base leading-relaxed text-secondary-foreground">
+          {JUNIOR_FREE_LINE} One form per family: your details, then each child. The age picks
+          the session (10 to 13 at 9 AM, 14 and up at 10:30).
+        </p>
+
+        {done ? (
+          <div className="mt-12 border border-primary bg-secondary p-10 text-center">
+            <p className="font-display text-3xl text-foreground">
+              {done.count === 1 ? "THEY'RE IN" : "THEY'RE ALL IN"}
+            </p>
+            <p className="mt-4 font-body text-base text-secondary-foreground">
+              {done.count === 1 ? "A place is held" : `${done.count} places are held`} for {done.dayLabel}. Bring court shoes and
+              water; racket and balls are here. Questions? Call {PHONE_DISPLAY}.
+            </p>
+          </div>
+        ) : days.length === 0 ? (
+          <div className="mt-12 border border-border p-10 text-center">
+            <p className="font-body text-base text-secondary-foreground">No dates are open for signup yet. Leave your details below and we will tell you first.</p>
+          </div>
+        ) : (
+          <form onSubmit={submit} className="mt-12 space-y-5" noValidate>
+            <div>
+              <label className={fieldLabel} htmlFor="s-day">Which day</label>
+              <select id="s-day" className={field} value={day} onChange={(e) => setDay(e.target.value)}>
+                {days.map((d) => (
+                  <option key={d.date} value={d.date}>{d.label} · no school, {d.reason.toLowerCase()}</option>
+                ))}
+              </select>
+            </div>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div><label className={fieldLabel} htmlFor="s-name">Parent's name</label><input id="s-name" className={field} value={form.name} onChange={set("name")} autoComplete="name" /></div>
+              <div><label className={fieldLabel} htmlFor="s-email">Email</label><input id="s-email" type="email" className={field} value={form.email} onChange={set("email")} autoComplete="email" /></div>
+            </div>
+            <div><label className={fieldLabel} htmlFor="s-phone">Mobile, if you would like a text too</label><input id="s-phone" type="tel" className={field} value={form.phone} onChange={set("phone")} autoComplete="tel" placeholder="(503) 555-0142" /></div>
+            {form.phone.trim() && <SmsConsentCheckbox id="s-sms-consent" checked={smsConsent} onChange={setSmsConsent} />}
+
+            <fieldset className="space-y-3">
+              <legend className={fieldLabel}>Your kids</legend>
+              {children.map((c, i) => (
+                <div key={i} className="grid gap-3 sm:grid-cols-[1fr_8rem_auto] sm:items-end">
+                  <div>
+                    {i === 0 && <label className="mb-2 block font-body text-xs text-muted-foreground" htmlFor={`s-child-${i}`}>Child's name</label>}
+                    <input id={`s-child-${i}`} className={field} value={c.name} onChange={setChild(i, "name")} placeholder="First and last name" />
+                  </div>
+                  <div>
+                    {i === 0 && <label className="mb-2 block font-body text-xs text-muted-foreground" htmlFor={`s-age-${i}`}>Age</label>}
+                    <input id={`s-age-${i}`} className={field} inputMode="numeric" value={c.age} onChange={setChild(i, "age")} placeholder="12" />
+                  </div>
+                  {children.length > 1 ? (
+                    <button type="button" onClick={() => setChildren((cs) => cs.filter((_, j) => j !== i))} className="border border-border px-4 py-4 font-body text-xs tracking-widest text-muted-foreground hover:border-primary">
+                      REMOVE
+                    </button>
+                  ) : (
+                    <span className="hidden sm:block" />
+                  )}
+                </div>
+              ))}
+              {children.length < 6 && (
+                <button type="button" onClick={() => setChildren((cs) => [...cs, { name: "", age: "" }])} className="font-body text-xs tracking-[0.15em] uppercase text-primary hover:underline">
+                  + Add another child
+                </button>
+              )}
+            </fieldset>
+
+            <div><label className={fieldLabel} htmlFor="s-notes">Anything we should know</label><textarea id="s-notes" className={`${field} min-h-[5rem]`} value={form.notes} onChange={set("notes")} placeholder="Racket experience, anything a coach should know" /></div>
+            <div className="hidden" aria-hidden="true"><input tabIndex={-1} autoComplete="off" value={form.website} onChange={set("website")} /></div>
+
+            {error && <p className="font-body text-sm text-primary">{error}</p>}
+            <button type="submit" disabled={submitting} className="w-full bg-primary px-8 py-4 font-display text-lg tracking-widest text-primary-foreground transition-all hover:brightness-110 disabled:opacity-60">
+              {submitting ? "SAVING" : "HOLD THEIR PLACE"}
+            </button>
+            <p className="text-center font-body text-xs leading-relaxed text-muted-foreground">
+              Ages 10 to 13: a parent stays for the session. Under 10: call us first. This also puts you on the club's email list; unsubscribe any time.
+            </p>
+          </form>
+        )}
+      </div>
+    </section>
+  );
+}
 
 /**
  * The list for parents who cannot make the date on show. The page lists one day at a time,

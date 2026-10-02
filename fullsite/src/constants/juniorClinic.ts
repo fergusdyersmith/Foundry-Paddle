@@ -13,7 +13,16 @@
  */
 import type { PlannedSession } from "@/constants/previewEvening";
 
-export const JUNIOR_PRICE = "$15"; // $10 until 25 September
+/** Was $10, then $15 from 25 September. Free since 2 October: a sponsor covers 100 places,
+ *  so nothing is collected and the signup lives on this site, not in Playtomic (the two
+ *  Playtomic sessions are priced at 0 so a listing someone finds cannot charge them). */
+export const JUNIOR_PRICE = "Free";
+export const JUNIOR_PLACES = 100;
+/** Who to thank. Null until the club says the sponsor can be named. */
+export const JUNIOR_SPONSOR: string | null = null;
+export const JUNIOR_FREE_LINE = JUNIOR_SPONSOR
+  ? `Free: ${JUNIOR_PLACES} places covered by ${JUNIOR_SPONSOR}.`
+  : `Free: ${JUNIOR_PLACES} places covered by a club sponsor.`;
 export const JUNIOR_COACH = "Diego Valeri";
 
 /** One session per age group (Monica, 25 Sep), ninety minutes each. `group` is what the

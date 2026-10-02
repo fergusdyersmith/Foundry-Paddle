@@ -14,7 +14,7 @@ import {
   PREVIEW_PRICE,
   PREVIEW_SESSION_CAPACITY,
 } from "@/constants/previewEvening";
-import { JUNIOR_COACH, JUNIOR_DAYS, JUNIOR_PRICE, JUNIOR_SESSION_TIMES } from "@/constants/juniorClinic";
+import { JUNIOR_COACH, JUNIOR_DAYS, JUNIOR_FREE_LINE, JUNIOR_SESSION_TIMES } from "@/constants/juniorClinic";
 
 /**
  * The homepage's "coming up": the dated things the club is selling right now, soonest
@@ -53,10 +53,10 @@ const OpenPromo = () => {
       body: (
         <>
           {JUNIOR_SESSION_TIMES.map((t) => `${t.ages} ${t.label}`).join(", ")}. Coached by Timbers legend {JUNIOR_COACH}, racket and balls included.{" "}
-          <span className="text-foreground">{JUNIOR_PRICE} per child.</span>
+          <span className="text-foreground">{JUNIOR_FREE_LINE}</span>
         </>
       ),
-      cta: `BOOK A SESSION · ${JUNIOR_PRICE}`,
+      cta: "SIGN UP FREE",
     });
   }
 
