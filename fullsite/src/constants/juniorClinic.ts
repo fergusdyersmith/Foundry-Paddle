@@ -17,7 +17,7 @@ import type { PlannedSession } from "@/constants/previewEvening";
  *  so nothing is collected and the signup lives on this site, not in Playtomic (the two
  *  Playtomic sessions are priced at 0 so a listing someone finds cannot charge them). */
 export const JUNIOR_PRICE = "Free";
-export const JUNIOR_PLACES = 100;
+export const JUNIOR_PLACES = 80; // 100 until Monica's note of 2 Oct, 1 PM
 /** Who to thank. Null until the club says the sponsor can be named. */
 export const JUNIOR_SPONSOR: string | null = null;
 export const JUNIOR_FREE_LINE = JUNIOR_SPONSOR
