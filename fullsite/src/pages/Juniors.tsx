@@ -103,7 +103,7 @@ const Juniors = () => {
     <main className="bg-background min-h-screen">
       <Seo
         title={`Junior Padel Clinic with ${JUNIOR_COACH} | Foundry Padel, St. Johns`}
-        description={`Padel for kids on a day off school, free: ${JUNIOR_PLACES} places covered by a sponsor. Coached by ${JUNIOR_COACH}, racket and balls included. Ages 10 and up. Next: ${next?.label ?? "see dates"}.`}
+        description={`Padel for kids on a day off school. This first clinic is free: ${JUNIOR_PLACES} places covered by a sponsor. Coached by ${JUNIOR_COACH}, racket and balls included. Ages 10 and up. Next: ${next?.label ?? "see dates"}.`}
         path="/juniors"
       />
       <Head>

@@ -20,9 +20,10 @@ export const JUNIOR_PRICE = "Free";
 export const JUNIOR_PLACES = 80; // 100 until Monica's note of 2 Oct, 1 PM
 /** Who to thank. Null until the club says the sponsor can be named. */
 export const JUNIOR_SPONSOR: string | null = null;
+/** "First" on purpose (Monica, 2 Oct): it sets the expectation that later clinics may cost. */
 export const JUNIOR_FREE_LINE = JUNIOR_SPONSOR
-  ? `Free: ${JUNIOR_PLACES} places covered by ${JUNIOR_SPONSOR}.`
-  : `Free: ${JUNIOR_PLACES} places covered by a club sponsor.`;
+  ? `This first clinic is free: ${JUNIOR_PLACES} places covered by ${JUNIOR_SPONSOR}.`
+  : `This first clinic is free: ${JUNIOR_PLACES} places covered by a club sponsor.`;
 export const JUNIOR_COACH = "Diego Valeri";
 
 /** One session per age group (Monica, 25 Sep), ninety minutes each. `group` is what the
