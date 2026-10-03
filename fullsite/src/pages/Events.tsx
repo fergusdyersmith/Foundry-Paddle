@@ -17,8 +17,8 @@ import { HOURS_SENTENCE } from "@/constants/hours";
  * the ones we submit there, and this page is the source they cite. Keep the two
  * in sync: if a capacity changes, it changes here first.
  *
- * Note that "events" elsewhere in this codebase (/api/events, EventsModal,
- * lib/events.ts) means a Playtomic session — a clinic, an open match, a
+ * Note that "events" elsewhere in this codebase (/api/events, lib/events.ts,
+ * components/schedule) means a Playtomic session — a clinic, an open match, a
  * tournament. This page is unrelated to those; it is about hiring the building.
  */
 
