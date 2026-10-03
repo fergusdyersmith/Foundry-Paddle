@@ -4,6 +4,14 @@ import { MemoryRouter } from "react-router-dom";
 import EventCard from "./EventCard";
 import type { PadelEvent } from "@/types/events";
 
+/** The card renders <Link>s (the member-price line), so it needs router context —
+ *  which is how it is really used: Schedule.tsx is a routed page. Rendering it bare
+ *  throws, and every test here would fail for a reason that has nothing to do with
+ *  what it is checking. */
+function renderCard(ui: React.ReactElement) {
+  return render(<MemoryRouter>{ui}</MemoryRouter>);
+}
+
 const NOW = new Date(2026, 7, 29, 9, 0); // Sat 29 Aug 2026, 9am — before the 10am start
 
 function event(o: Partial<PadelEvent> = {}): PadelEvent {
@@ -37,33 +45,33 @@ afterEach(() => {
 // BOOK" on a 16-of-16 tournament.
 describe("a card offers BOOK only when there is something to book", () => {
   it("says FULL, with no link, when every place is taken", () => {
-    render(<EventCard event={event()} />);
+    renderCard(<EventCard event={event()} />);
     expect(screen.getByText("FULL")).toBeTruthy();
     expect(screen.queryByText("BOOK")).toBeNull();
     expect(screen.queryByRole("link")).toBeNull();
   });
 
   it("shows the roster against the capacity, not a bare count", () => {
-    render(<EventCard event={event()} />);
+    renderCard(<EventCard event={event()} />);
     expect(screen.getByText("16 of 16 signed up")).toBeTruthy();
   });
 
   it("still books when a place is left", () => {
-    render(<EventCard event={event({ signed_up: 15 })} />);
+    renderCard(<EventCard event={event({ signed_up: 15 })} />);
     expect(screen.getByText("BOOK")).toBeTruthy();
     expect(screen.getByRole("link").getAttribute("href")).toBe("https://playtomic.com/x");
     expect(screen.getByText("15 of 16 signed up")).toBeTruthy();
   });
 
   it("books when the capacity is unknown, rather than guessing at full", () => {
-    render(<EventCard event={event({ capacity: null, signed_up: 40 })} />);
+    renderCard(<EventCard event={event({ capacity: null, signed_up: 40 })} />);
     expect(screen.getByText("BOOK")).toBeTruthy();
     expect(screen.getByText("40 signed up")).toBeTruthy();
   });
 
   it("prefers PAST over FULL once the session is over", () => {
     // Both are true of yesterday's sold-out tournament; PAST says the more useful thing.
-    render(<EventCard event={event({ date: "2026-08-28" })} />);
+    renderCard(<EventCard event={event({ date: "2026-08-28" })} />);
     expect(screen.getByText("PAST")).toBeTruthy();
     expect(screen.queryByText("FULL")).toBeNull();
   });
@@ -73,25 +81,25 @@ describe("a card offers BOOK only when there is something to book", () => {
 // on: what it costs.
 describe("a card says what a player pays", () => {
   it("shows the per-person price beside the type", () => {
-    render(<EventCard event={event({ price: "$25" })} />);
+    renderCard(<EventCard event={event({ price: "$25" })} />);
     expect(screen.getByText("$25")).toBeTruthy();
     expect(screen.getByText("/person")).toBeTruthy();
   });
 
   it("renders a raw Playtomic price as dollars", () => {
-    render(<EventCard event={event({ price: "37.50 USD" })} />);
+    renderCard(<EventCard event={event({ price: "37.50 USD" })} />);
     expect(screen.getByText("$37.50")).toBeTruthy();
   });
 
   it("says nothing when the price is unknown, rather than guessing", () => {
     // Null is what the server sends when Kumi's feed is unavailable — the alternative
     // there would be publishing the COURT total as if a player paid it.
-    render(<EventCard event={event({ price: null })} />);
+    renderCard(<EventCard event={event({ price: null })} />);
     expect(screen.queryByText("/person")).toBeNull();
   });
 
   it("still shows the price on a session that is full or past", () => {
-    render(<EventCard event={event({ price: "$25", signed_up: 16, capacity: 16 })} />);
+    renderCard(<EventCard event={event({ price: "$25", signed_up: 16, capacity: 16 })} />);
     expect(screen.getByText("$25")).toBeTruthy();
     expect(screen.getByText("FULL")).toBeTruthy();
   });
@@ -102,25 +110,25 @@ describe("a card says what a player pays", () => {
 // before then — its id IS the link.
 describe("an event the club has not opened yet offers no way in", () => {
   it("says MEMBERS FIRST instead of BOOK, and links nowhere", () => {
-    render(<EventCard event={event({ booking_open: false, book_url: null, price: null })} />);
+    renderCard(<EventCard event={event({ booking_open: false, book_url: null, price: null })} />);
     expect(screen.getByText("MEMBERS FIRST")).toBeTruthy();
     expect(screen.queryByText("BOOK")).toBeNull();
     expect(screen.queryByRole("link")).toBeNull();
   });
 
   it("still shows what it is and when, because the programme is worth seeing", () => {
-    render(<EventCard event={event({ booking_open: false, book_url: null, price: null })} />);
+    renderCard(<EventCard event={event({ booking_open: false, book_url: null, price: null })} />);
     expect(screen.getByText("Intermediate Tournament")).toBeTruthy();
     expect(screen.getByText("10:00 AM - 12:00 PM")).toBeTruthy();
   });
 
   it("books normally when the flag is absent, which is every other event", () => {
-    render(<EventCard event={event({ signed_up: 2 })} />);
+    renderCard(<EventCard event={event({ signed_up: 2 })} />);
     expect(screen.getByText("BOOK")).toBeTruthy();
   });
 
   it("prefers PAST once it has been, whatever the flag says", () => {
-    render(<EventCard event={event({ booking_open: false, book_url: null, date: "2026-08-28" })} />);
+    renderCard(<EventCard event={event({ booking_open: false, book_url: null, date: "2026-08-28" })} />);
     expect(screen.getByText("PAST")).toBeTruthy();
     expect(screen.queryByText("MEMBERS FIRST")).toBeNull();
   });
@@ -132,20 +140,20 @@ describe("a members-first card sells the window instead of just closing the door
   const gated = { booking_open: false, book_url: null, price: null, signed_up: 0 };
 
   it("says MEMBERS FIRST and the day it opens to all", () => {
-    render(<EventCard event={event({ ...gated, date: "2026-09-10", opens_on: "2026-09-05" })} />);
+    renderCard(<EventCard event={event({ ...gated, date: "2026-09-10", opens_on: "2026-09-05" })} />);
     expect(screen.getByText("MEMBERS FIRST")).toBeTruthy();
     expect(screen.getByText(/Opens to all Sep 5/)).toBeTruthy();
     expect(screen.queryByRole("link")).toBeNull();
   });
 
   it("drops the date when the server withheld it, keeping the label", () => {
-    render(<EventCard event={event({ ...gated, opens_on: null })} />);
+    renderCard(<EventCard event={event({ ...gated, opens_on: null })} />);
     expect(screen.getByText("MEMBERS FIRST")).toBeTruthy();
     expect(screen.queryByText(/Opens to all/)).toBeNull();
   });
 
   it("shows the roster again on an event that is open", () => {
-    render(<EventCard event={event({ signed_up: 5, capacity: 8 })} />);
+    renderCard(<EventCard event={event({ signed_up: 5, capacity: 8 })} />);
     expect(screen.getByText("5 of 8 signed up")).toBeTruthy();
     expect(screen.queryByText(/Opens to all/)).toBeNull();
   });
@@ -158,7 +166,7 @@ describe("a card shows what a member would pay", () => {
   const offPeak = { date: "2026-09-03", start_time: "11:00", end_time: "12:30" };
 
   it("puts the member price under the standard one", () => {
-    render(<EventCard event={event({ ...offPeak, price: "$20" })} />);
+    renderCard(<EventCard event={event({ ...offPeak, price: "$20" })} />);
     expect(screen.getByText("$20")).toBeTruthy();
     expect(screen.getByText("$10")).toBeTruthy();
     expect(screen.getByText("members")).toBeTruthy();
@@ -175,7 +183,7 @@ describe("a card shows what a member would pay", () => {
   });
 
   it("adds nothing when there is no price to take a share of", () => {
-    render(<EventCard event={event({ ...offPeak, price: null })} />);
+    renderCard(<EventCard event={event({ ...offPeak, price: null })} />);
     expect(screen.queryByText("members")).toBeNull();
   });
 });
@@ -192,20 +200,49 @@ describe("an off-peak open match is free for members", () => {
     signed_up: 2,
   };
 
+  it("links the orange Free to the memberships page, but not the grey words after it", () => {
+    // The price is the bit worth tapping: somebody who sees a session is free for
+    // members is exactly the person who should land on the page that sells one.
+    renderCard(<EventCard event={event(offPeakMatch)} />);
+    expect(screen.getByRole("link", { name: "Free" })).toHaveAttribute(
+      "href",
+      "/memberships",
+    );
+    expect(screen.queryByRole("link", { name: /for members/ })).toBeNull();
+  });
+
+  it("links an off-peak clinic price the same way", () => {
+    renderCard(
+      <EventCard
+        event={event({
+          booking_type: "PUBLIC_CLASS",
+          date: "2026-09-03",
+          start_time: "11:00",
+          price: "$20",
+          capacity: null,
+        })}
+      />,
+    );
+    expect(screen.getByRole("link", { name: "$15" })).toHaveAttribute(
+      "href",
+      "/memberships",
+    );
+  });
+
   it("reads Free for members, not $0", () => {
-    render(<EventCard event={event(offPeakMatch)} />);
+    renderCard(<EventCard event={event(offPeakMatch)} />);
     expect(screen.getByText("Free")).toBeTruthy();
     expect(screen.getByText("for members")).toBeTruthy();
     expect(screen.queryByText("$0")).toBeNull();
   });
 
   it("still shows the price everyone else pays", () => {
-    render(<EventCard event={event(offPeakMatch)} />);
+    renderCard(<EventCard event={event(offPeakMatch)} />);
     expect(screen.getByText("$15")).toBeTruthy();
   });
 
   it("says nothing on a peak match, where the benefit runs per tier", () => {
-    render(<EventCard event={event({ ...offPeakMatch, start_time: "18:00", end_time: "19:30" })} />);
+    renderCard(<EventCard event={event({ ...offPeakMatch, start_time: "18:00", end_time: "19:30" })} />);
     expect(screen.queryByText(/members/)).toBeNull();
   });
 });
@@ -216,33 +253,33 @@ describe("a full event with a waitlist", () => {
   const WL = { url: "https://app.playtomic.com/tournaments/wl", queued: 1 };
 
   it("offers JOIN WAITLIST instead of a dead FULL badge", () => {
-    render(<EventCard event={event({ waitlist: WL })} />);
+    renderCard(<EventCard event={event({ waitlist: WL })} />);
     const cta = screen.getByText("JOIN WAITLIST").closest("a");
     expect(cta?.getAttribute("href")).toBe(WL.url);
     expect(screen.queryByText("FULL")).toBeNull();
   });
 
   it("opens the queue in a new tab, like every other Playtomic link here", () => {
-    render(<EventCard event={event({ waitlist: WL })} />);
+    renderCard(<EventCard event={event({ waitlist: WL })} />);
     const cta = screen.getByText("JOIN WAITLIST").closest("a");
     expect(cta?.getAttribute("target")).toBe("_blank");
     expect(cta?.getAttribute("rel")).toContain("noopener");
   });
 
   it("shows how many are queued beside the roster", () => {
-    render(<EventCard event={event({ waitlist: WL })} />);
+    renderCard(<EventCard event={event({ waitlist: WL })} />);
     expect(screen.getByText(/16 of 16 signed up/)).toBeTruthy();
     expect(screen.getByText(/1 on the waitlist/)).toBeTruthy();
   });
 
   it("shows the button but no count when nobody has queued yet", () => {
-    render(<EventCard event={event({ waitlist: { ...WL, queued: 0 } })} />);
+    renderCard(<EventCard event={event({ waitlist: { ...WL, queued: 0 } })} />);
     expect(screen.getByText("JOIN WAITLIST")).toBeTruthy();
     expect(screen.queryByText(/on the waitlist/)).toBeNull();
   });
 
   it("still says FULL when the club is not running a queue", () => {
-    render(<EventCard event={event({ waitlist: null })} />);
+    renderCard(<EventCard event={event({ waitlist: null })} />);
     expect(screen.getByText("FULL")).toBeTruthy();
     expect(screen.queryByText("JOIN WAITLIST")).toBeNull();
   });
@@ -250,7 +287,7 @@ describe("a full event with a waitlist", () => {
   it("never offers a queue for a session that has already finished", () => {
     // PAST beats everything: the queue for last Tuesday's tournament is not a thing
     // anybody should be sent to.
-    render(<EventCard event={event({ date: "2026-08-28", waitlist: WL })} />);
+    renderCard(<EventCard event={event({ date: "2026-08-28", waitlist: WL })} />);
     expect(screen.getByText("PAST")).toBeTruthy();
     expect(screen.queryByText("JOIN WAITLIST")).toBeNull();
   });
@@ -260,13 +297,6 @@ describe("per-tier member pricing", () => {
   // The tier line is a <Link>, so it needs router context. Safe in production: this
   // card renders only from Schedule.tsx (directly and via AgendaList), which is a
   // routed page and imports Link itself. TvScreen does not use it.
-  const renderCard = (e: PadelEvent) =>
-    render(
-      <MemoryRouter>
-        <EventCard event={e} />
-      </MemoryRouter>,
-    );
-
   const withTiers = () =>
     event({
       booking_type: "TOURNAMENT",
@@ -277,7 +307,7 @@ describe("per-tier member pricing", () => {
     });
 
   it("names both tiers and links them to the memberships page", () => {
-    renderCard(withTiers());
+    renderCard(<EventCard event={withTiers()} />);
     const link = screen.getByRole("link", {
       name: "Regular $18.75 · Padelhead $12.50",
     });
@@ -285,12 +315,12 @@ describe("per-tier member pricing", () => {
   });
 
   it("does not say 'members' — the tier names carry that, and Student is a tier that gets no discount", () => {
-    renderCard(withTiers());
+    renderCard(<EventCard event={withTiers()} />);
     expect(screen.queryByText(/members$/i)).toBeNull();
   });
 
   it("shows nothing when the feed sends no member prices", () => {
-    renderCard(event({ booking_type: "TOURNAMENT", price: "$25" }));
+    renderCard(<EventCard event={event({ booking_type: "TOURNAMENT", price: "$25" })} />);
     expect(screen.queryByRole("link", { name: /Padelhead/ })).toBeNull();
   });
 });

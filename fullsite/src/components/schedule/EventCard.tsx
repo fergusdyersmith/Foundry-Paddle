@@ -121,8 +121,13 @@ export default function EventCard({
         {/* What the same session costs a member. Off-peak clinics and tournaments only,
             where the discount is the same on every tier and a single figure is true. */}
         {!tierPrices && member && (
-          <p className="mt-1 text-xs font-medium text-primary">
-            {member}{" "}
+          <p className="mt-1 text-xs font-medium">
+            <Link
+              to="/memberships"
+              className="text-primary underline-offset-2 hover:underline"
+            >
+              {member}
+            </Link>{" "}
             <span className="text-muted-foreground">
               {member === "Free" ? "for members" : "members"}
             </span>
