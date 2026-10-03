@@ -11,6 +11,12 @@ export interface PadelEvent {
   end_time: string;
   duration_min: number;
   price: string | null;
+  /** What each membership tier pays, e.g. {regular: "$18.75", padelhead: "$12.50"}.
+   *  Server-supplied and already filtered to the tiers that are genuinely cheaper than
+   *  `price`, so render it as given. Never recompute it from a percentage: member and
+   *  early-bird pricing do not stack, so during an early-bird window Regular's price
+   *  IS the standard price and the server omits the tier entirely. */
+  member_prices?: Record<string, string> | null;
   booking_type: string;
   court: string | null;
   /** Live roster count from Playtomic. Often 0 for clinics (sparse upstream data);

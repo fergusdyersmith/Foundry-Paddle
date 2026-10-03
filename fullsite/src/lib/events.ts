@@ -190,6 +190,30 @@ export function isPeakEvent(event: PadelEvent): boolean {
  *  unlimited off-peak play on every tier. It still requires a published price to discount
  *  — a match with no price is one we know nothing about, including whether it is the kind
  *  of thing the benefit covers. */
+/** The tier-by-tier member line, e.g. "Regular $18.75 · Padelhead $12.50".
+ *
+ *  Named tiers, not the word "members", and that is the whole point. Student IS a
+ *  membership tier and gets NO tournament discount, so a line reading "members $12.50"
+ *  is a lie to one tier in three. Naming them is also what makes the upgrade legible.
+ *
+ *  Everything here is server-supplied. The feed publishes a tier only when it is
+ *  genuinely cheaper than the standard price, so there is nothing to compute and
+ *  nothing to decide: during an early-bird window Regular pays the standard price
+ *  (the two discounts do not stack) and simply is not in the object. */
+const TIER_LABELS: Record<string, string> = {
+  regular: "Regular",
+  padelhead: "Padelhead",
+};
+
+export function memberTierPrices(event: PadelEvent): string | null {
+  const prices = event.member_prices;
+  if (!prices) return null;
+  const parts = Object.keys(TIER_LABELS)
+    .filter((tier) => prices[tier])
+    .map((tier) => `${TIER_LABELS[tier]} ${prices[tier]}`);
+  return parts.length ? parts.join(" · ") : null;
+}
+
 export function memberPrice(event: PadelEvent): string | null {
   const discount = OFF_PEAK_MEMBER_DISCOUNT[event.booking_type];
   if (!discount || !event.price || isPeakEvent(event)) return null;

@@ -490,6 +490,29 @@ describe("a tournament the club has not opened yet is not linked", () => {
     expect(e.signed_up).toBe(4);
   });
 
+  it("carries the per-tier member prices through to the event", () => {
+    const [e] = T.applyKumiTournamentInfo(
+      [tournament()],
+      [feedRow({ member_prices: { regular: "$18.75", padelhead: "$12.50" } })],
+      { isOver },
+    );
+    expect(e.member_prices).toEqual({ regular: "$18.75", padelhead: "$12.50" });
+  });
+
+  it("leaves member prices null when the feed sends none", () => {
+    const [e] = T.applyKumiTournamentInfo([tournament()], [feedRow()], { isOver });
+    expect(e.member_prices).toBeNull();
+  });
+
+  it("does not invent member prices from a percentage", () => {
+    // Member and early-bird pricing do NOT stack, so during an early-bird window the
+    // server omits Regular entirely rather than publishing a discount that is not
+    // there. If this file ever starts computing one, that is the bug coming back.
+    const src = readFileSync(new URL("../server.js", import.meta.url), "utf8");
+    const fn = src.slice(src.indexOf("function applyKumiTournamentInfo("));
+    expect(fn.slice(0, 3000)).not.toMatch(/0\.25|0\.5\b|\* *0\./);
+  });
+
   it("takes the CURRENT name from the feed, because the booking keeps the old one", () => {
     // 2026-10-01: the early-bird job renamed "Intermediate KOC 1.75 - 2.75 (Early Bird
     // Discount)" to "Intermediate KOC 1.75 - 2.75" and repriced it; the schedule showed the
@@ -732,6 +755,34 @@ describe("open matches with no court booked yet", () => {
     expect(out[0].booking_type).toBe("OPEN_MATCH");
     expect(out[0].duration_min).toBe(90);
     expect(out[0].book_url).toContain("/matches/");
+  });
+
+  const OPEN_MATCH_CAPACITY_FOR_TEST = 4;
+
+  it("DROPS a match nobody has joined", () => {
+    // 3 Oct 2026: three of these sat on the public schedule, all four places open, no
+    // court, nobody in them. An empty courtless match is an intention, not an event,
+    // and three of them in a row make the club look dead.
+    expect(
+      T.mergeUnbookedOpenMatches([], [kumiMatch({ spots_left: 4 })], { toLocal }),
+    ).toHaveLength(0);
+  });
+
+  it("KEEPS a match with one player, who is looking for three more", () => {
+    // The point of the feed. Only the empty end is dropped, not the nearly-empty end.
+    expect(
+      T.mergeUnbookedOpenMatches([], [kumiMatch({ spots_left: 3 })], { toLocal }),
+    ).toHaveLength(1);
+  });
+
+  it("a missing spots_left reads as FULL, so it is dropped downstream either way", () => {
+    // Not a case the feed produces, but worth pinning which way the default falls. It
+    // counts as four players, which the full-open-match filter in getEvents then
+    // removes. So an unknown match never reaches the page, by the other door.
+    const [e] = T.mergeUnbookedOpenMatches(
+      [], [kumiMatch({ spots_left: undefined })], { toLocal },
+    );
+    expect(e.signed_up).toBe(OPEN_MATCH_CAPACITY_FOR_TEST);
   });
 
   it("counts players from the places left, because that is what Kumi publishes", () => {

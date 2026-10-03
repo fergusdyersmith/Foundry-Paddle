@@ -9,6 +9,7 @@ import {
   isFullEvent,
   isPastEvent,
   memberPrice,
+  memberTierPrices,
   signupSummary,
   waitlistSummary,
 } from "@/lib/events";
@@ -49,6 +50,9 @@ export default function EventCard({
   const queued = waitlistSummary(event);
   // Only ever set on an off-peak clinic or tournament — see memberPrice.
   const member = memberPrice(event);
+  // Explicit per-tier prices win over the computed single figure: they come from
+  // Playtomic's own per-tier prices, so they stay right when the rules change.
+  const tierPrices = memberTierPrices(event);
   const typeLabel = TYPE_LABELS[event.booking_type];
   const typeColor =
     TYPE_COLORS[event.booking_type] || "bg-muted text-muted-foreground";
@@ -98,9 +102,18 @@ export default function EventCard({
             </span>
           )}
         </div>
+        {/* Tier-by-tier member pricing, server-supplied. Named tiers rather than the
+            word "members": Student is a membership tier that gets no tournament
+            discount, so "members $12.50" would be wrong for one tier in three. */}
+        {tierPrices && (
+          <p className="mt-1 text-xs font-medium text-primary">
+            {tierPrices}{" "}
+            <span className="text-muted-foreground">members</span>
+          </p>
+        )}
         {/* What the same session costs a member. Off-peak clinics and tournaments only,
             where the discount is the same on every tier and a single figure is true. */}
-        {member && (
+        {!tierPrices && member && (
           <p className="mt-1 text-xs font-medium text-primary">
             {member}{" "}
             <span className="text-muted-foreground">

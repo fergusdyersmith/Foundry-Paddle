@@ -701,6 +701,13 @@ function mergeUnbookedOpenMatches(events, openMatches, { toLocal }) {
     const id = m?.playtomic_match_id;
     if (!id || seen.has(id)) continue;
     if (!m.start_utc || !m.duration_min || !m.join_url) continue;
+    // AN EMPTY MATCH IS NOT AN EVENT EITHER. The filter below drops a FULL open match
+    // because it is really a closed court; this is the same rule at the other end. A
+    // match with all four places still open has nobody in it, holds no court (that is
+    // why it is in this feed at all) and is an intention rather than something to come
+    // to. Three of them sat on Saturday 3 Oct making the club look dead. One player
+    // IS worth showing: that is somebody looking for three more.
+    if ((m.spots_left ?? 0) >= OPEN_MATCH_SIZE) continue;
     const startUtc = new Date(m.start_utc);
     if (Number.isNaN(startUtc.getTime())) continue;
     const endUtc = new Date(startUtc.getTime() + m.duration_min * 60_000);
@@ -861,6 +868,12 @@ function applyKumiTournamentInfo(
       // booking. Kumi's feed reads Playtomic's tournament itself, so its name is current.
       name: typeof t.name === "string" && t.name.trim() ? t.name.trim() : null,
       price: cleanPrice(t.price),
+      // What each membership tier pays. Kumi publishes only the tiers that are
+      // genuinely cheaper than the standard price, so this is rendered as given and
+      // never recomputed here: member and early-bird pricing do not stack, and working
+      // "25% off" out site-side would invent a discount during every early-bird window.
+      memberPrices:
+        t.member_prices && typeof t.member_prices === "object" ? t.member_prices : null,
       capacity: Number.isFinite(t.max_players) ? t.max_players : null,
       registered: Number.isFinite(t.registered_count) ? t.registered_count : null,
       // Kumi pairs "<event> Waitlist" back to its event; turn its id into the same kind
@@ -903,6 +916,7 @@ function applyKumiTournamentInfo(
     // Only an id match can rename: a title+date match found it BY the old title.
     if (idMatch?.name) e.title = idMatch.name;
     e.price = match?.price || null; // never show a court total as a player price
+    e.member_prices = match?.memberPrices ?? null;
     e.capacity = match?.capacity ?? null;
     if (match?.registered != null) e.signed_up = match.registered;
     e.waitlist = match?.waitlist ?? null;

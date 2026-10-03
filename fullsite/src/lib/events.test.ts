@@ -11,6 +11,7 @@ import {
   signupSummary,
   waitlistSummary,
   wallSignupLabel,
+  memberTierPrices,
 } from "./events";
 import type { PadelEvent } from "@/types/events";
 
@@ -354,5 +355,45 @@ describe("a day lists what you can still join first", () => {
   it("applies to every day the schedule groups, not just one call site", () => {
     const grouped = groupEventsByDate([full("07:00"), open("10:00")]);
     expect(grouped.get("2099-01-01")?.map((e) => e.title)).toEqual(["open 10:00", "full 07:00"]);
+  });
+});
+
+describe("memberTierPrices", () => {
+  const ev = (member_prices: Record<string, string> | null) =>
+    ({
+      id: "t", title: "Beginner Friendly Americano 0 - 2", date: "2026-10-04",
+      start_time: "11:00", end_time: "12:30", duration_min: 90,
+      booking_type: "TOURNAMENT", price: "$25", signed_up: 3, member_prices,
+    }) as unknown as PadelEvent;
+
+  it("names both tiers, because 'members' would be a lie to Student", () => {
+    // Student IS a membership tier and gets no tournament discount. A line reading
+    // "members $12.50" is wrong for one tier in three; naming them also makes the
+    // upgrade from Regular to Padelhead legible.
+    expect(memberTierPrices(ev({ regular: "$18.75", padelhead: "$12.50" })))
+      .toBe("Regular $18.75 · Padelhead $12.50");
+  });
+
+  it("shows one tier when only one is cheaper", () => {
+    // The early-bird case. The event is already 25% off and the discounts do not
+    // stack, so Regular pays the standard price and the server omits the tier.
+    expect(memberTierPrices(ev({ padelhead: "$12.50" }))).toBe("Padelhead $12.50");
+  });
+
+  it("is null when the feed sends nothing, so the card shows no member line", () => {
+    expect(memberTierPrices(ev(null))).toBeNull();
+    expect(memberTierPrices(ev({}))).toBeNull();
+  });
+
+  it("orders Regular before Padelhead whatever order the feed used", () => {
+    expect(memberTierPrices(ev({ padelhead: "$12.50", regular: "$18.75" })))
+      .toBe("Regular $18.75 · Padelhead $12.50");
+  });
+
+  it("ignores a tier it has no label for, rather than printing a raw key", () => {
+    // Staff and Coach have custom prices in Playtomic. The server already filters them
+    // out; if that ever regresses, the card must not publish "staff $0".
+    expect(memberTierPrices(ev({ staff: "$0", coach: "$12.50", regular: "$18.75" })))
+      .toBe("Regular $18.75");
   });
 });
