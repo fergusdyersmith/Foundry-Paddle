@@ -1,5 +1,6 @@
 import { Clock, ExternalLink, Lock, Users } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { Link } from "react-router-dom";
 import { TYPE_LABELS, TYPE_COLORS } from "@/constants/events";
 import {
   eventBookingUrl,
@@ -102,13 +103,19 @@ export default function EventCard({
             </span>
           )}
         </div>
-        {/* Tier-by-tier member pricing, server-supplied. Named tiers rather than the
-            word "members": Student is a membership tier that gets no tournament
-            discount, so "members $12.50" would be wrong for one tier in three. */}
+        {/* Tier-by-tier member pricing, server-supplied, linking to the page that
+            explains it. Named tiers and no trailing "members": the tier names already
+            say who this is for, and the word would be wrong anyway — Student IS a
+            membership tier and gets no tournament discount. Someone who does not
+            recognise "Padelhead" is exactly the person the link is for. */}
         {tierPrices && (
-          <p className="mt-1 text-xs font-medium text-primary">
-            {tierPrices}{" "}
-            <span className="text-muted-foreground">members</span>
+          <p className="mt-1 text-xs font-medium">
+            <Link
+              to="/memberships"
+              className="text-primary underline-offset-2 hover:underline"
+            >
+              {tierPrices}
+            </Link>
           </p>
         )}
         {/* What the same session costs a member. Off-peak clinics and tournaments only,

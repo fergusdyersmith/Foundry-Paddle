@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { MemoryRouter } from "react-router-dom";
 import EventCard from "./EventCard";
 import type { PadelEvent } from "@/types/events";
 
@@ -252,5 +253,44 @@ describe("a full event with a waitlist", () => {
     render(<EventCard event={event({ date: "2026-08-28", waitlist: WL })} />);
     expect(screen.getByText("PAST")).toBeTruthy();
     expect(screen.queryByText("JOIN WAITLIST")).toBeNull();
+  });
+});
+
+describe("per-tier member pricing", () => {
+  // The tier line is a <Link>, so it needs router context. Safe in production: this
+  // card renders only from Schedule.tsx (directly and via AgendaList), which is a
+  // routed page and imports Link itself. TvScreen does not use it.
+  const renderCard = (e: PadelEvent) =>
+    render(
+      <MemoryRouter>
+        <EventCard event={e} />
+      </MemoryRouter>,
+    );
+
+  const withTiers = () =>
+    event({
+      booking_type: "TOURNAMENT",
+      price: "$25",
+      signed_up: 3,
+      capacity: 12,
+      member_prices: { regular: "$18.75", padelhead: "$12.50" },
+    });
+
+  it("names both tiers and links them to the memberships page", () => {
+    renderCard(withTiers());
+    const link = screen.getByRole("link", {
+      name: "Regular $18.75 · Padelhead $12.50",
+    });
+    expect(link).toHaveAttribute("href", "/memberships");
+  });
+
+  it("does not say 'members' — the tier names carry that, and Student is a tier that gets no discount", () => {
+    renderCard(withTiers());
+    expect(screen.queryByText(/members$/i)).toBeNull();
+  });
+
+  it("shows nothing when the feed sends no member prices", () => {
+    renderCard(event({ booking_type: "TOURNAMENT", price: "$25" }));
+    expect(screen.queryByRole("link", { name: /Padelhead/ })).toBeNull();
   });
 });
