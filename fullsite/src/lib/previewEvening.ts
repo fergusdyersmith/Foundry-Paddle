@@ -46,6 +46,12 @@ export function mergePreviewSessions(
   date: string,
   titlePattern: RegExp,
   campaign: string,
+  /** Also list matching Playtomic events that are not in `planned`. The preview evening
+   *  wants that (a session the club adds shows up by itself); the junior clinic does not:
+   *  its sessions are fixed and the website is the signup, so a stray Playtomic event is
+   *  not a session. A 1 PM "Junior Clinic w/ Diego Valeri" left in Playtomic showed on
+   *  /juniors as a third session (Monica, 3 Oct). */
+  includeUnplanned = true,
 ): PreviewSession[] {
   const live = events.filter((e) => e.date === date && titlePattern.test(e.title));
   const used = new Set<PadelEvent>();
@@ -69,7 +75,7 @@ export function mergePreviewSessions(
   });
 
   for (const e of live) {
-    if (used.has(e)) continue;
+    if (!includeUnplanned || used.has(e)) continue;
     merged.push({ start: e.start_time, end: e.end_time, ...fromEvent(e, null) });
   }
 

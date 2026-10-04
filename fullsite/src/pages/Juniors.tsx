@@ -34,8 +34,10 @@ import type { PadelEvent } from "@/types/events";
  * know when, how much, what the rules are for their kid's age, and which button.
  */
 
-const PHONE_DISPLAY = "(971) 378-7499";
-const PHONE_TEL = "+19713787499";
+// Monica's number for the junior clinic (her request, 3 Oct 2026). The other pages keep
+// the club's (971) 378-7499.
+const PHONE_DISPLAY = "(612) 442-7600";
+const PHONE_TEL = "+16124427600";
 const sectionHeading = "font-display text-4xl sm:text-5xl text-foreground";
 const field =
   "w-full border border-border bg-secondary px-5 py-4 font-body text-sm tracking-widest text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors";
@@ -93,6 +95,7 @@ const Juniors = () => {
           day.date,
           JUNIOR_TITLE_PATTERN,
           "juniors",
+          false, // only the two planned sessions; see mergePreviewSessions
         ),
       })),
     [upcoming, eventsByDate],

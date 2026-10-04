@@ -103,4 +103,13 @@ describe("withCampaign", () => {
   it("hands back something it cannot parse rather than throwing", () => {
     expect(withCampaign("not a url", CAMPAIGN)).toBe("not a url");
   });
+
+  it("leaves out unplanned Playtomic events when asked to (the junior clinic)", () => {
+    const planned: PlannedSession[] = [{ start: "09:00", end: "10:30", bookUrl: null }];
+    const stray = event({ start_time: "13:00", end_time: "14:30" });
+    expect(mergePreviewSessions(planned, [stray], DATE, PATTERN, "juniors").map((s) => s.start))
+      .toEqual(["09:00", "13:00"]);
+    expect(mergePreviewSessions(planned, [stray], DATE, PATTERN, "juniors", false).map((s) => s.start))
+      .toEqual(["09:00"]);
+  });
 });
