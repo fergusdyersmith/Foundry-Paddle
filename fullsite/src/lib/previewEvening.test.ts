@@ -125,18 +125,14 @@ describe("the juniors page signup button", () => {
   const src = () =>
     readFileSync(resolve(process.cwd(), "src/pages/Juniors.tsx"), "utf8");
 
-  it("sends SIGN UP to the Playtomic event, not to the form", () => {
-    // Kelly, 6 Oct: the button scrolled to the on-page form, left over from when the
-    // clinic went free on 2 October and the website was the signup. The free
-    // registration lives in Playtomic, and the feed has carried the link all along.
-    expect(src()).toMatch(/href=\{s\.bookUrl\}/);
-  });
-
-  it("keeps the form as the fallback when there is no link yet", () => {
-    // The feed hands out no link while an event is unreleased. A button that scrolls
-    // somewhere useful beats one that cannot take a booking.
-    expect(src()).toMatch(/s\.bookUrl \? \(/);
+  it("sends SIGN UP to the form, NOT to Playtomic", () => {
+    // This went both ways on 6 Oct and the second answer is the evidenced one. Playtomic
+    // registers the PLAYER, and the player is a child: 0 of the first 11 children had an
+    // account and only 2 of 9 parents did, while the form took 9 families in three days
+    // against Playtomic's 4. A free place for a ten year old must not require their own
+    // Playtomic account.
     expect(src()).toMatch(/href="#signup"/);
+    expect(src()).not.toMatch(/href=\{s\.bookUrl\}/);
   });
 
   it("still refuses to list a Playtomic session nobody planned", () => {

@@ -235,26 +235,20 @@ const Juniors = () => {
                         <p className="mt-1 font-display text-2xl text-foreground">{label}</p>
                         {spots && <p className="mt-1 font-body text-xs text-secondary-foreground">{spots}</p>}
                         <div className="mt-4">
-                          {/* Signup goes to Playtomic, which is where the free registration
-                              actually lives (Kelly, 6 Oct). It used to scroll to the form
-                              below, from when the clinic went free on 2 October and the
-                              website was the signup.
+                          {/* THE FORM IS THE SIGNUP, not Playtomic, and this has now been
+                              both ways. It pointed at Playtomic on 6 Oct because that is
+                              where the free registration lives; it came back the same day
+                              on the evidence. Playtomic needs an account for the PLAYER,
+                              and the player is a child: of the first 11 children signed up
+                              through this page, 0 had a Playtomic account and only 2 of 9
+                              parents did. Asking a parent to make an account for a ten year
+                              old before claiming a free place is the wrong ask, and the
+                              numbers said so — 9 families through the form in three days
+                              against 4 registrations in Playtomic.
 
-                              The form is still the fallback, and still the right one: the
-                              feed hands out no link while an event is unreleased, and a
-                              button that scrolls somewhere useful beats one that cannot
-                              take a booking. */}
+                              The feed is still read, for `full` and the places left. */}
                           {s.full ? (
                             <span className="inline-block border border-border px-5 py-2.5 font-display text-sm tracking-widest text-muted-foreground">FULL</span>
-                          ) : s.bookUrl ? (
-                            <a
-                              href={s.bookUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-block bg-primary px-5 py-2.5 font-display text-sm tracking-widest text-primary-foreground transition-all hover:brightness-110"
-                            >
-                              SIGN UP
-                            </a>
                           ) : (
                             <a href="#signup" className="inline-block bg-primary px-5 py-2.5 font-display text-sm tracking-widest text-primary-foreground transition-all hover:brightness-110">
                               SIGN UP
