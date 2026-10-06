@@ -164,3 +164,65 @@ describe("POST /api/juniors/notify", () => {
     expect(t).not.toContain("<!channel>"); expect(t).toContain("&lt;!channel&gt;");
   });
 });
+
+describe("the confirmation email", () => {
+  const SHEET = "https://script.google.com/macros/s/X/exec";
+  const CONFIRM = "https://padelmaps.org/api/internal/juniors-confirmation";
+
+  function appWith({ sheetOk = true, confirmOk = true, confirmSecret = "k3y" } = {}) {
+    const calls = [];
+    const fetchImpl = async (url, init) => {
+      calls.push({ url, headers: init.headers || {}, body: JSON.parse(init.body) });
+      if (url === SHEET) return { ok: sheetOk, json: async () => ({ ok: sheetOk }) };
+      return { ok: confirmOk, status: confirmOk ? 200 : 502, json: async () => ({ ok: confirmOk }) };
+    };
+    return {
+      calls,
+      app: app({ slackToken: null, klaviyo: null, days: DAYS, sheetUrl: SHEET,
+                 sheetSecret: "s3cret", confirmUrl: CONFIRM, confirmSecret, fetchImpl,
+                 now: () => new Date("2026-10-02T17:00:00Z") }),
+    };
+  }
+
+  it("sends one confirmation naming every child and its session", async () => {
+    const { app: a, calls } = appWith();
+    const r = await callRegister(a, reg);
+    expect(r.status).toBe(200);
+    const conf = calls.filter((c) => c.url === CONFIRM);
+    expect(conf).toHaveLength(1);
+    expect(conf[0].headers["X-Juniors-Secret"]).toBe("k3y");
+    expect(conf[0].body).toMatchObject({
+      parent_name: "Sam Rivera",
+      email: "sam@example.com",
+      day_label: "Friday, October 9",
+    });
+    expect(conf[0].body.children).toEqual([
+      { name: "Josie Rivera", age: 11, session: "10-13" },
+      { name: "Max Rivera", age: 14, session: "14+" },
+    ]);
+  });
+
+  it("does NOT confirm when the sheet row failed", async () => {
+    // The Sheet is the list the desk works from. A parent told "you're in" because Slack
+    // went through could arrive to find nobody expecting them.
+    const { app: a, calls } = appWith({ sheetOk: false });
+    await callRegister(a, reg);
+    expect(calls.filter((c) => c.url === CONFIRM)).toHaveLength(0);
+  });
+
+  it("still signs them up when the confirmation send fails", async () => {
+    // The place is already held by the time the email is attempted. A sender outage is a
+    // missing email, never a failed signup.
+    const { app: a } = appWith({ confirmOk: false });
+    const r = await callRegister(a, reg);
+    expect(r.status).toBe(200);
+    expect(r.json).toMatchObject({ ok: true });
+  });
+
+  it("sends nothing when no secret is configured, and the signup still works", async () => {
+    const { app: a, calls } = appWith({ confirmSecret: null });
+    const r = await callRegister(a, reg);
+    expect(r.status).toBe(200);
+    expect(calls.filter((c) => c.url === CONFIRM)).toHaveLength(0);
+  });
+});

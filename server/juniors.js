@@ -98,6 +98,11 @@ export function createJuniorsRouter({
   // The signups sheet shared with Monica: an Apps Script web app, see juniors-sheet.gs.
   sheetUrl = process.env.JUNIORS_SHEET_WEBHOOK || null,
   sheetSecret = process.env.JUNIORS_SHEET_SECRET || null,
+  // Where the confirmation email is sent from. Unset = no confirmations, and the signup
+  // still works: this is the one record a parent sees, not one the club depends on.
+  confirmUrl = process.env.JUNIORS_CONFIRM_URL
+    || "https://padelmaps.org/api/internal/juniors-confirmation",
+  confirmSecret = process.env.JUNIORS_CONFIRM_SECRET || null,
   // Which days take signups, YYYY-MM-DD -> label shown to people. The page sends the
   // date; the server refuses one it does not know so a stale tab cannot book a day
   // the club has not opened.
@@ -130,6 +135,28 @@ export function createJuniorsRouter({
       const json = await res.json().catch(() => ({}));
       if (json.ok === false) throw new Error(`sheet ${json.error || "refused"}`);
     }
+    return true;
+  }
+
+  // The confirmation email, sent through padelmaps.org because this server has no email
+  // transport of its own and should not grow one: a second sender here means a second key,
+  // a second template and a second place for a bounce to hide. The API end uses Resend
+  // (one address per request, one message id) rather than a Klaviyo campaign, which
+  // resolves its audience asynchronously and once put sixteen guest-pass codes in the
+  // wrong inboxes.
+  async function sendConfirmation(r, dayLabel) {
+    if (!confirmUrl || !confirmSecret) return false;
+    const res = await fetchImpl(confirmUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Juniors-Secret": confirmSecret },
+      body: JSON.stringify({
+        parent_name: r.name,
+        email: r.email,
+        day_label: dayLabel,
+        children: r.children.map((c) => ({ name: c.name, age: c.age, session: c.session })),
+      }),
+    });
+    if (!res.ok) throw new Error(`confirmation ${res.status}`);
     return true;
   }
 
@@ -185,6 +212,23 @@ export function createJuniorsRouter({
     const recorded = outcomes.some((o) => o.status === "fulfilled" && o.value === true);
     for (const o of outcomes) {
       if (o.status === "rejected") console.error("[juniors] register record failed:", o.reason?.message || o.reason);
+    }
+
+    // CONFIRM THE SHEET, NOTHING ELSE. The Sheet row is the list the desk works from on
+    // the day; Slack is a notification and Klaviyo is a marketing record. A parent told
+    // "you're in" because a Slack post went through could arrive to find nobody
+    // expecting them, so the email waits on the record that actually holds the place.
+    // outcomes[2] is appendSheetRows; its `false` means no sheet is configured.
+    const sheetOk = outcomes[2].status === "fulfilled" && outcomes[2].value === true;
+    if (sheetOk) {
+      // Never fails the signup. The place is already held by the time this runs, so a
+      // sender outage is a missing email and a logged error, not an error shown to a
+      // parent who IS signed up.
+      try {
+        await sendConfirmation(r, dayLabel);
+      } catch (e) {
+        console.error("[juniors] confirmation email failed:", e?.message || e);
+      }
     }
     if (!recorded) {
       // Unlike the open, there is no Playtomic booking behind this to fall back on: the
