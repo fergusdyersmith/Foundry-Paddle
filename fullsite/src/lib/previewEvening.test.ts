@@ -120,10 +120,20 @@ describe("withCampaign", () => {
  *  large page component for two attributes. Both of these have been wrong in production
  *  once each. */
 describe("the juniors page signup button", () => {
-  // cwd-relative, not import.meta.url: this project's tests run under jsdom, where
-  // import.meta.url is not a file:// URL and readFileSync rejects it.
-  const src = () =>
-    readFileSync(resolve(process.cwd(), "src/pages/Juniors.tsx"), "utf8");
+  // Not import.meta.url: these tests run under jsdom, where it is not a file:// URL and
+  // readFileSync rejects it. And not one cwd-relative path either — this file is
+  // collected by BOTH the fullsite project and the repo-root one, so cwd is either the
+  // repo root or fullsite. Try both rather than pass in one and fail in the other.
+  const src = () => {
+    for (const rel of ["src/pages/Juniors.tsx", "fullsite/src/pages/Juniors.tsx"]) {
+      try {
+        return readFileSync(resolve(process.cwd(), rel), "utf8");
+      } catch {
+        /* try the next */
+      }
+    }
+    throw new Error("could not locate Juniors.tsx from " + process.cwd());
+  };
 
   it("sends SIGN UP to the form, NOT to Playtomic", () => {
     // This went both ways on 6 Oct and the second answer is the evidenced one. Playtomic
