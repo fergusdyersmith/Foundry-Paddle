@@ -57,6 +57,9 @@ type DayWithSessions = { day: JuniorDay; sessions: PreviewSession[] };
 const Juniors = () => {
   const [today, setToday] = useState<string | null>(null);
   const [eventsByDate, setEventsByDate] = useState<Record<string, PadelEvent[]>>({});
+  // {"2026-10-09|10-13": 22}. Empty until the count lands, and empty
+  // forever if it cannot: the Playtomic figure is then what shows, as before.
+  const [trueSpots, setTrueSpots] = useState<Record<string, number>>({});
 
   // Decided in the browser: prerendering "today" would freeze whichever day the deploy ran.
   useEffect(() => setToday(todayInPortland()), []);
@@ -65,6 +68,31 @@ const Juniors = () => {
     () => (today ? JUNIOR_DAYS.filter((d) => d.date >= today) : JUNIOR_DAYS).slice(0, DAYS_SHOWN),
     [today],
   );
+
+  // THE TRUE COUNT, which Playtomic alone does not know. The form on this page is the
+  // signup, and its signups are invisible to the Playtomic event: on 6 Oct both sessions
+  // read "30 spots left" while eleven children were already in. Kumi adds both halves up.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/coaching/junior-signups")
+      .then((r) => (r.ok ? r.json() : { sessions: [] }))
+      .then((d) => {
+        if (cancelled) return;
+        const by: Record<string, number> = {};
+        for (const s of d?.sessions ?? []) {
+          // Keyed by day + session code. The 1 PM overflow carries no code and is
+          // deliberately left out of both sessions' totals.
+          if (s?.session && s?.date && typeof s.spots_left === "number") {
+            by[`${s.date}|${s.session}`] = s.spots_left;
+          }
+        }
+        setTrueSpots(by);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!today) return;
@@ -223,9 +251,13 @@ const Juniors = () => {
                   </div>
                   {sessions.map((s, j) => {
                     const label = JUNIOR_SESSION_TIMES[j]?.label ?? `${s.start} to ${s.end}`;
+                    // Kumi's number wins where we have it: it includes this page's own
+                    // form signups, which Playtomic cannot see.
+                    const group = JUNIOR_SESSION_TIMES[j]?.group;
+                    const left = trueSpots[`${day.date}|${group}`] ?? s.spotsLeft;
                     const spots =
-                      s.spotsLeft != null && !s.full && s.spotsLeft > 0
-                        ? `${s.spotsLeft} ${s.spotsLeft === 1 ? "spot" : "spots"} left`
+                      left != null && !s.full && left > 0
+                        ? `${left} ${left === 1 ? "spot" : "spots"} left`
                         : null;
                     return (
                       <div key={s.start} className="flex flex-col border-t border-border pt-5 md:border-l md:border-t-0 md:pl-6 md:pt-0">

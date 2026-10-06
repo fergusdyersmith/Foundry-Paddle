@@ -1530,6 +1530,39 @@ app.get("/api/coaching/match-slots", async (req, res) => {
   }
 });
 
+// How full each junior session really is: Playtomic's registrations PLUS the signups made
+// through the form on /juniors. The page used to show Playtomic's figure alone, which read
+// "30 spots left" against both sessions while eleven children were already signed up
+// through that same page. Wrong in the dangerous direction — it keeps taking signups the
+// club cannot seat.
+const KUMI_JUNIOR_SIGNUPS_URL =
+  process.env.KUMI_JUNIOR_SIGNUPS_URL ||
+  "https://padelmaps.org/api/coaching/junior-signups?slug=foundry-padel";
+let juniorSignupsCache = { data: null, fetchedAt: 0 };
+
+async function fetchJuniorSignups() {
+  if (juniorSignupsCache.data && Date.now() - juniorSignupsCache.fetchedAt < COACH_CLASSES_TTL) {
+    return juniorSignupsCache.data;
+  }
+  const upstream = await fetch(KUMI_JUNIOR_SIGNUPS_URL, { headers: { Accept: "application/json" } });
+  if (!upstream.ok) throw new Error(`Kumi junior signups fetch failed (${upstream.status})`);
+  const data = await upstream.json();
+  juniorSignupsCache = { data, fetchedAt: Date.now() };
+  return data;
+}
+
+app.get("/api/coaching/junior-signups", async (req, res) => {
+  try {
+    return res.json(await fetchJuniorSignups());
+  } catch (error) {
+    console.error("[coaching] junior signups proxy failed:", error.message);
+    if (juniorSignupsCache.data) return res.json(juniorSignupsCache.data);
+    // An empty list, not a 502: the page falls back to Playtomic's own figure, which is
+    // what it showed before this existed. A stale number beats a broken page.
+    return res.json({ sessions: [] });
+  }
+});
+
 app.get("/api/coaching/classes", async (req, res) => {
   try {
     return res.json(await fetchKumiClasses());
