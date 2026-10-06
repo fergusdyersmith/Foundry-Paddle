@@ -235,10 +235,26 @@ const Juniors = () => {
                         <p className="mt-1 font-display text-2xl text-foreground">{label}</p>
                         {spots && <p className="mt-1 font-body text-xs text-secondary-foreground">{spots}</p>}
                         <div className="mt-4">
-                          {/* The signup is the form below, not Playtomic: the clinic is free
-                              since 2 October. The feed still tells us when a session is full. */}
+                          {/* Signup goes to Playtomic, which is where the free registration
+                              actually lives (Kelly, 6 Oct). It used to scroll to the form
+                              below, from when the clinic went free on 2 October and the
+                              website was the signup.
+
+                              The form is still the fallback, and still the right one: the
+                              feed hands out no link while an event is unreleased, and a
+                              button that scrolls somewhere useful beats one that cannot
+                              take a booking. */}
                           {s.full ? (
                             <span className="inline-block border border-border px-5 py-2.5 font-display text-sm tracking-widest text-muted-foreground">FULL</span>
+                          ) : s.bookUrl ? (
+                            <a
+                              href={s.bookUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-block bg-primary px-5 py-2.5 font-display text-sm tracking-widest text-primary-foreground transition-all hover:brightness-110"
+                            >
+                              SIGN UP
+                            </a>
                           ) : (
                             <a href="#signup" className="inline-block bg-primary px-5 py-2.5 font-display text-sm tracking-widest text-primary-foreground transition-all hover:brightness-110">
                               SIGN UP

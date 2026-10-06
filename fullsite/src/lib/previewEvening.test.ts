@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { PadelEvent } from "@/types/events";
 import type { PlannedSession } from "@/constants/previewEvening";
@@ -111,5 +113,37 @@ describe("withCampaign", () => {
       .toEqual(["09:00", "13:00"]);
     expect(mergePreviewSessions(planned, [stray], DATE, PATTERN, "juniors", false).map((s) => s.start))
       .toEqual(["09:00"]);
+  });
+});
+
+/** The /juniors page wiring, guarded at source because the alternative is mounting a
+ *  large page component for two attributes. Both of these have been wrong in production
+ *  once each. */
+describe("the juniors page signup button", () => {
+  // cwd-relative, not import.meta.url: this project's tests run under jsdom, where
+  // import.meta.url is not a file:// URL and readFileSync rejects it.
+  const src = () =>
+    readFileSync(resolve(process.cwd(), "src/pages/Juniors.tsx"), "utf8");
+
+  it("sends SIGN UP to the Playtomic event, not to the form", () => {
+    // Kelly, 6 Oct: the button scrolled to the on-page form, left over from when the
+    // clinic went free on 2 October and the website was the signup. The free
+    // registration lives in Playtomic, and the feed has carried the link all along.
+    expect(src()).toMatch(/href=\{s\.bookUrl\}/);
+  });
+
+  it("keeps the form as the fallback when there is no link yet", () => {
+    // The feed hands out no link while an event is unreleased. A button that scrolls
+    // somewhere useful beats one that cannot take a booking.
+    expect(src()).toMatch(/s\.bookUrl \? \(/);
+    expect(src()).toMatch(/href="#signup"/);
+  });
+
+  it("still refuses to list a Playtomic session nobody planned", () => {
+    // Monica, 3 Oct: a 1 PM "Junior Clinic w/ Diego Valeri" left in Playtomic appeared
+    // on /juniors as a third session. Kelly, 6 Oct: the same 1 PM session must stay off
+    // the site entirely so the 9am and 10:30 fill first. The `false` is what stops this
+    // page inventing a session from a stray event.
+    expect(src()).toMatch(/false, \/\/ only the two planned sessions/);
   });
 });
