@@ -78,7 +78,11 @@ const good = {
 };
 
 function app(deps) {
-  const a = express(); a.use(express.json()); a.use(createJuniorsRouter(deps)); return a;
+  // No real waiting between sheet retries. The backoff is production behaviour, not
+  // something to spend seconds of every test run on.
+  const a = express(); a.use(express.json());
+  a.use(createJuniorsRouter({ sleep: async () => {}, ...deps }));
+  return a;
 }
 async function call(a, body) {
   const srv = a.listen(0); const port = srv.address().port;
@@ -224,5 +228,95 @@ describe("the confirmation email", () => {
     const r = await callRegister(a, reg);
     expect(r.status).toBe(200);
     expect(calls.filter((c) => c.url === CONFIRM)).toHaveLength(0);
+  });
+});
+
+describe("a sheet row that will not land", () => {
+  const SHEET = "https://script.google.com/macros/s/X/exec";
+  const CONFIRM = "https://padelmaps.org/api/internal/juniors-confirmation";
+
+  /** Fails the sheet POST for `failFor` children, by child name. */
+  function appWith({ failFor = [], failTimes = Infinity } = {}) {
+    const calls = [];
+    const attempts = {};
+    const fetchImpl = async (url, init) => {
+      const body = JSON.parse(init.body);
+      calls.push({ url, body });
+      if (url !== SHEET) return { ok: true, status: 200, json: async () => ({ ok: true }) };
+      const child = body.row[5];
+      attempts[child] = (attempts[child] || 0) + 1;
+      if (failFor.includes(child) && attempts[child] <= failTimes) {
+        return { ok: false, status: 500, json: async () => ({ ok: false, error: "boom" }) };
+      }
+      return { ok: true, status: 200, json: async () => ({ ok: true }) };
+    };
+    return {
+      calls, attempts,
+      app: app({ slackToken: "x", klaviyo: null, days: DAYS, sheetUrl: SHEET,
+                 sheetSecret: "s", confirmUrl: CONFIRM, confirmSecret: "k",
+                 fetchImpl, now: () => new Date("2026-10-02T17:00:00Z") }),
+    };
+  }
+
+  const sheetRows = (calls) => calls.filter((c) => c.url === SHEET).map((c) => c.body.row[5]);
+
+  it("THE CASE: a failure on the first child still writes the second", async () => {
+    // Jessica Tatum, 6 Oct. Samuel's row landed, Avangelina's did not, and the loop threw
+    // rather than carrying on. Klaviyo had both children, the sheet had one, and the
+    // parent was told she was signed up.
+    const { app: a, calls } = appWith({ failFor: ["Josie Rivera"] });
+    const r = await callRegister(a, reg);
+    expect(r.status).toBe(200);
+    expect(sheetRows(calls)).toContain("Max Rivera");
+  });
+
+  it("retries a row before giving up on it", async () => {
+    // The failures this sees are transient: Apps Script cold starts and contention.
+    const { app: a, attempts } = appWith({ failFor: ["Josie Rivera"] });
+    await callRegister(a, reg);
+    expect(attempts["Josie Rivera"]).toBe(3);
+  });
+
+  it("a row that fails once and then succeeds is NOT reported as missing", async () => {
+    const { app: a, calls } = appWith({ failFor: ["Josie Rivera"], failTimes: 1 });
+    await callRegister(a, reg);
+    const slack = calls.filter((c) => c.url.includes("slack.com"));
+    expect(slack.some((c) => /did not reach the sheet/.test(c.body.text || ""))).toBe(false);
+    expect(calls.some((c) => c.url === CONFIRM)).toBe(true);   // all rows landed in the end
+  });
+
+  it("shouts to Slack, naming the child, when a row really will not land", async () => {
+    // The old code logged this to a console nobody reads.
+    const { app: a, calls } = appWith({ failFor: ["Josie Rivera"] });
+    await callRegister(a, reg);
+    const alert = calls.filter((c) => c.url.includes("slack.com"))
+      .map((c) => c.body.text || "").find((t) => /did not reach the sheet/.test(t));
+    expect(alert).toBeTruthy();
+    expect(alert).toContain("Josie Rivera");
+    expect(alert).toContain("Sam Rivera");
+  });
+
+  it("sends NO confirmation when a child is missing from the sheet", async () => {
+    // A confirmation naming two children when one is not on the list is worse than no
+    // confirmation: it is the thing that stops anyone asking.
+    const { app: a, calls } = appWith({ failFor: ["Josie Rivera"] });
+    await callRegister(a, reg);
+    expect(calls.filter((c) => c.url === CONFIRM)).toHaveLength(0);
+  });
+
+  it("still tells the parent they are signed up, because they are", async () => {
+    // One row landed and Klaviyo has the lot. The place is held; the list is what needs
+    // a human.
+    const { app: a } = appWith({ failFor: ["Josie Rivera"] });
+    const r = await callRegister(a, reg);
+    expect(r.status).toBe(200);
+    expect(r.json).toMatchObject({ ok: true });
+  });
+
+  it("fails the signup only when NOTHING recorded it", async () => {
+    const { app: a } = appWith({ failFor: ["Josie Rivera", "Max Rivera"] });
+    const r = await callRegister(a, { ...reg, name: "Sam Rivera" });
+    // Slack still took it, so the signup stands; the sheet alert covers the gap.
+    expect(r.status).toBe(200);
   });
 });

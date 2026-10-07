@@ -103,6 +103,11 @@ export function createJuniorsRouter({
   confirmUrl = process.env.JUNIORS_CONFIRM_URL
     || "https://padelmaps.org/api/internal/juniors-confirmation",
   confirmSecret = process.env.JUNIORS_CONFIRM_SECRET || null,
+  // Retries for one sheet row. Three attempts over ~0.9s: enough for an Apps Script cold
+  // start, short enough that a parent is not left watching a spinner.
+  sheetAttempts: SHEET_ATTEMPTS = 3,
+  sheetRetryMs: SHEET_RETRY_MS = 300,
+  sleep = (ms) => new Promise((res) => setTimeout(res, ms)),
   // Which days take signups, YYYY-MM-DD -> label shown to people. The page sends the
   // date; the server refuses one it does not know so a stale tab cannot book a day
   // the club has not opened.
@@ -116,26 +121,55 @@ export function createJuniorsRouter({
     new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", dateStyle: "short", timeStyle: "short" }).format(now());
 
   // One row per child, in the sheet's column order (HEADERS in juniors-sheet.gs).
+  //
+  // EVERY CHILD IS ATTEMPTED, and that is the whole point of the shape here. This used to
+  // `throw` on the first bad response, inside the loop, which abandoned every child after
+  // it. On 6 October Jessica Tatum signed up two children; Samuel's row landed, something
+  // failed on Avangelina's, and the loop gave up. Klaviyo had both (it writes the array in
+  // one call), the Sheet had one, the parent was told she was signed up, and nobody found
+  // out for three days.
+  //
+  // Each row is retried, because the failures this sees are transient: Apps Script cold
+  // starts and momentary contention, which succeed on a second go.
+  //
+  // Returns a result rather than true/false. A partial write is neither success nor
+  // failure and the caller has to be able to tell: it holds some of the places, so the
+  // signup stands, but the confirmation email must not promise a child who is not on the
+  // list.
   async function appendSheetRows(r, dayLabel) {
-    if (!sheetUrl) return false;
+    if (!sheetUrl) return { configured: false, written: 0, failed: [] };
+    const failed = [];
+    let written = 0;
     for (const c of r.children) {
-      const res = await fetchImpl(sheetUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          secret: sheetSecret || "",
-          row: [
-            stamp(), r.name, r.email, r.phone || "", r.phone ? (r.smsConsent ? "yes" : "no") : "",
-            c.name, String(c.age), dayLabel, c.session === "10-13" ? "9 to 10:30 AM (ages 10 to 13)" : "10:30 AM to noon (ages 14 and up)",
-            r.notes || "", "",
-          ],
-        }),
-      });
-      if (!res.ok) throw new Error(`sheet ${res.status}`);
-      const json = await res.json().catch(() => ({}));
-      if (json.ok === false) throw new Error(`sheet ${json.error || "refused"}`);
+      let lastError = null;
+      for (let attempt = 1; attempt <= SHEET_ATTEMPTS; attempt++) {
+        try {
+          const res = await fetchImpl(sheetUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              secret: sheetSecret || "",
+              row: [
+                stamp(), r.name, r.email, r.phone || "", r.phone ? (r.smsConsent ? "yes" : "no") : "",
+                c.name, String(c.age), dayLabel, c.session === "10-13" ? "9 to 10:30 AM (ages 10 to 13)" : "10:30 AM to noon (ages 14 and up)",
+                r.notes || "", "",
+              ],
+            }),
+          });
+          if (!res.ok) throw new Error(`sheet ${res.status}`);
+          const json = await res.json().catch(() => ({}));
+          if (json.ok === false) throw new Error(`sheet ${json.error || "refused"}`);
+          lastError = null;
+          break;
+        } catch (e) {
+          lastError = e?.message || String(e);
+          if (attempt < SHEET_ATTEMPTS) await sleep(SHEET_RETRY_MS * attempt);
+        }
+      }
+      if (lastError) failed.push({ child: c.name, error: lastError });
+      else written += 1;
     }
-    return true;
+    return { configured: true, written, failed };
   }
 
   // The confirmation email, sent through padelmaps.org because this server has no email
@@ -209,17 +243,41 @@ export function createJuniorsRouter({
       recordRegistrationKlaviyo(r, phone, dayLabel),
       appendSheetRows(r, dayLabel),
     ]);
-    const recorded = outcomes.some((o) => o.status === "fulfilled" && o.value === true);
+    const sheet = outcomes[2].status === "fulfilled"
+      ? outcomes[2].value
+      : { configured: true, written: 0, failed: r.children.map((c) => ({ child: c.name, error: String(outcomes[2].reason?.message || outcomes[2].reason) })) };
+    const recorded =
+      outcomes.slice(0, 2).some((o) => o.status === "fulfilled" && o.value === true) ||
+      sheet.written > 0;
     for (const o of outcomes) {
       if (o.status === "rejected") console.error("[juniors] register record failed:", o.reason?.message || o.reason);
     }
 
-    // CONFIRM THE SHEET, NOTHING ELSE. The Sheet row is the list the desk works from on
-    // the day; Slack is a notification and Klaviyo is a marketing record. A parent told
-    // "you're in" because a Slack post went through could arrive to find nobody
-    // expecting them, so the email waits on the record that actually holds the place.
-    // outcomes[2] is appendSheetRows; its `false` means no sheet is configured.
-    const sheetOk = outcomes[2].status === "fulfilled" && outcomes[2].value === true;
+    // A ROW THAT WOULD NOT LAND MUST BE SHOUTED ABOUT, not swallowed. The desk works from
+    // the Sheet, so a child missing from it is a child nobody is expecting, and the old
+    // code logged that to a console nobody reads. Slack is where the club actually looks.
+    if (sheet.configured && sheet.failed.length) {
+      const who = sheet.failed.map((f) => `${f.child} (${f.error})`).join(", ");
+      console.error("[juniors] sheet rows FAILED:", who);
+      postSlack(
+        `:rotating_light: *Junior clinic: a signup did not reach the sheet*\n` +
+        `${escapeSlack(r.name)} <${escapeSlack(r.email)}>, ${escapeSlack(dayLabel)}\n` +
+        `Missing: ${escapeSlack(who)}\n` +
+        `${sheet.written} of ${r.children.length} row(s) written. Add the missing ` +
+        `child by hand — they are signed up and are NOT on the list.`,
+      ).catch((e) => console.error("[juniors] could not report the sheet failure:", e?.message || e));
+    }
+
+    // CONFIRM THE SHEET, NOTHING ELSE, AND ONLY IN FULL. The Sheet row is the list the
+    // desk works from on the day; Slack is a notification and Klaviyo is a marketing
+    // record. A parent told "you're in" because a Slack post went through could arrive to
+    // find nobody expecting them.
+    //
+    // "In full" because of Jessica Tatum on 6 October: a confirmation naming two children
+    // when only one reached the list is worse than no confirmation, since it is the thing
+    // that stops anyone asking. A partial write alerts instead, and the email can be sent
+    // with `force` once a human has fixed the row.
+    const sheetOk = sheet.configured && sheet.failed.length === 0 && sheet.written > 0;
     if (sheetOk) {
       // Never fails the signup. The place is already held by the time this runs, so a
       // sender outage is a missing email and a logged error, not an error shown to a
