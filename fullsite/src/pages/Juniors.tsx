@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Head } from "vite-react-ssg";
 import { Check, MapPin, Phone } from "lucide-react";
+import { Link } from "react-router-dom";
 import Photo from "@/components/Photo";
 import Seo from "@/components/Seo";
 import SmsConsentCheckbox from "@/components/SmsConsentCheckbox";
@@ -331,6 +332,11 @@ const Juniors = () => {
               <p className="mt-8 font-body text-xs tracking-[0.1em] uppercase text-muted-foreground">
                 Please, only children enrolled in the clinic in attendance
               </p>
+              <p className="mt-4 font-body text-sm leading-relaxed text-secondary-foreground">
+                Every player under 18 needs a waiver signed by a parent or guardian.{" "}
+                <Link to="/juniors/waiver" className="text-primary hover:underline">Sign it online</Link> once
+                and it covers every visit until they turn 18.
+              </p>
             </div>
             <div>
               <h2 className={sectionHeading}>
@@ -476,6 +482,10 @@ function SignupForm({ days, full }: { days: JuniorDay[]; full: boolean[][] }) {
           {JUNIOR_FREE_LINE} One form per family: your details, then each child. The age picks
           the session (10 to 13 at 9 AM, 14 and up at 10:30).
         </p>
+        <p className="mx-auto mt-3 max-w-xl text-center font-body text-sm leading-relaxed text-muted-foreground">
+          Already signed up? <Link to="/juniors/waiver" className="text-primary hover:underline">Sign the junior waiver online</Link> before
+          the day and skip the paperwork at the desk.
+        </p>
 
         {done ? (
           <div className="mt-12 border border-primary bg-secondary p-10 text-center">
@@ -485,6 +495,11 @@ function SignupForm({ days, full }: { days: JuniorDay[]; full: boolean[][] }) {
             <p className="mt-4 font-body text-base text-secondary-foreground">
               {done.count === 1 ? "A place is held" : `${done.count} places are held`} for {done.dayLabel}. Bring court shoes and
               water; racket and balls are here. Questions? Call {PHONE_DISPLAY}.
+            </p>
+            <p className="mt-6 font-body text-base text-secondary-foreground">
+              One more thing: every player under 18 needs a signed waiver.{" "}
+              <Link to="/juniors/waiver" className="text-primary hover:underline">Sign it online now</Link> and
+              check-in on the day is just your name at the desk.
             </p>
           </div>
         ) : days.length === 0 ? (

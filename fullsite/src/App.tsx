@@ -17,6 +17,7 @@ import Gallery from "./pages/Gallery";
 import Events from "./pages/Events";
 import Preview from "./pages/Preview";
 import Juniors from "./pages/Juniors";
+import JuniorWaiver from "./pages/JuniorWaiver";
 import Open from "./pages/Open";
 import GiftCards from "./pages/GiftCards";
 import GiftThanks from "./pages/GiftThanks";
@@ -54,6 +55,9 @@ export const routes: RouteRecord[] = [
       { path: "preview", element: <Preview /> },
       // Same deal: printed as foundrypadel.com/juniors on the junior clinic ad.
       { path: "juniors", element: <Juniors /> },
+      // The junior waiver, signed online. Linked from the clinic page and the reminder
+      // emails; not in the sitemap, it is a form, not a page to find.
+      { path: "juniors/waiver", element: <JuniorWaiver /> },
       // The December open. Printed on its flyers as foundrypadel.com/open.
       { path: "open", element: <Open /> },
       { path: "book", element: <Book /> },

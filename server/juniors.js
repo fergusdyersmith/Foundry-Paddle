@@ -11,6 +11,9 @@
 import express from "express";
 import { z } from "zod";
 import { escapeSlack, normalizePhone, sanitize } from "./notify.js";
+import {
+  ageOn, buildWaiverHtml, buildWaiverSlackText, cleanWaiver, waiverFilename, waiverSchema,
+} from "./juniors-waiver.js";
 
 /** The page's two sessions, in JUNIOR_SESSION_TIMES order. */
 export const AGE_GROUPS = ["10-13", "14+"];
@@ -342,6 +345,79 @@ export function createJuniorsRouter({
     }
     return true;
   }
+
+  // The waiver. One Apps Script call does everything that counts (PDFs, Drive, the email,
+  // the Waivers tab, the Status column), so unlike a signup it either lands whole or not at
+  // all. No retry: a call that timed out AFTER the script filed everything would file it
+  // twice and email the desk twice, and the script is well inside its own limits.
+  router.post("/api/juniors/waiver", async (req, res) => {
+    const parsed = waiverSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: "Please check the form: every required field, each child's name and date of birth, and both boxes above the signature are needed." });
+    }
+    const w = cleanWaiver(parsed.data);
+    const signedAt = now();
+    const ages = [];
+    for (const c of w.children) {
+      const age = ageOn(c.dob, signedAt);
+      if (age == null || age < 3) {
+        return res.status(400).json({ error: `${c.name}'s date of birth does not look right.` });
+      }
+      if (age >= 18) {
+        return res.status(400).json({ error: `${c.name} is 18 or over, so this form does not apply: they sign the adult waiver at the club.` });
+      }
+      ages.push(age);
+    }
+    if (!sheetUrl) {
+      console.error("[juniors] waiver: JUNIORS_SHEET_WEBHOOK is not set");
+      return res.status(502).json({ error: "We could not file the waiver. Please try again later, or fill in the paper copy when you arrive." });
+    }
+
+    const stamp_ = stamp();
+    const ip = String(req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "").split(",")[0].trim();
+    const userAgent = sanitize(String(req.headers["user-agent"] || ""), 200);
+    const body = {
+      secret: sheetSecret || "",
+      action: "waiver",
+      signedAt: signedAt.toISOString(),
+      stamp: stamp_,
+      parent: w.parent,
+      emergency: w.emergency,
+      pickup: w.pickup,
+      children: w.children.map((c, i) => ({
+        name: c.name, dob: c.dob, age: ages[i], sessionDates: c.sessionDates, media: c.media,
+        leaveAlone: c.leaveAlone, allergies: c.allergies, conditions: c.conditions, medications: c.medications,
+        filename: waiverFilename(c, signedAt),
+        html: buildWaiverHtml(w, c, { age: ages[i], signedAt, stamp: stamp_, ip, userAgent }),
+      })),
+    };
+
+    let filed;
+    try {
+      const r = await fetchImpl(sheetUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        // Three PDFs and two emails take the script a few seconds; this is well past that.
+        // (Guarded: the test runner's DOM shim has no AbortSignal.timeout.)
+        signal: typeof AbortSignal.timeout === "function" ? AbortSignal.timeout(50_000) : undefined,
+      });
+      if (!r.ok) throw new Error(`sheet ${r.status}`);
+      filed = await r.json().catch(() => ({}));
+      if (filed.ok !== true) throw new Error(`sheet ${filed.error || "refused"}`);
+    } catch (e) {
+      console.error("[juniors] waiver not filed:", e?.message || e);
+      postSlack(
+        `:rotating_light: *Junior waiver did NOT file*  ${escapeSlack(w.parent.name)} <${escapeSlack(w.parent.email)}> ` +
+        `for ${w.children.map((c) => escapeSlack(c.name)).join(", ")}: ${escapeSlack(e?.message || String(e))}. ` +
+        `They were told to try again or bring the paper copy.`,
+      ).catch((err) => console.error("[juniors] could not report the waiver failure:", err?.message || err));
+      return res.status(502).json({ error: "We could not file the waiver just now. Please try again in a minute, or fill in the paper copy when you arrive." });
+    }
+
+    postSlack(buildWaiverSlackText(w, ages, filed)).catch((e) => console.error("[juniors] waiver slack failed:", e?.message || e));
+    return res.json({ ok: true, children: w.children.map((c) => c.name), unmatched: filed.unmatched || [] });
+  });
 
   router.post("/api/juniors/notify", async (req, res) => {
     const parsed = signupSchema.safeParse(req.body);
