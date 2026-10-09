@@ -44,27 +44,40 @@ function doPost(e) {
     if (secret && body.secret !== secret) {
       return out.setContent(JSON.stringify({ ok: false, error: "bad secret" }));
     }
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    if (body.action === "waiver") {
-      return out.setContent(JSON.stringify(fileWaiver(ss, body)));
+    // One write at a time. Two families submitting in the same second each get their own
+    // execution; the lock keeps one's Status write from reading row numbers the other is
+    // still changing. 30s is far longer than any single filing takes.
+    var lock = LockService.getScriptLock();
+    lock.waitLock(30000);
+    try {
+      return out.setContent(JSON.stringify(handle(body)));
+    } finally {
+      lock.releaseLock();
     }
-    if (!Array.isArray(body.row) || body.row.length === 0) {
-      return out.setContent(JSON.stringify({ ok: false, error: "no row" }));
-    }
-    var sheet = ss.getSheets()[0];
-    if (sheet.getLastRow() === 0) {
-      sheet.appendRow(HEADERS);
-      sheet.getRange(1, 1, 1, HEADERS.length).setFontWeight("bold");
-      sheet.setFrozenRows(1);
-    }
-    // Everything lands as text so a phone number keeps its leading + and an age never
-    // turns into a date.
-    var row = body.row.map(function (v) { return v == null ? "" : String(v); });
-    sheet.appendRow(row);
-    return out.setContent(JSON.stringify({ ok: true }));
   } catch (err) {
     return out.setContent(JSON.stringify({ ok: false, error: String(err) }));
   }
+}
+
+function handle(body) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (body.action === "waiver") {
+    return fileWaiver(ss, body);
+  }
+  if (!Array.isArray(body.row) || body.row.length === 0) {
+    return { ok: false, error: "no row" };
+  }
+  var sheet = ss.getSheets()[0];
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(HEADERS);
+    sheet.getRange(1, 1, 1, HEADERS.length).setFontWeight("bold");
+    sheet.setFrozenRows(1);
+  }
+  // Everything lands as text so a phone number keeps its leading + and an age never
+  // turns into a date.
+  var row = body.row.map(function (v) { return v == null ? "" : String(v); });
+  sheet.appendRow(row);
+  return { ok: true };
 }
 
 function norm(v) { return String(v == null ? "" : v).trim().toLowerCase().replace(/\s+/g, " "); }
