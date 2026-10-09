@@ -47,6 +47,13 @@ export type JuniorDay = {
    * feed hands out no link while a session is still private. null = not created yet.
    */
   bookUrls: [string | null, string | null];
+  /**
+   * The club has stopped taking names for this day (Monica, 8 Oct 2026, the evening
+   * before the first clinic). The day stays on the page, its SIGN UP buttons become
+   * "signups closed", the form hides it, and the server refuses a signup for it from a
+   * stale tab. The next-dates list stays open throughout.
+   */
+  signupsClosed?: boolean;
 };
 
 export const JUNIOR_DAYS: JuniorDay[] = [
@@ -58,6 +65,7 @@ export const JUNIOR_DAYS: JuniorDay[] = [
       "https://app.playtomic.com/tournaments/44e6a014-edb0-43a0-a137-37af36007c7f",
       "https://app.playtomic.com/tournaments/6d700fbc-a871-4bd7-8a84-0f6b54f04848",
     ],
+    signupsClosed: true,
   },
   { date: "2026-10-29", label: "Thursday, October 29", reason: "Staff day", bookUrls: [null, null] },
   { date: "2026-10-30", label: "Friday, October 30", reason: "Staff day", bookUrls: [null, null] },

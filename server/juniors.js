@@ -22,7 +22,7 @@ export const AGE_GROUPS = ["10-13", "14+"];
  *  of JUNIOR_DAYS in fullsite/src/constants/juniorClinic.ts (the page shows DAYS_SHOWN of
  *  them); add a day in both places when the club opens it. */
 export const JUNIOR_SIGNUP_DAYS = {
-  "2026-10-09": "Friday, October 9",
+  // "2026-10-09": "Friday, October 9", closed by Monica on 8 Oct, the evening before.
 };
 
 const E164 = /^\+[1-9]\d{6,14}$/;

@@ -200,12 +200,21 @@ const Juniors = () => {
               kids who have. Racket and balls provided. {JUNIOR_BLURB}
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <a
-                href="#signup"
-                className="bg-primary px-10 py-4 font-display text-lg tracking-widest text-primary-foreground shadow-[0_0_40px_-8px_hsl(var(--primary)/0.7)] transition-all hover:brightness-110"
-              >
-                SIGN UP · {JUNIOR_PRICE.toUpperCase()}
-              </a>
+              {next?.signupsClosed ? (
+                <a
+                  href="#next-dates"
+                  className="bg-primary px-10 py-4 font-display text-lg tracking-widest text-primary-foreground shadow-[0_0_40px_-8px_hsl(var(--primary)/0.7)] transition-all hover:brightness-110"
+                >
+                  HEAR ABOUT THE NEXT DATES
+                </a>
+              ) : (
+                <a
+                  href="#signup"
+                  className="bg-primary px-10 py-4 font-display text-lg tracking-widest text-primary-foreground shadow-[0_0_40px_-8px_hsl(var(--primary)/0.7)] transition-all hover:brightness-110"
+                >
+                  SIGN UP · {JUNIOR_PRICE.toUpperCase()}
+                </a>
+              )}
               <a href="#dates" className="border border-border px-10 py-4 font-display text-lg tracking-widest text-foreground transition-colors hover:border-primary">
                 SEE THE DATES
               </a>
@@ -257,7 +266,7 @@ const Juniors = () => {
                     const group = JUNIOR_SESSION_TIMES[j]?.group;
                     const left = trueSpots[`${day.date}|${group}`] ?? s.spotsLeft;
                     const spots =
-                      left != null && !s.full && left > 0
+                      left != null && !s.full && !day.signupsClosed && left > 0
                         ? `${left} ${left === 1 ? "spot" : "spots"} left`
                         : null;
                     return (
@@ -280,7 +289,9 @@ const Juniors = () => {
                               against 4 registrations in Playtomic.
 
                               The feed is still read, for `full` and the places left. */}
-                          {s.full ? (
+                          {day.signupsClosed ? (
+                            <span className="inline-block border border-border px-5 py-2.5 font-display text-sm tracking-widest text-muted-foreground">SIGNUPS CLOSED</span>
+                          ) : s.full ? (
                             <span className="inline-block border border-border px-5 py-2.5 font-display text-sm tracking-widest text-muted-foreground">FULL</span>
                           ) : (
                             <a href="#signup" className="inline-block bg-primary px-5 py-2.5 font-display text-sm tracking-widest text-primary-foreground transition-all hover:brightness-110">
@@ -297,14 +308,22 @@ const Juniors = () => {
           )}
 
           <p className="mx-auto mt-10 max-w-2xl text-center font-body text-sm leading-relaxed text-muted-foreground">
-            Nothing to pay and no app needed: fill in the form below and the place is held for
-            your kid. Rather talk to a person?{" "}
+            {next?.signupsClosed ? (
+              <>Signups for {next.label} have closed. Leave your details below and we will tell you first when the next date opens.</>
+            ) : (
+              <>Nothing to pay and no app needed: fill in the form below and the place is held for your kid.</>
+            )}{" "}
+            Rather talk to a person?{" "}
             <a href={`tel:${PHONE_TEL}`} className="whitespace-nowrap text-primary hover:underline">call {PHONE_DISPLAY}</a>.
           </p>
         </div>
       </section>
 
-      <SignupForm days={upcoming} full={days.map((d) => d.sessions.map((s) => Boolean(s.full)))} />
+      <SignupForm
+        days={upcoming.filter((d) => !d.signupsClosed)}
+        full={days.filter((d) => !d.day.signupsClosed).map((d) => d.sessions.map((s) => Boolean(s.full)))}
+        closedLabel={upcoming.find((d) => d.signupsClosed)?.label ?? null}
+      />
 
       <NextDatesSignup nextLabel={next?.label ?? null} />
 
@@ -399,7 +418,7 @@ type Child = { name: string; age: string };
  * child in the organisers' sheet; the age picks the session. Records to Slack, Klaviyo
  * and the sheet shared with Monica; see server/juniors.js.
  */
-function SignupForm({ days, full }: { days: JuniorDay[]; full: boolean[][] }) {
+function SignupForm({ days, full, closedLabel }: { days: JuniorDay[]; full: boolean[][]; closedLabel: string | null }) {
   const [form, setForm] = useState({ name: "", email: "", phone: "", notes: "", website: "" });
   const [day, setDay] = useState<string>(days[0]?.date ?? "");
   const [children, setChildren] = useState<Child[]>([{ name: "", age: "" }]);
@@ -504,7 +523,11 @@ function SignupForm({ days, full }: { days: JuniorDay[]; full: boolean[][] }) {
           </div>
         ) : days.length === 0 ? (
           <div className="mt-12 border border-border p-10 text-center">
-            <p className="font-body text-base text-secondary-foreground">No dates are open for signup yet. Leave your details below and we will tell you first.</p>
+            <p className="font-body text-base text-secondary-foreground">
+              {closedLabel
+                ? `Signups for ${closedLabel} have closed. Leave your details below and we will tell you first when the next date opens.`
+                : "No dates are open for signup yet. Leave your details below and we will tell you first."}
+            </p>
           </div>
         ) : (
           <form onSubmit={submit} className="mt-12 space-y-5" noValidate>

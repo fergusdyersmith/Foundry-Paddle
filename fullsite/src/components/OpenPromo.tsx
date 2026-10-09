@@ -56,7 +56,7 @@ const OpenPromo = () => {
           <span className="text-foreground">{JUNIOR_FREE_LINE}</span>
         </>
       ),
-      cta: "SIGN UP FREE",
+      cta: nextJunior.signupsClosed ? "SEE THE DETAILS" : "SIGN UP FREE",
     });
   }
 
