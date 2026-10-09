@@ -65,7 +65,8 @@ export const JUNIOR_DAYS: JuniorDay[] = [
       "https://app.playtomic.com/tournaments/44e6a014-edb0-43a0-a137-37af36007c7f",
       "https://app.playtomic.com/tournaments/6d700fbc-a871-4bd7-8a84-0f6b54f04848",
     ],
-    signupsClosed: true,
+    // Closed the evening of 8 Oct, reopened an hour later: four more places at 9 AM.
+    signupsClosed: false,
   },
   { date: "2026-10-29", label: "Thursday, October 29", reason: "Staff day", bookUrls: [null, null] },
   { date: "2026-10-30", label: "Friday, October 30", reason: "Staff day", bookUrls: [null, null] },
