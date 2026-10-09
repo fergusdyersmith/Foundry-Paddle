@@ -233,7 +233,9 @@ export function waiverFilename(child, signedAt) {
   const last = parts.length > 1 ? parts[parts.length - 1] : "";
   const first = parts.length > 1 ? parts.slice(0, -1).join(" ") : parts[0];
   const who = (last ? `${last}, ${first}` : first).replace(/[^\w ,.'-]/g, "");
-  return `${who} ${signedAt.toISOString().slice(0, 10)}.pdf`;
+  // The club's date, not UTC's: a waiver signed at 5 PM on the 8th is not "the 9th".
+  const day = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(signedAt);
+  return `${who} ${day}.pdf`;
 }
 
 /** The Slack line. Names and ages only; the medical answers stay in the PDF and the sheet. */

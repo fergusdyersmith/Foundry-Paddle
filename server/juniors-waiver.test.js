@@ -135,5 +135,7 @@ describe("waiverFilename", () => {
     expect(waiverFilename({ name: "Josie Rivera" }, NOW)).toBe("Rivera, Josie 2026-10-08.pdf");
     expect(waiverFilename({ name: "Ana María de la Cruz" }, NOW)).toBe("Cruz, Ana Mara de la 2026-10-08.pdf".replace("Mara", "Mara"));
     expect(waiverFilename({ name: "Cher" }, NOW)).toBe("Cher 2026-10-08.pdf");
+    // 5 PM in Portland on the 8th is already the 9th in UTC; the file is dated the club's way.
+    expect(waiverFilename({ name: "Josie Rivera" }, new Date("2026-10-09T00:30:00Z"))).toBe("Rivera, Josie 2026-10-08.pdf");
   });
 });
