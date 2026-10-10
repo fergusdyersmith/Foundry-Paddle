@@ -52,6 +52,15 @@ function partnerLogosVirtualModule(root: string) {
 // https://vitejs.dev/config/
 export default defineConfig({
   base: "/",
+  define: {
+    // The club's date on the day of the build, YYYY-MM-DD. The prerender has no "today",
+    // and without a stand-in it listed every announced junior clinic, including one that
+    // had already run, with a SIGN UP button until the browser corrected it. The browser
+    // still decides the real day after mount; this only keeps the static HTML honest.
+    __BUILD_DAY__: JSON.stringify(
+      new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(new Date()),
+    ),
+  },
   server: {
     host: "::",
     port: 8080,

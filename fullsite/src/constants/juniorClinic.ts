@@ -54,6 +54,17 @@ export type JuniorDay = {
    * stale tab. The next-dates list stays open throughout.
    */
   signupsClosed?: boolean;
+  /**
+   * The club has announced this day (Kelly, 10 Oct 2026, the day after the first
+   * clinic). The rest of the list is the district calendar, days the clinic COULD run,
+   * and until Monica confirms one it must not look bookable: the page showed 29 October
+   * with a SIGN UP button on 10 October while the server knew no such day. Only announced
+   * days reach the page, the home promo and the waiver; with none ahead the page says
+   * more clinics are coming and asks for an email. Announcing a day means setting this,
+   * adding it to JUNIOR_SIGNUP_DAYS in server/juniors.js, and creating the Playtomic
+   * sessions.
+   */
+  announced?: boolean;
 };
 
 export const JUNIOR_DAYS: JuniorDay[] = [
@@ -67,6 +78,7 @@ export const JUNIOR_DAYS: JuniorDay[] = [
     ],
     // Closed the evening of 8 Oct, reopened an hour later: four more places at 9 AM.
     signupsClosed: false,
+    announced: true,
   },
   { date: "2026-10-29", label: "Thursday, October 29", reason: "Staff day", bookUrls: [null, null] },
   { date: "2026-10-30", label: "Friday, October 30", reason: "Staff day", bookUrls: [null, null] },
@@ -78,6 +90,26 @@ export const JUNIOR_DAYS: JuniorDay[] = [
   { date: "2027-04-08", label: "Thursday, April 8", reason: "Staff day", bookUrls: [null, null] },
   { date: "2027-04-09", label: "Friday, April 9", reason: "Staff day", bookUrls: [null, null] },
 ];
+
+/** Before the browser has decided "today" (the prerender, and the first client render that
+ *  must match it), the day of the build stands in. Vitest has no define, hence the guard. */
+const BUILD_DAY: string | null = typeof __BUILD_DAY__ === "string" ? __BUILD_DAY__ : null;
+
+/** The announced days still ahead, soonest first. `today` is YYYY-MM-DD in Portland, or
+ *  null before the browser has decided it, when the build day is used instead. */
+export function announcedDays(today: string | null): JuniorDay[] {
+  const ref = today || BUILD_DAY;
+  return JUNIOR_DAYS.filter((d) => d.announced && (!ref || d.date >= ref));
+}
+
+/** The most recent announced day that has already happened, if any: the page names it
+ *  while the next one is still unannounced. */
+export function lastClinicDay(today: string | null): JuniorDay | null {
+  const ref = today || BUILD_DAY;
+  if (!ref) return null;
+  const past = JUNIOR_DAYS.filter((d) => d.announced && d.date < ref);
+  return past[past.length - 1] ?? null;
+}
 
 /** A day's sessions in the shape the preview evening's merge already understands. */
 export function plannedSessionsFor(day: JuniorDay): PlannedSession[] {

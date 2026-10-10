@@ -14,7 +14,7 @@ import {
   PREVIEW_PRICE,
   PREVIEW_SESSION_CAPACITY,
 } from "@/constants/previewEvening";
-import { JUNIOR_COACH, JUNIOR_DAYS, JUNIOR_FREE_LINE, JUNIOR_SESSION_TIMES } from "@/constants/juniorClinic";
+import { JUNIOR_COACH, JUNIOR_FREE_LINE, JUNIOR_SESSION_TIMES, announcedDays } from "@/constants/juniorClinic";
 
 /**
  * The homepage's "coming up": the dated things the club is selling right now, soonest
@@ -41,9 +41,10 @@ const OpenPromo = () => {
 
   const cards: Card[] = [];
 
-  // The junior clinic: the next scheduled day, until it has happened. Soonest of the
-  // three, so it leads.
-  const nextJunior = JUNIOR_DAYS.find((d) => today == null || d.date >= today);
+  // The junior clinic: the next ANNOUNCED day, until it has happened. Soonest of the
+  // three, so it leads. With nothing announced the card drops out rather than pointing
+  // at a day the club has not confirmed; the juniors page itself collects the emails.
+  const nextJunior = announcedDays(today)[0];
   if (nextJunior) {
     cards.push({
       key: "juniors",

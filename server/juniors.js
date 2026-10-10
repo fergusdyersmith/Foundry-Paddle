@@ -18,12 +18,12 @@ import {
 /** The page's two sessions, in JUNIOR_SESSION_TIMES order. */
 export const AGE_GROUPS = ["10-13", "14+"];
 
-/** Days open for signups, YYYY-MM-DD -> the label people see. Mirrors the first entries
- *  of JUNIOR_DAYS in fullsite/src/constants/juniorClinic.ts (the page shows DAYS_SHOWN of
- *  them); add a day in both places when the club opens it. */
-export const JUNIOR_SIGNUP_DAYS = {
-  "2026-10-09": "Friday, October 9",
-};
+/** Days open for signups, YYYY-MM-DD -> the label people see. Mirrors the ANNOUNCED
+ *  entries of JUNIOR_DAYS in fullsite/src/constants/juniorClinic.ts (the page shows
+ *  DAYS_SHOWN of them); add a day in both places when the club opens it. Empty since
+ *  10 Oct 2026: the first clinic (9 Oct) has run and the next is not announced, so a
+ *  signup from a stale tab is refused and the notify form is the only one that writes. */
+export const JUNIOR_SIGNUP_DAYS = {};
 
 const E164 = /^\+[1-9]\d{6,14}$/;
 

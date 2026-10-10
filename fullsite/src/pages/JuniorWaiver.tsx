@@ -2,7 +2,7 @@ import type { FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Seo from "@/components/Seo";
-import { JUNIOR_DAYS } from "@/constants/juniorClinic";
+import { announcedDays } from "@/constants/juniorClinic";
 import {
   LEAVE_ALONE_LABEL,
   MEDIA_CHOICES,
@@ -77,7 +77,8 @@ function ageFrom(dob: string, today: string): number | null {
 const JuniorWaiver = () => {
   const [today, setToday] = useState<string>("");
   useEffect(() => setToday(todayInPortland()), []);
-  const nextDay = useMemo(() => JUNIOR_DAYS.find((d) => !today || d.date >= today) ?? null, [today]);
+  // Only an announced day pre-fills the session dates; otherwise the parent writes them in.
+  const nextDay = useMemo(() => announcedDays(today || null)[0] ?? null, [today]);
 
   return (
     <main className="min-h-screen bg-background pt-24">

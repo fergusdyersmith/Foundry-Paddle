@@ -13,12 +13,13 @@ import {
   JUNIOR_AGE_RULES,
   JUNIOR_BLURB,
   JUNIOR_COACH,
-  JUNIOR_DAYS,
   JUNIOR_FREE_LINE,
   JUNIOR_PLACES,
   JUNIOR_PRICE,
   JUNIOR_SESSION_TIMES,
   JUNIOR_TITLE_PATTERN,
+  announcedDays,
+  lastClinicDay,
   plannedSessionsFor,
   type JuniorDay,
 } from "@/constants/juniorClinic";
@@ -65,10 +66,11 @@ const Juniors = () => {
   // Decided in the browser: prerendering "today" would freeze whichever day the deploy ran.
   useEffect(() => setToday(todayInPortland()), []);
 
-  const upcoming = useMemo(
-    () => (today ? JUNIOR_DAYS.filter((d) => d.date >= today) : JUNIOR_DAYS).slice(0, DAYS_SHOWN),
-    [today],
-  );
+  // Announced days only: the district calendar is in JUNIOR_DAYS too, but a day the club
+  // has not confirmed must not carry a SIGN UP button (see JuniorDay.announced).
+  const upcoming = useMemo(() => announcedDays(today).slice(0, DAYS_SHOWN), [today]);
+  // Named while nothing is announced: "the first clinic ran on ...".
+  const lastRun = useMemo(() => lastClinicDay(today), [today]);
 
   // THE TRUE COUNT, which Playtomic alone does not know. The form on this page is the
   // signup, and its signups are invisible to the Playtomic event: on 6 Oct both sessions
@@ -135,17 +137,22 @@ const Juniors = () => {
     <main className="bg-background min-h-screen">
       <Seo
         title={`Junior Padel Clinic with ${JUNIOR_COACH} | Foundry Padel, St. Johns`}
-        description={`Padel for kids on a day off school. This first clinic is free: ${JUNIOR_PLACES} places covered by a sponsor. Coached by ${JUNIOR_COACH}, racket and balls included. Ages 10 and up. Next: ${next?.label ?? "see dates"}.`}
+        description={
+          next
+            ? `Padel for kids on a day off school. This first clinic is free: ${JUNIOR_PLACES} places covered by a sponsor. Coached by ${JUNIOR_COACH}, racket and balls included. Ages 10 and up. Next: ${next.label}.`
+            : `Padel for kids on days off school, coached by ${JUNIOR_COACH}, racket and balls included. Ages 10 and up. More clinics coming soon: leave your email to hear the dates first.`
+        }
         path="/juniors"
       />
-      <Head>
+      {/* The event schema only while a day is announced: a past startDate reads as a stale listing. */}
+      {next && <Head>
         <script type="application/ld+json">
           {JSON.stringify({
             "@context": "https://schema.org",
             "@type": "SportsEvent",
             name: `Junior Padel Clinic with ${JUNIOR_COACH}`,
             description: "A padel clinic for kids on a day off school. Racket and balls provided.",
-            startDate: `${JUNIOR_DAYS[0].date}T${JUNIOR_SESSION_TIMES[0].start}:00-07:00`,
+            startDate: `${next.date}T${JUNIOR_SESSION_TIMES[0].start}:00-07:00`,
             eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
             eventStatus: "https://schema.org/EventScheduled",
             url: "https://www.foundrypadel.com/juniors",
@@ -171,7 +178,7 @@ const Juniors = () => {
             organizer: { "@type": "Organization", name: "Foundry Padel", url: "https://www.foundrypadel.com" },
           })}
         </script>
-      </Head>
+      </Head>}
 
       {/* Hero */}
       <section className="relative flex min-h-[78vh] w-full items-center overflow-hidden">
@@ -200,7 +207,14 @@ const Juniors = () => {
               kids who have. Racket and balls provided. {JUNIOR_BLURB}
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-              {next?.signupsClosed ? (
+              {!next ? (
+                <a
+                  href="#next-dates"
+                  className="bg-primary px-10 py-4 font-display text-lg tracking-widest text-primary-foreground shadow-[0_0_40px_-8px_hsl(var(--primary)/0.7)] transition-all hover:brightness-110"
+                >
+                  GET NOTIFIED OF THE NEXT DATES
+                </a>
+              ) : next.signupsClosed ? (
                 <a
                   href="#next-dates"
                   className="bg-primary px-10 py-4 font-display text-lg tracking-widest text-primary-foreground shadow-[0_0_40px_-8px_hsl(var(--primary)/0.7)] transition-all hover:brightness-110"
@@ -216,7 +230,7 @@ const Juniors = () => {
                 </a>
               )}
               <a href="#dates" className="border border-border px-10 py-4 font-display text-lg tracking-widest text-foreground transition-colors hover:border-primary">
-                SEE THE DATES
+                {next ? "SEE THE DATES" : "HOW IT WORKS"}
               </a>
             </div>
           </div>
@@ -227,19 +241,32 @@ const Juniors = () => {
       <section id="dates" className="scroll-mt-24 px-6 py-20">
         <div className="mx-auto max-w-5xl">
           <div className="text-center">
-            <h2 className={sectionHeading}>PICK A DAY AND A TIME</h2>
+            <h2 className={sectionHeading}>{days.length === 0 ? "MORE JUNIOR CLINICS COMING SOON" : "PICK A DAY AND A TIME"}</h2>
             <p className="mx-auto mt-5 max-w-2xl font-body text-base leading-relaxed text-secondary-foreground">
-              Two sessions each day, one for each age group. {JUNIOR_BLURB}
+              {days.length === 0 ? (
+                <>
+                  {lastRun ? `The first clinic ran on ${lastRun.label} with ${JUNIOR_COACH} on court. ` : ""}
+                  The next dates will be days off school, two sessions each day, one for each age group, and
+                  they go on this page first. Leave your details below and we will tell you the moment they are announced.
+                </>
+              ) : (
+                <>Two sessions each day, one for each age group. {JUNIOR_BLURB}</>
+              )}
             </p>
           </div>
 
           {days.length === 0 ? (
-            <div className="mx-auto mt-12 max-w-2xl border border-border p-10 text-center">
-              <p className="font-display text-2xl text-foreground">NO DATES ON THE CALENDAR YET</p>
+            <div className="mx-auto mt-12 max-w-2xl border border-primary bg-secondary p-10 text-center">
+              <p className="font-display text-2xl text-foreground">DATES NOT ANNOUNCED YET</p>
               <p className="mt-4 font-body text-base text-secondary-foreground">
-                The next days off school have not been scheduled yet. Leave your details below and we
-                will let you know.
+                Signups open here as soon as the club sets the next day. Racket and balls provided, ages 10 and up.
               </p>
+              <a
+                href="#next-dates"
+                className="mt-8 inline-block bg-primary px-8 py-4 font-display text-lg tracking-widest text-primary-foreground transition-all hover:brightness-110"
+              >
+                GET NOTIFIED
+              </a>
             </div>
           ) : (
             <div className="mt-12 space-y-6">
@@ -308,11 +335,11 @@ const Juniors = () => {
           )}
 
           <p className="mx-auto mt-10 max-w-2xl text-center font-body text-sm leading-relaxed text-muted-foreground">
-            {next?.signupsClosed ? (
-              <>Signups for {next.label} have closed. Leave your details below and we will tell you first when the next date opens.</>
+            {!next ? null : next.signupsClosed ? (
+              <>Signups for {next.label} have closed. Leave your details below and we will tell you first when the next date opens.{" "}</>
             ) : (
-              <>Nothing to pay and no app needed: fill in the form below and the place is held for your kid.</>
-            )}{" "}
+              <>Nothing to pay and no app needed: fill in the form below and the place is held for your kid.{" "}</>
+            )}
             Rather talk to a person?{" "}
             <a href={`tel:${PHONE_TEL}`} className="whitespace-nowrap text-primary hover:underline">call {PHONE_DISPLAY}</a>.
           </p>
@@ -439,6 +466,10 @@ function SignupForm({ days, full, closedLabel }: { days: JuniorDay[]; full: bool
   /** Which session an age lands in, or null when the club wants a call first. */
   const sessionFor = (age: number) => (age >= 14 ? "14+" : age >= 10 ? "10-13" : null);
   const dayIndex = Math.max(0, days.findIndex((d) => d.date === day));
+
+  // Nothing announced and nothing just closed: the dates section already says more
+  // clinics are coming and points at the notify form, so this section would only repeat it.
+  if (days.length === 0 && !closedLabel && !done) return null;
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -643,8 +674,9 @@ function NextDatesSignup({ nextLabel }: { nextLabel: string | null }) {
         <div className="section-divider mb-16" />
         <h2 className={`${sectionHeading} text-center`}>HEAR ABOUT THE NEXT DATES</h2>
         <p className="mx-auto mt-5 max-w-xl text-center font-body text-base leading-relaxed text-secondary-foreground">
-          {nextLabel ? `Can't make ${nextLabel}? ` : ""}Leave your details and we will tell you when the
-          next junior clinic is on the calendar.
+          {nextLabel
+            ? `Can't make ${nextLabel}? Leave your details and we will tell you when the next junior clinic is on the calendar.`
+            : "More junior clinics are coming. Leave your details and you hear the dates the moment they are announced, before they go anywhere else."}
         </p>
 
         {done ? (
