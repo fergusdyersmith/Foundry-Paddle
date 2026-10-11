@@ -57,18 +57,19 @@ export interface CoachProfile {
   levelRange?: string;
   privateLessons?: PrivateLessons;
   /**
-   * False for a coach not taking private lessons here at the moment, which hides the
-   * PRIVATE LESSONS panel outright.
+   * False for a coach who is still on the team but not taking private lessons at the
+   * moment, which hides the PRIVATE LESSONS panel outright.
    *
    * Absent means they are, and the panel shows either their rate or "Private
    * availability coming soon" with a mail link. That default is right for somebody who
-   * has not set pricing up yet and wrong for somebody who has stopped coaching: it
-   * invites a member to email about a lesson nobody is going to give, and "coming soon"
-   * is a promise the club cannot keep on their behalf.
+   * has not set pricing up yet and wrong for somebody on a break: it invites a member to
+   * email about a lesson nobody is going to give, and "coming soon" is a promise the
+   * club cannot keep on their behalf.
    *
-   * They keep their bio on the page. Whether they return is the club's call, not this
-   * file's, and deleting a coach loses the photo and the aliases that match their
-   * historic classes.
+   * A coach who has LEFT comes off this list entirely, photo and all. Tato, Eugene and
+   * Axel sat here with the panel hidden from 2026-09-18 while it was unclear whether
+   * they would return; the club removed them on 2026-10-11. To bring a coach back,
+   * restore their entry from git history.
    */
   takingPrivateLessons?: boolean;
   /** Placeholder bio/photo pending real content from the coach. */
@@ -76,22 +77,6 @@ export interface CoachProfile {
 }
 
 export const COACHES: CoachProfile[] = [
-  {
-    id: "eugene",
-    name: "Eugene Jung",
-    firstName: "Eugene",
-    photo: "/coaches/eugene.jpg",
-    aliases: ["eugene jung", "eugene"],
-    bio: "Eugene is a competitive tennis player with a USTA 4.5 rating and has competed at the national level. A lifelong racquet sports enthusiast, he also founded Pips & Bounce, Portland's premier ping pong social club, combining his passion for sport with building community.",
-    specialties:
-      "Helping beginner and intermediate players build confidence: proper fundamentals, sound technique, and smart court habits for long-term development.",
-    languages: "English",
-    levelRange: "Beginner & intermediate",
-    // Not coaching here at the moment. The rate that sat here was the last one derived
-    // from free text rather than Playtomic, and by 2026-09-18 it was also the cheapest
-    // on the page, for lessons nobody was giving.
-    takingPrivateLessons: false,
-  },
   {
     id: "kelly",
     name: "Kelly Correia",
@@ -188,32 +173,6 @@ export const COACHES: CoachProfile[] = [
     specialties: "6-week padel course, tennis-to-padel transition, fundamentals",
     levelRange: "All levels",
     mock: true,
-  },
-  {
-    id: "tato",
-    name: "Tato",
-    firstName: "Tato",
-    photo: "/coaches/tato.jpg",
-    aliases: ["tato"],
-    bio: "Tato leads Foundry's beginner open play clinics, where first-timers get comfortable on court fast: relaxed pace, lots of rallies, and plenty of encouragement.",
-    specialties: "Beginner open play, first-timer onboarding",
-    levelRange: "Beginner & intermediate",
-    mock: true,
-    // Not coaching here at the moment.
-    takingPrivateLessons: false
-  },
-  {
-    id: "axel",
-    name: "Axel Garay",
-    firstName: "Axel",
-    photo: "/coaches/axel.jpg",
-    aliases: ["axel garay", "axel"],
-    bio: "Axel rounds out the Foundry coaching team, working with players across levels on fundamentals and consistent, repeatable technique.",
-    specialties: "Fundamentals, consistency",
-    levelRange: "All levels",
-    mock: true,
-    // Not coaching here at the moment.
-    takingPrivateLessons: false
   },
 ];
 

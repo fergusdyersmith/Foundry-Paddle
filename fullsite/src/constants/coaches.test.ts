@@ -1,39 +1,33 @@
-/** Who the coaching page offers private lessons for.
+/** Who the coaching page shows, and who it offers private lessons for.
  *
- * The PRIVATE LESSONS panel renders for every coach, and when a coach has no pricing it
- * falls back to "Private availability coming soon" with a mail link. That is right for
- * somebody who has not set their pricing up yet and wrong for somebody who has stopped
- * coaching: it invites a member to email about a lesson nobody is going to give.
- *
- * Tato, Eugene and Axel stopped coaching at Foundry (2026-09-18) and it is not known
- * whether they return, so their panel is hidden rather than deleted along with their
- * bios.
+ * Tato, Eugene and Axel stopped coaching at Foundry on 2026-09-18. For three weeks they
+ * stayed on the page with their PRIVATE LESSONS panel hidden, in case they came back.
+ * The club removed them on 2026-10-11, so they are off the page entirely: a bio on the
+ * coaching page says "book this person", whatever the lessons panel says.
  */
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
-import { COACHES } from "./coaches";
+import { COACHES, coachMatchesName } from "./coaches";
 
 const by = (id: string) => COACHES.find((c) => c.id === id);
-const STOPPED = ["eugene", "tato", "axel"];
+const FORMER = [
+  { id: "eugene", name: "Eugene Jung" },
+  { id: "tato", name: "Tato" },
+  { id: "axel", name: "Axel Garay" },
+];
 
-describe("coaches who are not taking private lessons", () => {
-  it.each(STOPPED)("%s is marked as not taking them", (id) => {
-    expect(by(id)?.takingPrivateLessons).toBe(false);
+describe("coaches who have left", () => {
+  it.each(FORMER)("$name is not on the coaching page", ({ id, name }) => {
+    expect(by(id)).toBeUndefined();
+    // Nor does a class still carrying their name pin them to anyone else's tile.
+    expect(COACHES.filter((c) => coachMatchesName(c, name))).toEqual([]);
   });
 
-  it.each(STOPPED)("%s advertises no rate at all", (id) => {
-    // Eugene's used to be the last rate on the page derived from free text rather than
-    // Playtomic, and it had drifted to being the cheapest on offer.
-    expect(by(id)?.privateLessons).toBeUndefined();
-  });
-
-  it.each(STOPPED)("%s keeps their bio and photo", (id) => {
-    // Hidden lessons, not a deleted coach: removing them loses the photo and the
-    // aliases that match their historic classes.
-    const c = by(id);
-    expect(c?.bio).toBeTruthy();
-    expect(c?.photo).toBeTruthy();
-    expect(c?.aliases.length).toBeGreaterThan(0);
+  it.each(FORMER)("$name's photo is not published", ({ id }) => {
+    expect(existsSync(resolve(__dirname, `../../public/coaches/${id}.jpg`))).toBe(false);
   });
 });
 

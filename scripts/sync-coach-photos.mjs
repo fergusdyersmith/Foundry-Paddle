@@ -25,14 +25,15 @@
  *
  * A coach Kumi has no photo for (not currently assigned to a class) keeps whatever
  * remote URL coaches.ts already had, and that is what gets mirrored — that is how
- * Jack and Axel came in. Coaches already on a local path with no upstream are left
- * alone; Tato's photo was never from Playtomic.
+ * Jack came in. Coaches already on a local path with no upstream are left alone.
+ * Only coaches listed in coaches.ts are touched, so a coach who has left (removed from
+ * that file) never gets a photo back.
  *
  * A human stays in the loop on purpose: running this without --apply prints the drift,
  * so nobody wakes up to a coach's new selfie auto-published on the marketing site.
  *
  * PINNING
- * Some coaches' Playtomic pictures are team podium shots, not headshots (Juan, Axel).
+ * Some coaches' Playtomic pictures are team podium shots, not headshots (Juan).
  * Drop a better image in at fullsite/public/coaches/<id>.jpg by hand and set
  * "pin": true on that coach in scripts/coach-photos.manifest.json; this leaves pinned coaches alone
  * forever after, so a Playtomic edit cannot overwrite a photo we chose on purpose.
