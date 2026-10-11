@@ -76,6 +76,10 @@ export interface CoachProfile {
   mock?: boolean;
 }
 
+// Not every Foundry coach is on this page. Javi (Javier Jimenez Peña) coaches at the
+// club and is bookable in Playtomic, but has asked not to be listed here (confirmed by
+// the club again 2026-10-11). Kumi still knows him; leave him off unless he changes his
+// mind. coaches.test.ts pins this so a "the page is missing a coach" fix cannot add him.
 export const COACHES: CoachProfile[] = [
   {
     id: "kelly",

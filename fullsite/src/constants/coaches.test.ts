@@ -31,6 +31,14 @@ describe("coaches who have left", () => {
   });
 });
 
+describe("coaches who asked not to be listed", () => {
+  it("Javi is not on the coaching page, at his own request", () => {
+    // He coaches at Foundry and Kumi knows him; he has asked not to appear here
+    // (confirmed by the club 2026-10-11). Not an oversight to fix.
+    expect(COACHES.filter((c) => /\bjavi(er)?\b/i.test([c.name, ...c.aliases].join(" ")))).toEqual([]);
+  });
+});
+
 describe("coaches who are still taking them", () => {
   it.each(["kelly", "ryan", "carlos", "juan"])("%s is untouched", (id) => {
     const c = by(id);
