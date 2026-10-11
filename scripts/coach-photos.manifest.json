@@ -33,5 +33,12 @@
     "sha256": "d21d782e2df3f725",
     "bytes": 61150,
     "fetchedAt": "2026-09-13"
+  },
+  "alejandro": {
+    "source": "https://cdn.playtomic.io/users/5034331/1776104562821/width=700,smartCrop=true",
+    "file": "/coaches/alejandro.webp",
+    "sha256": "e07876ed0beba54d",
+    "bytes": 83558,
+    "fetchedAt": "2026-10-11"
   }
 }

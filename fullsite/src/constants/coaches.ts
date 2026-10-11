@@ -174,6 +174,18 @@ export const COACHES: CoachProfile[] = [
     levelRange: "All levels",
     mock: true,
   },
+  {
+    id: "alejandro",
+    name: "Alejandro Huerta",
+    firstName: "Alejandro",
+    photo: "/coaches/alejandro.webp",
+    aliases: ["alejandro huerta", "alejandro"],
+    // From his Playtomic coach profile ("Available for coaching at all levels."), the
+    // only description he has given so far. Placeholder until he sends his own.
+    bio: "Alejandro is available for coaching at all levels, from first-timers to experienced players.",
+    levelRange: "All levels",
+    mock: true,
+  },
 ];
 
 export const TEAM_COACHES = COACHES;

@@ -38,10 +38,11 @@ describe("coaches who are still taking them", () => {
     expect(c?.privateLessons?.rate).toMatch(/^\$\d+\/hour, court included$/);
   });
 
-  it("jack keeps his panel even with no rate set", () => {
-    // He is coaching; he simply has no Playtomic pricing rules yet, which is exactly
-    // the case the "coming soon" fallback exists for.
-    const c = by("jack");
+  it.each(["jack", "alejandro"])("%s keeps his panel even with no rate set", (id) => {
+    // Coaching, but with no Playtomic pricing rules yet, which is exactly the case the
+    // "coming soon" fallback exists for. Alejandro joined the page on 2026-10-11.
+    const c = by(id);
+    expect(c).toBeDefined();
     expect(c?.takingPrivateLessons).not.toBe(false);
     expect(c?.privateLessons).toBeUndefined();
   });
