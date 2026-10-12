@@ -22,6 +22,9 @@ import { mergePreviewSessions } from "@/lib/previewEvening";
 import { clubToday } from "@/lib/clubTime";
 import type { PadelEvent } from "@/types/events";
 
+// The day the build ran, in Portland (vite.config.ts); see isOver below.
+const BUILD_DAY: string | null = typeof __BUILD_DAY__ === "string" ? __BUILD_DAY__ : null;
+
 /**
  * Landing page for the neighbourhood preview evening, and the target of the QR code and
  * the printed URL in the North Peninsula Review ad.
@@ -81,9 +84,11 @@ const suppliers = [
 
 const Preview = () => {
   const [events, setEvents] = useState<PadelEvent[]>([]);
-  // Decided in the browser, never at build time: a prerendered "this has happened" would
-  // be frozen into the HTML by whichever deploy happened to run last.
-  const [isOver, setIsOver] = useState(false);
+  // Starts from the build's day, so a deploy after the evening prerenders the page as
+  // over (title, structured data and all), and the browser then corrects it to today. It
+  // used to start at false, which kept the booking button, the sales copy and Google's
+  // "EventScheduled" in the static HTML for good once the evening had passed.
+  const [isOver, setIsOver] = useState(BUILD_DAY != null && BUILD_DAY > PREVIEW_DATE);
 
   useEffect(() => {
     setIsOver(clubToday() > PREVIEW_DATE);
@@ -110,46 +115,57 @@ const Preview = () => {
 
   return (
     <main className="bg-background min-h-screen">
-      <Seo
-        title="Neighborhood Preview Evening, October 10 | Foundry Padel, St. Johns"
-        description={`Try padel at Portland's first indoor padel club. ${PREVIEW_DATE_LABEL} in St. Johns. ${PREVIEW_PRICE} includes a racket and balls, a brat and a drink. Coaches on court, no experience needed.`}
-        path="/preview"
-      />
-      <Head>
-        <script type="application/ld+json">
-          {JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "SportsEvent",
-            name: "Foundry Padel Neighborhood Preview Evening",
-            description:
-              "An evening for the neighborhood to try padel with coaches on court. No experience needed; racket and balls provided.",
-            startDate: `${PREVIEW_DATE}T${PREVIEW_SESSIONS[0].start}:00-07:00`,
-            endDate: `${PREVIEW_DATE}T${PREVIEW_SESSIONS[PREVIEW_SESSIONS.length - 1].end}:00-07:00`,
-            eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
-            eventStatus: "https://schema.org/EventScheduled",
-            url: "https://www.foundrypadel.com/preview",
-            location: {
-              "@type": "Place",
-              name: "Foundry Padel",
-              address: {
-                "@type": "PostalAddress",
-                streetAddress: "8613 N Crawford St",
-                addressLocality: "Portland",
-                addressRegion: "OR",
-                postalCode: "97203",
-                addressCountry: "US",
-              },
-            },
-            offers: {
-              "@type": "Offer",
-              price: PREVIEW_PRICE.replace("$", ""),
-              priceCurrency: "USD",
+      {isOver ? (
+        <Seo
+          title="The Neighborhood Preview Evening Has Happened | Foundry Padel, St. Johns"
+          description={`Foundry Padel's neighborhood preview evening was ${PREVIEW_DATE_LABEL}. You can still try padel any day in St. Johns: book a court, a beginner clinic or an open match.`}
+          path="/preview"
+        />
+      ) : (
+        <Seo
+          title="Neighborhood Preview Evening, October 10 | Foundry Padel, St. Johns"
+          description={`Try padel at Portland's first indoor padel club. ${PREVIEW_DATE_LABEL} in St. Johns. ${PREVIEW_PRICE} includes a racket and balls, a brat and a drink. Coaches on court, no experience needed.`}
+          path="/preview"
+        />
+      )}
+      {/* Event markup only while there is an event to go to: a past one has no offer. */}
+      {!isOver && (
+        <Head>
+          <script type="application/ld+json">
+            {JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "SportsEvent",
+              name: "Foundry Padel Neighborhood Preview Evening",
+              description:
+                "An evening for the neighborhood to try padel with coaches on court. No experience needed; racket and balls provided.",
+              startDate: `${PREVIEW_DATE}T${PREVIEW_SESSIONS[0].start}:00-07:00`,
+              endDate: `${PREVIEW_DATE}T${PREVIEW_SESSIONS[PREVIEW_SESSIONS.length - 1].end}:00-07:00`,
+              eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+              eventStatus: "https://schema.org/EventScheduled",
               url: "https://www.foundrypadel.com/preview",
-            },
-            organizer: { "@type": "Organization", name: "Foundry Padel", url: "https://www.foundrypadel.com" },
-          })}
-        </script>
-      </Head>
+              location: {
+                "@type": "Place",
+                name: "Foundry Padel",
+                address: {
+                  "@type": "PostalAddress",
+                  streetAddress: "8613 N Crawford St",
+                  addressLocality: "Portland",
+                  addressRegion: "OR",
+                  postalCode: "97203",
+                  addressCountry: "US",
+                },
+              },
+              offers: {
+                "@type": "Offer",
+                price: PREVIEW_PRICE.replace("$", ""),
+                priceCurrency: "USD",
+                url: "https://www.foundrypadel.com/preview",
+              },
+              organizer: { "@type": "Organization", name: "Foundry Padel", url: "https://www.foundrypadel.com" },
+            })}
+          </script>
+        </Head>
+      )}
 
       {/* Hero */}
       <section className="relative flex min-h-[78vh] w-full items-center overflow-hidden">
@@ -174,6 +190,7 @@ const Preview = () => {
             </h1>
             <p className="mt-6 font-display text-2xl sm:text-3xl tracking-wide text-foreground">
               {PREVIEW_DATE_LABEL.toUpperCase()}
+              {isOver && <span className="text-primary"> · THANKS FOR COMING</span>}
             </p>
             <p className="mx-auto mt-4 max-w-xl font-body text-base text-secondary-foreground">
               Padel is the fastest-growing sport in the world, and the first courts in the PNW are
@@ -181,12 +198,21 @@ const Preview = () => {
               the fuss is about.
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <a
-                href="#sessions"
-                className="bg-primary px-10 py-4 font-display text-lg tracking-widest text-primary-foreground shadow-[0_0_40px_-8px_hsl(var(--primary)/0.7)] transition-all hover:brightness-110"
-              >
-                PICK A SESSION · {PREVIEW_PRICE}
-              </a>
+              {isOver ? (
+                <Link
+                  to="/new-to-padel"
+                  className="bg-primary px-10 py-4 font-display text-lg tracking-widest text-primary-foreground shadow-[0_0_40px_-8px_hsl(var(--primary)/0.7)] transition-all hover:brightness-110"
+                >
+                  TRY PADEL ANY DAY
+                </Link>
+              ) : (
+                <a
+                  href="#sessions"
+                  className="bg-primary px-10 py-4 font-display text-lg tracking-widest text-primary-foreground shadow-[0_0_40px_-8px_hsl(var(--primary)/0.7)] transition-all hover:brightness-110"
+                >
+                  PICK A SESSION · {PREVIEW_PRICE}
+                </a>
+              )}
             </div>
           </div>
         </div>
@@ -309,63 +335,65 @@ const Preview = () => {
         </div>
       </section>
 
-      {/* What the $25 covers */}
-      <section className="px-6 pb-8">
-        <div className="mx-auto max-w-5xl">
-          <div className="section-divider mb-16" />
-          <Reveal className="grid gap-12 md:grid-cols-2 md:items-center">
-            <div>
-              <h2 className={sectionHeading}>
-                <span className="text-primary">{PREVIEW_PRICE}</span> AND YOU'RE SET
-              </h2>
-              <p className="mt-6 font-body text-base leading-relaxed text-secondary-foreground">
-                One price per person covers the whole evening. Nothing to buy first and nothing
-                to bring but shoes.
-              </p>
-              <ul className="mt-8 space-y-4">
-                {PREVIEW_INCLUDES.map((item) => (
-                  <li key={item} className="flex items-start gap-3 font-body text-base text-foreground">
-                    <Check size={20} className="mt-0.5 shrink-0 text-primary" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-6 font-body text-xs tracking-[0.1em] uppercase text-muted-foreground">
-                Beer and wine for ages 21 and over
-              </p>
-              {/* The suppliers' marks, in the page's cream on nothing, the way the Foundry
-                  lockup sits on this page. Their own colours are in the partner band. */}
-              <div className="mt-8 flex flex-wrap items-center gap-x-10 gap-y-6">
-                {suppliers.map((s) => (
-                  <div key={s.name} className="flex items-center gap-4">
-                    <span className="font-body text-[10px] tracking-[0.2em] uppercase text-muted-foreground">
-                      {s.role}
-                    </span>
-                    <img
-                      src={s.src}
-                      alt={s.name}
-                      className={s.className}
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </div>
-                ))}
+      {/* What the price covered. Gone once the evening has: it is a sales pitch. */}
+      {!isOver && (
+        <section className="px-6 pb-8">
+          <div className="mx-auto max-w-5xl">
+            <div className="section-divider mb-16" />
+            <Reveal className="grid gap-12 md:grid-cols-2 md:items-center">
+              <div>
+                <h2 className={sectionHeading}>
+                  <span className="text-primary">{PREVIEW_PRICE}</span> AND YOU'RE SET
+                </h2>
+                <p className="mt-6 font-body text-base leading-relaxed text-secondary-foreground">
+                  One price per person covers the whole evening. Nothing to buy first and nothing
+                  to bring but shoes.
+                </p>
+                <ul className="mt-8 space-y-4">
+                  {PREVIEW_INCLUDES.map((item) => (
+                    <li key={item} className="flex items-start gap-3 font-body text-base text-foreground">
+                      <Check size={20} className="mt-0.5 shrink-0 text-primary" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-6 font-body text-xs tracking-[0.1em] uppercase text-muted-foreground">
+                  Beer and wine for ages 21 and over
+                </p>
+                {/* The suppliers' marks, in the page's cream on nothing, the way the Foundry
+                    lockup sits on this page. Their own colours are in the partner band. */}
+                <div className="mt-8 flex flex-wrap items-center gap-x-10 gap-y-6">
+                  {suppliers.map((s) => (
+                    <div key={s.name} className="flex items-center gap-4">
+                      <span className="font-body text-[10px] tracking-[0.2em] uppercase text-muted-foreground">
+                        {s.role}
+                      </span>
+                      <img
+                        src={s.src}
+                        alt={s.name}
+                        className={s.className}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-4 font-body text-sm text-secondary-foreground">
+                  Both from our neighbors down the hill in St. Johns.
+                </p>
               </div>
-              <p className="mt-4 font-body text-sm text-secondary-foreground">
-                Both from our neighbors down the hill in St. Johns.
-              </p>
-            </div>
-            <div className="aspect-[4/3] overflow-hidden border border-border">
-              <Photo
-                name="paddle-tap-four"
-                dir={GALLERY_IMAGE_DIR}
-                alt="Four players tap paddles across the net after a match at Foundry Padel"
-                className="h-full w-full object-cover"
-              />
-            </div>
-          </Reveal>
-        </div>
-      </section>
+              <div className="aspect-[4/3] overflow-hidden border border-border">
+                <Photo
+                  name="paddle-tap-four"
+                  dir={GALLERY_IMAGE_DIR}
+                  alt="Four players tap paddles across the net after a match at Foundry Padel"
+                  className="h-full w-full object-cover"
+                />
+              </div>
+            </Reveal>
+          </div>
+        </section>
+      )}
 
       {/* What to expect */}
       <section className="px-6 py-20">

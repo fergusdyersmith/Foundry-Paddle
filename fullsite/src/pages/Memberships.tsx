@@ -105,7 +105,7 @@ const rateCard = [
 // back in a month. Every figure below is COMPUTED from the constants, never typed in,
 // because the last set of hand-written value figures went stale and inverted.
 //
-// Counted, at the $22.50 per-player rate:
+// Counted, at the per-player rate the rate card above states (shared/rates.js):
 //   off-peak play   the whole rate, since it is free
 //   peak play       only the DISCOUNT, since they still pay the rest
 //   peak tournaments  only the DISCOUNT, on the number assumed below
@@ -114,9 +114,10 @@ const rateCard = [
 //
 // Padelhead assumes MORE peak play than Regular, which is the tier's whole premise:
 // at 2+2 it lands at $390, and it is sold to people who live at peak.
-const SESSION_RATE = 22.5;         // per player, 90 minutes
+const SESSION_RATE = ratesOn(RATE_CHANGE_DATE).perPlayer90; // per player, 90 minutes
 const WEEKS_PER_MONTH = 52 / 12;   // 4.33, not 4 — the difference is a whole session
-const GUEST_PASS_VALUE = 22.5;
+// A guest pays one player's share (see the rate card), so a pass is worth one.
+const GUEST_PASS_VALUE = SESSION_RATE;
 const TSHIRT_VALUE = 25;
 
 // Peak tournaments a month, the figure the tournament discount is worth something ON.
@@ -364,9 +365,9 @@ const Memberships = () => {
             date on it, and nobody should discover that at renewal. */}
         <Reveal variant="fade" className="mx-auto max-w-3xl mt-10 space-y-3 text-center">
           <p className="font-body text-xs leading-relaxed text-muted-foreground">
-            Value is what you get back in a month at the $22.50 per-player rate taking
-            effect on <span className="text-foreground font-semibold">1 September 2026</span>,
-            on the play shown under each figure. Off-peak sessions count in full because
+            Value is what you get back in a month at the{" "}
+            <span className="text-foreground font-semibold">{formatUsd(SESSION_RATE)}</span> per-player
+            rate, on the play shown under each figure. Off-peak sessions count in full because
             they are free; peak sessions count only the discount, since you still pay the
             rest. Two peak tournaments a month, your guest pass and your t-shirt are included. Play more than
             that and the number goes up.
