@@ -29,15 +29,16 @@ export const OPEN_CLOSES = "2026-11-28";
 export const OPEN_CLOSES_LABEL = "Friday, November 27";
 export const OPEN_CAPACITY = 100;
 /** The headline figure only (Jake, 30 Sep): how it splits across levels stays off the page
- *  and the flyer until sign-ups show what to expect. Raise it when sponsor money lands. */
+ *  and the flyer until sign-ups show what to expect. Raise it when sponsor money lands.
+ *  It is a mix of cash and goods, and every mention says so (Ryan, 12 Oct). */
 export const OPEN_PRIZE_POOL: string | null = "$3,500";
 
 export const OPEN_INCLUDES = [
-  "Two days of padel for everyone: Saturday pool play, Sunday single-elimination bracket. You play both days, win or lose",
+  "Two days of padel for everyone: Saturday pool play, Sunday single-elimination bracket. Everyone is in on Sunday whatever Saturday brought, then it is knockout",
   "A tournament t-shirt",
   // Vouchers, not a free-for-all (Ryan and Monica, 28 Sep): players eat and drink a lot.
   "A brat and a drink on us each day, by voucher at check-in",
-  OPEN_PRIZE_POOL ? `${OPEN_PRIZE_POOL} in prizes across the three levels` : "Prizes in every level",
+  OPEN_PRIZE_POOL ? `${OPEN_PRIZE_POOL} in prizes across the three levels, a mix of cash and goods` : "Prizes in every level, a mix of cash and goods",
 ] as const;
 
 export const OPEN_SUPPLIERS = [
@@ -59,7 +60,7 @@ export const SHIRT_SIZES = ["XS", "S", "M", "L", "XL", "XXL"] as const;
 
 export const OPEN_SCHEDULE = [
   { day: "Saturday, December 5", what: "Pool play in every level. Everybody plays several matches; results seed Sunday's bracket." },
-  { day: "Sunday, December 6", what: "Single-elimination bracket by level, seeded by Saturday's pools. Everyone plays, win or lose. Finals in the afternoon, prizes after." },
+  { day: "Sunday, December 6", what: "Single-elimination bracket by level, seeded by Saturday's pools. Everyone is in on Sunday whatever Saturday brought, then it is knockout. Finals in the afternoon, prizes after." },
 ] as const;
 
 /** Where the brackets come from once the tournament is under way. A JSON file the club

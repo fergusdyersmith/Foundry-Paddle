@@ -178,7 +178,7 @@ const Open = () => {
             <p className="mt-6 font-display text-2xl sm:text-3xl tracking-wide text-foreground">{OPEN_DATES_LABEL.toUpperCase()}</p>
             <p className="mx-auto mt-4 max-w-xl font-body text-base text-secondary-foreground">
               Pool play on Saturday, a single-elimination bracket on Sunday, in beginner, intermediate and
-              advanced draws. Everyone plays both days, win or lose. {OPEN_PRIZE_POOL ? `${OPEN_PRIZE_POOL} in prizes` : "Prizes in every level"}, a shirt on your back, and a brat and a drink on us each day. {OPEN_HOST_LINE}
+              advanced draws. Everyone is in on Sunday whatever Saturday brought, then it is knockout. {OPEN_PRIZE_POOL ? `${OPEN_PRIZE_POOL} in prizes` : "Prizes in every level"}, a shirt on your back, and a brat and a drink on us each day. {OPEN_HOST_LINE}
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <a href="#register" className="bg-primary px-10 py-4 font-display text-lg tracking-widest text-primary-foreground shadow-[0_0_40px_-8px_hsl(var(--primary)/0.7)] transition-all hover:brightness-110">
