@@ -19,6 +19,7 @@
 import express from "express";
 import { z } from "zod";
 import { escapeSlack, normalizePhone, sanitize } from "./notify.js";
+import { rateLimit, sheetCell } from "./abuse.js";
 
 export const LEVELS = ["beginner", "intermediate", "advanced"];
 export const SHIRT_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
@@ -108,10 +109,14 @@ export function createOpenRouter({
   sheetSecret = process.env.OPEN_SHEET_SECRET || null,
   tiers = DEFAULT_TIERS,
   closes = DEFAULT_CLOSES,
-  fetchImpl = (...args) => fetch(...args),
+  // Ten seconds unless the caller says otherwise: Node's fetch would otherwise wait
+  // minutes on a hung upstream, holding the visitor's request open the whole time.
+  fetchImpl = (url, opts = {}) => fetch(url, { signal: AbortSignal.timeout(10_000), ...opts }),
   now = () => new Date(),
 } = {}) {
   const router = express.Router();
+  // Registrations post to Slack and the organisers' sheet and update a Klaviyo profile.
+  const registerLimit = rateLimit({ name: "open", max: 6, windowMs: 10 * 60 * 1000 });
 
   async function postSlack(text) {
     if (!slackToken) return false;
@@ -179,7 +184,7 @@ export function createOpenRouter({
           new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", dateStyle: "short", timeStyle: "short" }).format(now()),
           r.name || "", r.level, r.partner || "", r.shirt || "", r.playtomicEmail || "", r.email || "", r.phone || "",
           tier.label, tier.price, r.notes || "",
-        ],
+        ].map(sheetCell),
       }),
     });
     if (!res.ok) throw new Error(`sheet ${res.status}`);
@@ -201,6 +206,7 @@ export function createOpenRouter({
     if (!parsed.success) {
       return res.status(400).json({ error: "Please pick the level you want to play." });
     }
+    if (registerLimit(req, res)) return;
     const r = {
       ...parsed.data,
       name: sanitize(parsed.data.name || "", 80),

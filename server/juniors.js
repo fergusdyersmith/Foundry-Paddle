@@ -11,6 +11,7 @@
 import express from "express";
 import { z } from "zod";
 import { escapeSlack, normalizePhone, sanitize } from "./notify.js";
+import { clientIp, rateLimit, sheetCell, sheetSafe } from "./abuse.js";
 import {
   ageOn, buildWaiverHtml, buildWaiverSlackText, cleanWaiver, waiverFilename, waiverSchema,
 } from "./juniors-waiver.js";
@@ -115,10 +116,28 @@ export function createJuniorsRouter({
   // date; the server refuses one it does not know so a stale tab cannot book a day
   // the club has not opened.
   days = JUNIOR_SIGNUP_DAYS,
-  fetchImpl = (...args) => fetch(...args),
+  // Ten seconds unless the caller says otherwise: Node's fetch would otherwise wait
+  // minutes on a hung upstream, holding the visitor's request open the whole time.
+  fetchImpl = (url, opts = {}) => fetch(url, { signal: AbortSignal.timeout(10_000), ...opts }),
   now = () => new Date(),
 } = {}) {
   const router = express.Router();
+
+  // Each of these writes to the organisers' sheet and posts to Slack; the waiver also
+  // files PDFs to Drive and emails a copy to the address typed in, from the club's own
+  // account. Unlimited, a script could mail anyone through us and burn the script's
+  // daily quota until real waivers stopped filing. A family signing several children
+  // sends one form, so these leave plenty of room for real use.
+  const formLimit = () => rateLimit({ name: "juniors", max: 6, windowMs: 10 * 60 * 1000 });
+  const registerLimit = formLimit();
+  const notifyLimit = formLimit();
+  const waiverLimit = formLimit();
+  const waiverEmailLimit = rateLimit({
+    name: "juniors-waiver-email",
+    max: 5,
+    windowMs: 24 * 60 * 60 * 1000,
+    key: (req) => String(req.body?.parent?.email || "").trim().toLowerCase(),
+  });
 
   const stamp = () =>
     new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", dateStyle: "short", timeStyle: "short" }).format(now());
@@ -156,7 +175,7 @@ export function createJuniorsRouter({
                 stamp(), r.name, r.email, r.phone || "", r.phone ? (r.smsConsent ? "yes" : "no") : "",
                 c.name, String(c.age), dayLabel, c.session === "10-13" ? "9 to 10:30 AM (ages 10 to 13)" : "10:30 AM to noon (ages 14 and up)",
                 r.notes || "", "",
-              ],
+              ].map(sheetCell),
             }),
           });
           if (!res.ok) throw new Error(`sheet ${res.status}`);
@@ -225,6 +244,7 @@ export function createJuniorsRouter({
     if (!parsed.success) {
       return res.status(400).json({ error: "Please check the form: your name, an email, the day and each child's name and age are needed." });
     }
+    if (registerLimit(req, res)) return;
     const r = {
       ...parsed.data,
       name: sanitize(parsed.data.name, 80),
@@ -368,13 +388,16 @@ export function createJuniorsRouter({
       }
       ages.push(age);
     }
+    if (waiverLimit(req, res) || waiverEmailLimit(req, res)) return;
     if (!sheetUrl) {
       console.error("[juniors] waiver: JUNIORS_SHEET_WEBHOOK is not set");
       return res.status(502).json({ error: "We could not file the waiver. Please try again later, or fill in the paper copy when you arrive." });
     }
 
     const stamp_ = stamp();
-    const ip = String(req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "").split(",")[0].trim();
+    // Printed on the signed PDF, so it must be the address Railway saw, not one the
+    // client wrote into its own X-Forwarded-For.
+    const ip = clientIp(req);
     const userAgent = sanitize(String(req.headers["user-agent"] || ""), 200);
     const body = {
       secret: sheetSecret || "",
@@ -397,7 +420,9 @@ export function createJuniorsRouter({
       const r = await fetchImpl(sheetUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        // The script lays these fields out as sheet rows, so each is made inert first. The
+        // PDF's HTML is already escaped, and the secret and file names are ours.
+        body: JSON.stringify(sheetSafe(body, new Set(["html", "secret", "filename"]))),
         // Three PDFs and two emails take the script a few seconds; this is well past that.
         // (Guarded: the test runner's DOM shim has no AbortSignal.timeout.)
         signal: typeof AbortSignal.timeout === "function" ? AbortSignal.timeout(50_000) : undefined,
@@ -424,6 +449,7 @@ export function createJuniorsRouter({
     if (!parsed.success) {
       return res.status(400).json({ error: "Please check the form: a name, an email and at least one age group are needed." });
     }
+    if (notifyLimit(req, res)) return;
     const s = {
       ...parsed.data,
       ages: [...new Set(parsed.data.ages)],

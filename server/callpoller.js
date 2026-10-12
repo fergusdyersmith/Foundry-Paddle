@@ -52,7 +52,9 @@ export function createCallPoller({
   linkSender,
   cachedEvents,
   timezone = "America/Los_Angeles",
-  fetchImpl = (...args) => fetch(...args),
+  // Ten seconds unless the caller says otherwise: Node's fetch would otherwise wait
+  // minutes on a hung upstream, holding the visitor's request open the whole time.
+  fetchImpl = (url, opts = {}) => fetch(url, { signal: AbortSignal.timeout(10_000), ...opts }),
   intervalMs = POLL_MS,
 }) {
   const seen = new Set();
@@ -189,8 +191,13 @@ export function createCallPoller({
         console.error("[calls] failed to report %s: %s", c.call_id, error.message);
       }
     }
-    // The set only needs to cover the poll window.
-    if (seen.size > 200) seen.clear();
+    // The set only needs to cover the poll window, so it sheds its OLDEST ids (a Set
+    // iterates in insertion order). Clearing it outright forgot the calls still in
+    // Bland's list too, and the next poll reported them all over again.
+    for (const id of seen) {
+      if (seen.size <= 150) break;
+      seen.delete(id);
+    }
   }
 
   return {

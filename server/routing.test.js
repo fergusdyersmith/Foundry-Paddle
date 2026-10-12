@@ -29,6 +29,8 @@ function buildFixture() {
   mkdirSync(path.join(dir, "assets"));
   writeFileSync(path.join(dir, "assets", "app-abc123.js"), "console.log(1)");
   writeFileSync(path.join(dir, "robots.txt"), "User-agent: *\nAllow: /\n");
+  mkdirSync(path.join(dir, ".vite"));
+  writeFileSync(path.join(dir, ".vite", "manifest.json"), "{}");
   return dir;
 }
 
@@ -154,6 +156,48 @@ describe("redirects", () => {
     const res = await fetch(`${ctx.base}${from}`, { redirect: "manual" });
     expect(res.status).toBe(301);
     expect(res.headers.get("location")).toBe(to);
+  });
+
+  // `Location: //evil.example/x` is a redirect to another site.
+  it.each([
+    ["/fullsite//evil.example/x", "/evil.example/x"],
+    ["/fullsite/\\evil.example", "/evil.example"],
+    ["/fullsite/\\/evil.example", "/evil.example"],
+  ])("never 301s off-site: %s -> %s", async (from, to) => {
+    ctx = await boot();
+    const res = await rawGet(ctx.base, from);
+    expect(res.status).toBe(301);
+    expect(res.location).toBe(to);
+  });
+});
+
+describe("response headers", () => {
+  it("refuses framing everywhere but the court screen, and says nothing about Express", async () => {
+    ctx = await boot();
+    const page = await fetch(`${ctx.base}/book`);
+    expect(page.headers.get("x-frame-options")).toBe("SAMEORIGIN");
+    expect(page.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(page.headers.get("x-powered-by")).toBeNull();
+    const tv = await fetch(`${ctx.base}/tv`);
+    expect(tv.headers.get("x-frame-options")).toBeNull();
+  });
+
+  it("caches hashed assets for good, and keeps Vite's manifest private", async () => {
+    ctx = await boot();
+    const asset = await fetch(`${ctx.base}/assets/app-abc123.js`);
+    expect(asset.headers.get("cache-control")).toBe("public, max-age=31536000, immutable");
+    expect(await status(ctx.base, "/.vite/manifest.json")).toBe(404);
+  });
+
+  it("answers a malformed JSON body with a JSON 400, not a stack trace", async () => {
+    ctx = await boot();
+    const res = await fetch(`${ctx.base}/api/interest`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{not json",
+    });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "Bad request" });
   });
 });
 

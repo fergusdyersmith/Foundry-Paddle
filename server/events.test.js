@@ -589,6 +589,16 @@ describe("a tournament the club has not opened yet is not linked", () => {
     expect(block).toMatch(/e\.price = null/);
     expect(block).not.toMatch(/book_url/);
   });
+
+  // The classes feed failing used to skip the tournament gate as well (one shared try),
+  // which published every event Kumi lists as private on purpose.
+  it("gates tournaments even when the classes feed fails, on the last good copy if need be", () => {
+    const src = readFileSync(new URL("../server.js", import.meta.url), "utf8");
+    const classesCatch = src.indexOf("[events] kumi price enrichment skipped");
+    const gate = src.indexOf("applyKumiTournamentInfo(events, kumiTournaments.tournaments");
+    expect(gate).toBeGreaterThan(classesCatch); // outside the classes' try, after its catch
+    expect(src).toMatch(/kumiTournaments = kumiTournamentsCache\.data;/);
+  });
 });
 
 // The members-first window is a perk, so the page names the day it ends rather than just

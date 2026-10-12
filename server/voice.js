@@ -47,14 +47,18 @@ function overLimit(key, max = LIMITS.perMinute, windowMs = LIMITS.windowMs) {
 const sweeper = setInterval(() => hits.clear(), 10 * 60 * 1000);
 sweeper.unref();
 
-function authorized(req) {
-  // Fail closed. An unset secret means the endpoint is unconfigured, not open.
+/** Constant-time comparison with the shared secret. Fails closed: an unset secret
+ *  means the endpoint is unconfigured, not open. */
+function matchesSecret(presented) {
   if (!VOICE_TOOL_SECRET) return false;
-  const header = req.get("authorization") || "";
-  const presented = header.replace(/^Bearer\s+/i, "");
-  const a = Buffer.from(presented);
+  const a = Buffer.from(String(presented ?? ""));
   const b = Buffer.from(VOICE_TOOL_SECRET);
   return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+function authorized(req) {
+  const header = req.get("authorization") || "";
+  return matchesSecret(header.replace(/^Bearer\s+/i, ""));
 }
 
 function nowLocal(timezone) {
@@ -1025,7 +1029,7 @@ export function createVoiceRouter({
   // because the signature secret is only obtainable by hand from their
   // dashboard and this needs no extra setup step to be safe.
   router.post("/api/voice/webhook", async (req, res) => {
-    if (req.query?.token !== VOICE_TOOL_SECRET || !VOICE_TOOL_SECRET) {
+    if (!matchesSecret(req.query?.token)) {
       return res.status(401).json({ error: "Unauthorized." });
     }
     // Always 200 quickly. A webhook that errors gets retried, and a duplicate

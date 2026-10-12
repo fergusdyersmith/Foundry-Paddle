@@ -18,6 +18,7 @@
  * allowed to answer from the supplied blocks.
  */
 import express from "express";
+import { clientIp } from "./abuse.js";
 
 // ---------------------------------------------------------------------------------------
 // Configuration. Everything that is a secret comes from the environment and never leaves
@@ -430,9 +431,9 @@ function sameOriginish(req) {
 }
 
 function clientKey(req) {
-  // Used only for rate limiting, in memory, never stored or sent anywhere.
-  const fwd = (req.headers["x-forwarded-for"] || "").split(",")[0].trim();
-  return fwd || req.ip || "unknown";
+  // Used only for rate limiting, in memory, never stored or sent anywhere. The LAST
+  // forwarded address: the first is the client's own say-so (see abuse.js).
+  return clientIp(req);
 }
 
 function extractText(payload) {

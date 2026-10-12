@@ -13,6 +13,7 @@ import { createTransferRouter } from "./server/transfer.js";
 import { createOpenRouter } from "./server/open.js";
 import { createJuniorsRouter } from "./server/juniors.js";
 import { formatUsd, ratesOn } from "./shared/rates.js";
+import { rateLimit } from "./server/abuse.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // SITE_DIST exists so the routing tests can point at a fixture tree instead of
@@ -22,8 +23,33 @@ const dist = process.env.SITE_DIST
   : path.join(__dirname, "dist");
 const indexHtml = path.join(dist, "index.html");
 
+// Every call this server makes to someone else's API gives up after this long. Node's
+// fetch has no timeout of its own, so one hung upstream (Playtomic, padelmaps.org) used to
+// hold the visitor's request, and the cache warmer, open for minutes.
+const UPSTREAM_TIMEOUT_MS = 10_000;
+const upstreamSignal = () => AbortSignal.timeout(UPSTREAM_TIMEOUT_MS);
+
 const app = express();
+app.disable("x-powered-by");
 app.use(express.json({ limit: "32kb" }));
+
+// Baseline response headers. No CSP yet: the site loads Wistia, GA, Google Fonts and the
+// Playtomic booking iframe, and a policy that misses one of them breaks a page silently.
+app.use((req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  // Nothing but /tv is meant to be framed: it is the club's court screen, which embeds it.
+  // Everywhere else (gift checkout, the waiver, the signup forms) refuses, so a hostile
+  // page cannot overlay its own buttons on ours.
+  if (req.path !== "/tv") {
+    res.setHeader("X-Frame-Options", "SAMEORIGIN");
+    res.setHeader("Content-Security-Policy", "frame-ancestors 'self'");
+  }
+  if (req.headers["x-forwarded-proto"] === "https") {
+    res.setHeader("Strict-Transport-Security", "max-age=31536000");
+  }
+  next();
+});
 
 // Canonical host: once the apex domain points here (instead of Squarespace,
 // whose redirect drops paths), send it to www WITH the path intact.
@@ -84,6 +110,7 @@ const interestPayloadSchema = z.object({
 async function klaviyo(method, apiPath, body) {
   const res = await fetch(`https://a.klaviyo.com/api${apiPath}`, {
     method,
+    signal: upstreamSignal(),
     headers: {
       Authorization: `Klaviyo-API-Key ${KLAVIYO_API_KEY}`,
       revision: KLAVIYO_REVISION,
@@ -162,6 +189,10 @@ async function subscribeToKlaviyo({ email, mobile, source, interests, sms_consen
   }
 }
 
+// Every signup lands in Klaviyo with marketing consent, so a script could otherwise
+// subscribe any address it likes, as fast as it likes.
+const interestLimit = rateLimit({ name: "interest", max: 6, windowMs: 10 * 60 * 1000 });
+
 app.post("/api/register-interest", async (req, res) => {
   const parsed = interestPayloadSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -173,6 +204,7 @@ app.post("/api/register-interest", async (req, res) => {
     });
     return res.status(400).json({ error: "Invalid request payload." });
   }
+  if (interestLimit(req, res)) return;
 
   // Preferred path: subscribe directly to Klaviyo (no fragile Make.com relay).
   if (KLAVIYO_API_KEY) {
@@ -352,6 +384,7 @@ async function getPlaytomicToken() {
 
   const res = await fetch("https://thirdparty.playtomic.io/api/v1/oauth/token", {
     method: "POST",
+    signal: upstreamSignal(),
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       client_id: PLAYTOMIC_CLIENT_ID,
@@ -410,6 +443,7 @@ async function fetchBookingsWindow(start, end) {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
+      signal: upstreamSignal(),
     });
 
     if (!res.ok) {
@@ -476,30 +510,43 @@ const EVENTS_HISTORY_DAYS = 120;
 const PAST_BOOKINGS_TTL = 15 * 60 * 1000;
 const PAST_BOOKINGS_CACHE_MAX = 8;
 const pastBookingsCache = new Map(); // window start (YYYY-MM-DD) -> { data, fetchedAt }
+const pastBookingsInFlight = new Map(); // window start -> the fetch already under way
 
 /** Live bookings from `from` (a club-local YYYY-MM-DD) up to now.
  *  The window opens a day early because it is sent as a UTC instant while `from` is a
  *  local date; getEvents filters by local date afterwards, so the extra day costs
- *  nothing and stops the club's evening events falling outside their own month. */
+ *  nothing and stops the club's evening events falling outside their own month.
+ *
+ *  Windows start on the first of a month. Keyed on the exact date asked for, every
+ *  different `start` was a cache miss of up to 25 Playtomic pages, so anyone cycling the
+ *  date could make this server hammer Playtomic with the club's own credentials. By
+ *  month there are at most five windows in the 120 days, inside the cache's eight, and
+ *  callers asking for the same window at once share the one fetch. */
 async function fetchPastBookings(from) {
   const floor = new Date(Date.now() - EVENTS_HISTORY_DAYS * 86400000)
     .toISOString()
     .slice(0, 10);
-  const start = from < floor ? floor : from;
+  const monthStart = `${from.slice(0, 7)}-01`;
+  const start = monthStart < floor ? floor : monthStart;
 
   const hit = pastBookingsCache.get(start);
   if (hit && Date.now() - hit.fetchedAt < PAST_BOOKINGS_TTL) return hit.data;
+  if (pastBookingsInFlight.has(start)) return pastBookingsInFlight.get(start);
 
-  const windowStart = new Date(Date.parse(`${start}T00:00:00Z`) - 86400000)
-    .toISOString()
-    .slice(0, 19);
-  const { live } = await fetchBookingsWindow(windowStart, new Date().toISOString().slice(0, 19));
+  const job = (async () => {
+    const windowStart = new Date(Date.parse(`${start}T00:00:00Z`) - 86400000)
+      .toISOString()
+      .slice(0, 19);
+    const { live } = await fetchBookingsWindow(windowStart, new Date().toISOString().slice(0, 19));
 
-  pastBookingsCache.set(start, { data: live, fetchedAt: Date.now() });
-  if (pastBookingsCache.size > PAST_BOOKINGS_CACHE_MAX) {
-    pastBookingsCache.delete(pastBookingsCache.keys().next().value);
-  }
-  return live;
+    pastBookingsCache.set(start, { data: live, fetchedAt: Date.now() });
+    if (pastBookingsCache.size > PAST_BOOKINGS_CACHE_MAX) {
+      pastBookingsCache.delete(pastBookingsCache.keys().next().value);
+    }
+    return live;
+  })().finally(() => pastBookingsInFlight.delete(start));
+  pastBookingsInFlight.set(start, job);
+  return job;
 }
 
 /** The live forward window plus history back to `from`, de-duplicated over the overlap
@@ -997,23 +1044,44 @@ async function getEvents({ from = null, to = null, includePast = false } = {}) {
   // already fetching rather than add a second Playtomic call per class.
   try {
     applyKumiClassInfo(events, (await fetchKumiClasses()).classes || []);
-
-    // Reassigned, not just mutated: this now also DROPS events (a private hire kept
-    // private past its own release date). Ignoring the return would have left them on
-    // the calendar and made the whole gate a no-op.
-    const kumiTournaments = await fetchKumiTournaments();
-    events = applyKumiTournamentInfo(events, kumiTournaments.tournaments || [], {
-      isOver,
-      today: nowParts.date,
-      hidden: kumiTournaments.hidden || [],
-    });
   } catch (error) {
     // Fails OPEN: prices go, links stay. Kumi being unreachable must not take every
     // tournament's BOOK button down with it — a few hours of links we would rather have
     // held back beats a schedule nobody can book from.
     console.error("[events] kumi price enrichment skipped:", error.message);
     for (const e of events) {
-      if (CLASS_TYPES.has(e.booking_type) || e.booking_type === "TOURNAMENT") e.price = null;
+      if (CLASS_TYPES.has(e.booking_type)) e.price = null;
+    }
+  }
+
+  // The tournament gate has its OWN try, and falls back to the last good copy of the feed.
+  // It used to share the classes' try, so a failure of the CLASSES feed skipped this gate
+  // too, and with it Kumi's list of events kept private on purpose: every private party
+  // and court hire went public, join link and all, for as long as the outage lasted. The
+  // last good copy still names them, so a stale gate beats none. Only a cold start with
+  // Kumi down has no copy at all, and that keeps the fail-open rule above.
+  let kumiTournaments = null;
+  try {
+    kumiTournaments = await fetchKumiTournaments();
+  } catch (error) {
+    kumiTournaments = kumiTournamentsCache.data;
+    console.error(
+      `[events] kumi tournaments fetch failed${kumiTournaments ? ", gating on the last good copy" : ", no copy to gate on"}:`,
+      error.message,
+    );
+  }
+  if (kumiTournaments) {
+    // Reassigned, not just mutated: this now also DROPS events (a private hire kept
+    // private past its own release date). Ignoring the return would have left them on
+    // the calendar and made the whole gate a no-op.
+    events = applyKumiTournamentInfo(events, kumiTournaments.tournaments || [], {
+      isOver,
+      today: nowParts.date,
+      hidden: kumiTournaments.hidden || [],
+    });
+  } else {
+    for (const e of events) {
+      if (e.booking_type === "TOURNAMENT") e.price = null;
     }
   }
 
@@ -1309,7 +1377,12 @@ function startCacheWarmer() {
     console.log("[warm] Playtomic not configured; cache warmer not started");
     return null;
   }
+  // A tick still running when the next is due is skipped, not doubled: a slow Playtomic
+  // would otherwise stack refreshes on top of each other, each making the same calls.
+  let ticking = false;
   const tick = async () => {
+    if (ticking) return;
+    ticking = true;
     try {
       // getEvents populates the bookings cache and both Kumi caches in one pass,
       // so availability and schedule are both warm afterwards.
@@ -1317,6 +1390,8 @@ function startCacheWarmer() {
     } catch (error) {
       // Keep the previous data: a stale answer beats silence mid-call.
       console.error("[warm] refresh failed:", error.message);
+    } finally {
+      ticking = false;
     }
   };
   tick();
@@ -1402,7 +1477,7 @@ async function fetchKumiClasses() {
   if (coachClassesCache.data && Date.now() - coachClassesCache.fetchedAt < COACH_CLASSES_TTL) {
     return coachClassesCache.data;
   }
-  const upstream = await fetch(KUMI_CLASSES_URL, { headers: { Accept: "application/json" } });
+  const upstream = await fetch(KUMI_CLASSES_URL, { headers: { Accept: "application/json" }, signal: upstreamSignal() });
   if (!upstream.ok) throw new Error(`Kumi classes fetch failed (${upstream.status})`);
   const data = await upstream.json();
   coachClassesCache = { data, fetchedAt: Date.now() };
@@ -1418,7 +1493,7 @@ async function fetchKumiTournaments() {
   if (kumiTournamentsCache.data && Date.now() - kumiTournamentsCache.fetchedAt < COACH_CLASSES_TTL) {
     return kumiTournamentsCache.data;
   }
-  const upstream = await fetch(KUMI_TOURNAMENTS_URL, { headers: { Accept: "application/json" } });
+  const upstream = await fetch(KUMI_TOURNAMENTS_URL, { headers: { Accept: "application/json" }, signal: upstreamSignal() });
   if (!upstream.ok) throw new Error(`Kumi tournaments fetch failed (${upstream.status})`);
   const data = await upstream.json();
   kumiTournamentsCache = { data, fetchedAt: Date.now() };
@@ -1434,7 +1509,7 @@ async function fetchKumiOpenMatches() {
   if (kumiOpenMatchesCache.data && Date.now() - kumiOpenMatchesCache.fetchedAt < COACH_CLASSES_TTL) {
     return kumiOpenMatchesCache.data;
   }
-  const upstream = await fetch(KUMI_OPEN_MATCHES_URL, { headers: { Accept: "application/json" } });
+  const upstream = await fetch(KUMI_OPEN_MATCHES_URL, { headers: { Accept: "application/json" }, signal: upstreamSignal() });
   if (!upstream.ok) throw new Error(`Kumi open matches fetch failed (${upstream.status})`);
   const data = await upstream.json();
   kumiOpenMatchesCache = { data, fetchedAt: Date.now() };
@@ -1475,7 +1550,7 @@ async function fetchKumiMemberships() {
   if (kumiMembershipsCache.data && Date.now() - kumiMembershipsCache.fetchedAt < COACH_CLASSES_TTL) {
     return kumiMembershipsCache.data;
   }
-  const upstream = await fetch(KUMI_MEMBERSHIPS_URL, { headers: { Accept: "application/json" } });
+  const upstream = await fetch(KUMI_MEMBERSHIPS_URL, { headers: { Accept: "application/json" }, signal: upstreamSignal() });
   if (!upstream.ok) throw new Error(`Kumi memberships fetch failed (${upstream.status})`);
   const data = normalizeMembershipCount(await upstream.json());
   if (!data) throw new Error("Kumi memberships payload missing cap/sold");
@@ -1511,7 +1586,7 @@ async function fetchKumiMatchSlots() {
   if (kumiMatchSlotsCache.data && Date.now() - kumiMatchSlotsCache.fetchedAt < MATCH_SLOTS_TTL) {
     return kumiMatchSlotsCache.data;
   }
-  const upstream = await fetch(KUMI_MATCH_SLOTS_URL, { headers: { Accept: "application/json" } });
+  const upstream = await fetch(KUMI_MATCH_SLOTS_URL, { headers: { Accept: "application/json" }, signal: upstreamSignal() });
   if (!upstream.ok) throw new Error(`Kumi match slots fetch failed (${upstream.status})`);
   const data = await upstream.json();
   kumiMatchSlotsCache = { data, fetchedAt: Date.now() };
@@ -1544,7 +1619,7 @@ async function fetchJuniorSignups() {
   if (juniorSignupsCache.data && Date.now() - juniorSignupsCache.fetchedAt < COACH_CLASSES_TTL) {
     return juniorSignupsCache.data;
   }
-  const upstream = await fetch(KUMI_JUNIOR_SIGNUPS_URL, { headers: { Accept: "application/json" } });
+  const upstream = await fetch(KUMI_JUNIOR_SIGNUPS_URL, { headers: { Accept: "application/json" }, signal: upstreamSignal() });
   if (!upstream.ok) throw new Error(`Kumi junior signups fetch failed (${upstream.status})`);
   const data = await upstream.json();
   juniorSignupsCache = { data, fetchedAt: Date.now() };
@@ -1596,6 +1671,7 @@ const GIFT_API = process.env.GIFT_API_BASE || "https://padelmaps.org";
 async function giftProxy(req, res, path, init) {
   try {
     const upstream = await fetch(`${GIFT_API}${path}`, {
+      signal: upstreamSignal(),
       ...init,
       headers: { "Content-Type": "application/json", ...(init?.headers || {}) },
     });
@@ -1615,11 +1691,15 @@ async function giftProxy(req, res, path, init) {
 app.get("/api/gift/catalogue", (req, res) =>
   giftProxy(req, res, "/api/gift/catalogue"));
 
-app.post("/api/gift/checkout", (req, res) =>
-  giftProxy(req, res, "/api/gift/checkout", {
+const giftCheckoutLimit = rateLimit({ name: "gift-checkout", max: 12, windowMs: 10 * 60 * 1000 });
+
+app.post("/api/gift/checkout", (req, res) => {
+  if (giftCheckoutLimit(req, res)) return;
+  return giftProxy(req, res, "/api/gift/checkout", {
     method: "POST",
     body: JSON.stringify(req.body || {}),
-  }));
+  });
+});
 
 app.get("/api/gift/order/:reference", (req, res) => {
   const t = req.query.t ? `?t=${encodeURIComponent(String(req.query.t))}` : "";
@@ -1637,7 +1717,7 @@ app.get("/api/gift/order/:reference/certificate", async (req, res) => {
   const path = `/api/gift/order/${encodeURIComponent(req.params.reference)}` +
     `/certificate?${params.toString()}`;
   try {
-    const upstream = await fetch(`${GIFT_API}${path}`);
+    const upstream = await fetch(`${GIFT_API}${path}`, { signal: upstreamSignal() });
     if (!upstream.ok) {
       const body = await upstream.text();
       return res.status(upstream.status).type("application/json").send(body);
@@ -1756,6 +1836,7 @@ app.get(["/join", "/join/"], async (req, res) => {
   try {
     const upstream = await fetch(joinUrl, {
       headers: { "User-Agent": "foundry-site/kumi-proxy" },
+      signal: upstreamSignal(),
     });
     const html = await upstream.text();
     res
@@ -1772,16 +1853,29 @@ app.get(["/join", "/join/"], async (req, res) => {
 // Legacy URLs: /fullsite and /fullsite/* -> / and /*
 app.use((req, res, next) => {
   const p = req.path;
-  if (!p.startsWith("/fullsite")) return next();
-  const after = p === "/fullsite" ? "" : p.slice("/fullsite".length);
-  const pathOnly =
-    after === "" || after === "/" ? "/" : after.startsWith("/") ? after : `/${after}`;
+  if (p !== "/fullsite" && !p.startsWith("/fullsite/")) return next();
+  // Leading slashes and backslashes collapse to one. "/fullsite//evil.example" used to
+  // answer `Location: //evil.example`, which a browser follows to another site: an open
+  // redirect, and a cached 301 at that, on our own domain.
+  const pathOnly = `/${p.slice("/fullsite".length).replace(/^[/\\]+/, "")}`;
   const qs = req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "";
   res.redirect(301, pathOnly + qs);
 });
 
-// Serves fullsite assets at / (e.g. /assets/...).
-app.use(express.static(dist, { index: false }));
+// Serves fullsite assets at / (e.g. /assets/...). Everything under /assets/ carries a
+// content hash in its name, so it can be cached for good; a deploy renames what changes.
+// Dot-directories (Vite's /.vite/manifest.json) are not for the public.
+app.use(
+  express.static(dist, {
+    index: false,
+    dotfiles: "ignore",
+    setHeaders: (res, filePath) => {
+      if (filePath.startsWith(path.join(dist, "assets") + path.sep)) {
+        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+      }
+    },
+  }),
+);
 
 // Main site fallback. Routes are prerendered to per-route HTML files by
 // vite-react-ssg (e.g. /book -> dist/book.html), so a direct hit or crawler
@@ -1821,6 +1915,17 @@ app.get("*", (req, res) => {
   // ever drops it, still answer 404 rather than falling back to the homepage.
   console.error("Missing dist/404.html — serving a plain-text 404 instead.");
   res.status(404).type("text/plain").send("Not found");
+});
+
+// Last stop for errors. Without it a malformed or oversized JSON body got Express's own
+// HTML error page, which carries a stack trace with server paths unless NODE_ENV is set.
+// eslint-disable-next-line no-unused-vars -- Express tells error handlers apart by arity.
+app.use((err, req, res, next) => {
+  const status = Number(err?.status || err?.statusCode) || 500;
+  if (status >= 500) console.error("[server] unhandled error:", err);
+  if (res.headersSent) return;
+  const message = status === 413 ? "Request too large" : status < 500 ? "Bad request" : "Something went wrong";
+  res.status(status).json({ error: message });
 });
 
 // Bind only when run as the entrypoint (`npm start`). Importing this module
