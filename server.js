@@ -14,6 +14,7 @@ import { createOpenRouter } from "./server/open.js";
 import { createJuniorsRouter } from "./server/juniors.js";
 import { formatUsd, ratesOn } from "./shared/rates.js";
 import { rateLimit } from "./server/abuse.js";
+import { CSP_REPORT_ONLY, cspReportHandler, wantsCsp } from "./server/csp.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // SITE_DIST exists so the routing tests can point at a fixture tree instead of
@@ -33,8 +34,9 @@ const app = express();
 app.disable("x-powered-by");
 app.use(express.json({ limit: "32kb" }));
 
-// Baseline response headers. No CSP yet: the site loads Wistia, GA, Google Fonts and the
-// Playtomic booking iframe, and a policy that misses one of them breaks a page silently.
+// Baseline response headers. The full CSP is report-only for now (server/csp.js): the
+// site loads Wistia, GA, Google Fonts and the Playtomic booking iframe, and a policy that
+// misses one of them breaks a page silently.
 app.use((req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
@@ -45,11 +47,27 @@ app.use((req, res, next) => {
     res.setHeader("X-Frame-Options", "SAMEORIGIN");
     res.setHeader("Content-Security-Policy", "frame-ancestors 'self'");
   }
+  if (wantsCsp(req.path)) {
+    res.setHeader("Content-Security-Policy-Report-Only", CSP_REPORT_ONLY);
+  }
   if (req.headers["x-forwarded-proto"] === "https") {
     res.setHeader("Strict-Transport-Security", "max-age=31536000");
   }
   next();
 });
+
+// Where browsers send what the report-only CSP would have blocked; logged as "[csp]".
+// Browsers post these as application/csp-report or application/reports+json, which the
+// app-wide JSON parser leaves alone.
+const cspReportLimit = rateLimit({ name: "csp-report", max: 30, windowMs: 60 * 1000 });
+app.post(
+  "/api/csp-report",
+  express.json({ type: ["application/csp-report", "application/reports+json", "application/json"], limit: "16kb" }),
+  (req, res) => {
+    if (cspReportLimit(req, res)) return;
+    cspReportHandler(req, res);
+  },
+);
 
 // Canonical host: once the apex domain points here (instead of Squarespace,
 // whose redirect drops paths), send it to www WITH the path intact.
