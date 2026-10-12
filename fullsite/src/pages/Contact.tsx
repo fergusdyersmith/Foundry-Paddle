@@ -1,10 +1,11 @@
 import { Instagram, Facebook, Mail, MapPin, Clock, Car } from "lucide-react";
-import { GOOGLE_MAPS_EMBED_SRC, GOOGLE_MAPS_URL } from "@/constants/location";
+import { GOOGLE_MAPS_URL } from "@/constants/location";
 import StayInTouchForm from "@/components/StayInTouchForm";
 import WhatsAppJoinLink from "@/components/WhatsAppJoinLink";
 import WhatsAppIcon from "@/components/WhatsAppIcon";
 import Photo from "@/components/Photo";
 import { HOURS_LINE, HOURS_META } from "@/constants/hours";
+import MapEmbed from "@/components/MapEmbed";
 import Seo from "@/components/Seo";
 import PageHeader from "@/components/PageHeader";
 import Reveal from "@/components/motion/Reveal";
@@ -103,29 +104,7 @@ const Contact = () => {
                 </div>
               </div>
 
-              {/* Map. The embed is only a picture of where we are: it takes no clicks or
-                  focus, and the link laid over it opens Google Maps. An iframe nested
-                  inside the link was invalid markup and put the embed's own links in the
-                  tab order behind an element that swallowed their clicks. */}
-              <div className="relative mt-10 aspect-[4/3] overflow-hidden border border-border">
-                <iframe
-                  title="Map of Foundry Padel's location"
-                  src={GOOGLE_MAPS_EMBED_SRC}
-                  className="pointer-events-none h-full w-full"
-                  style={{ filter: "grayscale(1) invert(1) contrast(1.2) brightness(0.6)" }}
-                  loading="lazy"
-                  tabIndex={-1}
-                  aria-hidden="true"
-                  referrerPolicy="no-referrer-when-downgrade"
-                />
-                <a
-                  href={GOOGLE_MAPS_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="absolute inset-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
-                  aria-label="View on Google Maps"
-                />
-              </div>
+              <MapEmbed className="mt-10 aspect-[4/3]" />
             </Reveal>
 
             {/* Not wrapped in a Reveal: StayInTouchForm reveals its own heading and keeps

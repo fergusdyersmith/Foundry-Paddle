@@ -1,10 +1,11 @@
 import { Link } from "react-router-dom";
 import { Instagram, Facebook } from "lucide-react";
 import { BOOK_PAGE_PATH } from "@/constants/booking";
-import { GOOGLE_MAPS_EMBED_SRC, GOOGLE_MAPS_URL } from "@/constants/location";
+import { GOOGLE_MAPS_URL } from "@/constants/location";
 import { HOURS_LINE } from "@/constants/hours";
 import { APP_URL } from "@/constants/app";
 import WhatsAppJoinLink from "@/components/WhatsAppJoinLink";
+import MapEmbed from "@/components/MapEmbed";
 
 const TikTokIcon = ({ size = 20 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -123,24 +124,7 @@ const Footer = () => {
           {/* Map — compact, same column rhythm as above */}
           <div>
             <span className="font-body text-xs uppercase tracking-[0.2em] text-muted-foreground">Location</span>
-            <div className="mt-3">
-              <a
-                href={GOOGLE_MAPS_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block aspect-square w-full max-w-[240px] border border-border overflow-hidden md:max-w-none"
-                aria-label="View on Google Maps"
-              >
-                <iframe
-                  title="Foundry Padel location"
-                  src={GOOGLE_MAPS_EMBED_SRC}
-                  className="h-full w-full pointer-events-none"
-                  style={{ filter: "grayscale(1) invert(1) contrast(1.2) brightness(0.6)" }}
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                />
-              </a>
-            </div>
+            <MapEmbed className="mt-3 aspect-square w-full max-w-[240px] md:max-w-none" />
           </div>
         </div>
 
