@@ -1,13 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Head } from "vite-react-ssg";
-import { Link } from "react-router-dom";
-import { ArrowRight, Check, MapPin, Phone } from "lucide-react";
+import { Check } from "lucide-react";
 import Photo from "@/components/Photo";
 import Seo from "@/components/Seo";
 import StayInTouchForm from "@/components/StayInTouchForm";
 import Reveal from "@/components/motion/Reveal";
 import { GALLERY_IMAGE_DIR } from "@/data/gallery";
-import { GOOGLE_MAPS_URL } from "@/constants/location";
 import { PLAYTOMIC_APP_STORE_URL, PLAYTOMIC_PLAY_STORE_URL } from "@/constants/booking";
 import {
   PREVIEW_DATE,
@@ -21,8 +19,10 @@ import {
 import { mergePreviewSessions } from "@/lib/previewEvening";
 import { clubToday } from "@/lib/clubTime";
 import type { PadelEvent } from "@/types/events";
+import FindUs, { PHONE_DISPLAY, PHONE_TEL } from "@/components/preview/FindUs";
+import PreviewThanks from "@/components/preview/PreviewThanks";
 
-// The day the build ran, in Portland (vite.config.ts); see isOver below.
+// The day the build ran, in Portland (vite.config.ts); see Preview at the bottom.
 const BUILD_DAY: string | null = typeof __BUILD_DAY__ === "string" ? __BUILD_DAY__ : null;
 
 /**
@@ -38,9 +38,6 @@ const BUILD_DAY: string | null = typeof __BUILD_DAY__ === "string" ? __BUILD_DAY
  * JavaScript and when the events feed is down. The feed then lays the live Playtomic
  * sessions over them: booking links, and places left. See lib/previewEvening.ts.
  */
-
-const PHONE_DISPLAY = "(971) 378-7499";
-const PHONE_TEL = "+19713787499";
 
 const sectionHeading = "font-display text-4xl sm:text-5xl text-foreground";
 
@@ -82,17 +79,11 @@ const suppliers = [
   },
 ];
 
-const Preview = () => {
+/** The evening itself, up to and including its day. */
+const PreviewEvening = () => {
   const [events, setEvents] = useState<PadelEvent[]>([]);
-  // Starts from the build's day, so a deploy after the evening prerenders the page as
-  // over (title, structured data and all), and the browser then corrects it to today. It
-  // used to start at false, which kept the booking button, the sales copy and Google's
-  // "EventScheduled" in the static HTML for good once the evening had passed.
-  const [isOver, setIsOver] = useState(BUILD_DAY != null && BUILD_DAY > PREVIEW_DATE);
 
   useEffect(() => {
-    setIsOver(clubToday() > PREVIEW_DATE);
-
     let cancelled = false;
     fetch(`/api/events?date=${PREVIEW_DATE}`)
       .then((r) => (r.ok ? r.json() : []))
@@ -115,57 +106,46 @@ const Preview = () => {
 
   return (
     <main className="bg-background min-h-screen">
-      {isOver ? (
-        <Seo
-          title="The Neighborhood Preview Evening Has Happened | Foundry Padel, St. Johns"
-          description={`Foundry Padel's neighborhood preview evening was ${PREVIEW_DATE_LABEL}. You can still try padel any day in St. Johns: book a court, a beginner clinic or an open match.`}
-          path="/preview"
-        />
-      ) : (
-        <Seo
-          title="Neighborhood Preview Evening, October 10 | Foundry Padel, St. Johns"
-          description={`Try padel at Portland's first indoor padel club. ${PREVIEW_DATE_LABEL} in St. Johns. ${PREVIEW_PRICE} includes a racket and balls, a brat and a drink. Coaches on court, no experience needed.`}
-          path="/preview"
-        />
-      )}
-      {/* Event markup only while there is an event to go to: a past one has no offer. */}
-      {!isOver && (
-        <Head>
-          <script type="application/ld+json">
-            {JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "SportsEvent",
-              name: "Foundry Padel Neighborhood Preview Evening",
-              description:
-                "An evening for the neighborhood to try padel with coaches on court. No experience needed; racket and balls provided.",
-              startDate: `${PREVIEW_DATE}T${PREVIEW_SESSIONS[0].start}:00-07:00`,
-              endDate: `${PREVIEW_DATE}T${PREVIEW_SESSIONS[PREVIEW_SESSIONS.length - 1].end}:00-07:00`,
-              eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
-              eventStatus: "https://schema.org/EventScheduled",
+      <Seo
+        title={`Neighborhood Preview Evening, ${PREVIEW_DATE_LABEL.replace(/^\w+, /, "")} | Foundry Padel, St. Johns`}
+        description={`Try padel at Portland's first indoor padel club. ${PREVIEW_DATE_LABEL} in St. Johns. ${PREVIEW_PRICE} includes a racket and balls, a brat and a drink. Coaches on court, no experience needed.`}
+        path="/preview"
+      />
+      <Head>
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "SportsEvent",
+            name: "Foundry Padel Neighborhood Preview Evening",
+            description:
+              "An evening for the neighborhood to try padel with coaches on court. No experience needed; racket and balls provided.",
+            startDate: `${PREVIEW_DATE}T${PREVIEW_SESSIONS[0].start}:00-07:00`,
+            endDate: `${PREVIEW_DATE}T${PREVIEW_SESSIONS[PREVIEW_SESSIONS.length - 1].end}:00-07:00`,
+            eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+            eventStatus: "https://schema.org/EventScheduled",
+            url: "https://www.foundrypadel.com/preview",
+            location: {
+              "@type": "Place",
+              name: "Foundry Padel",
+              address: {
+                "@type": "PostalAddress",
+                streetAddress: "8613 N Crawford St",
+                addressLocality: "Portland",
+                addressRegion: "OR",
+                postalCode: "97203",
+                addressCountry: "US",
+              },
+            },
+            offers: {
+              "@type": "Offer",
+              price: PREVIEW_PRICE.replace("$", ""),
+              priceCurrency: "USD",
               url: "https://www.foundrypadel.com/preview",
-              location: {
-                "@type": "Place",
-                name: "Foundry Padel",
-                address: {
-                  "@type": "PostalAddress",
-                  streetAddress: "8613 N Crawford St",
-                  addressLocality: "Portland",
-                  addressRegion: "OR",
-                  postalCode: "97203",
-                  addressCountry: "US",
-                },
-              },
-              offers: {
-                "@type": "Offer",
-                price: PREVIEW_PRICE.replace("$", ""),
-                priceCurrency: "USD",
-                url: "https://www.foundrypadel.com/preview",
-              },
-              organizer: { "@type": "Organization", name: "Foundry Padel", url: "https://www.foundrypadel.com" },
-            })}
-          </script>
-        </Head>
-      )}
+            },
+            organizer: { "@type": "Organization", name: "Foundry Padel", url: "https://www.foundrypadel.com" },
+          })}
+        </script>
+      </Head>
 
       {/* Hero */}
       <section className="relative flex min-h-[78vh] w-full items-center overflow-hidden">
@@ -190,7 +170,6 @@ const Preview = () => {
             </h1>
             <p className="mt-6 font-display text-2xl sm:text-3xl tracking-wide text-foreground">
               {PREVIEW_DATE_LABEL.toUpperCase()}
-              {isOver && <span className="text-primary"> · THANKS FOR COMING</span>}
             </p>
             <p className="mx-auto mt-4 max-w-xl font-body text-base text-secondary-foreground">
               Padel is the fastest-growing sport in the world, and the first courts in the PNW are
@@ -198,21 +177,12 @@ const Preview = () => {
               the fuss is about.
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-              {isOver ? (
-                <Link
-                  to="/new-to-padel"
-                  className="bg-primary px-10 py-4 font-display text-lg tracking-widest text-primary-foreground shadow-[0_0_40px_-8px_hsl(var(--primary)/0.7)] transition-all hover:brightness-110"
-                >
-                  TRY PADEL ANY DAY
-                </Link>
-              ) : (
-                <a
-                  href="#sessions"
-                  className="bg-primary px-10 py-4 font-display text-lg tracking-widest text-primary-foreground shadow-[0_0_40px_-8px_hsl(var(--primary)/0.7)] transition-all hover:brightness-110"
-                >
-                  PICK A SESSION · {PREVIEW_PRICE}
-                </a>
-              )}
+              <a
+                href="#sessions"
+                className="bg-primary px-10 py-4 font-display text-lg tracking-widest text-primary-foreground shadow-[0_0_40px_-8px_hsl(var(--primary)/0.7)] transition-all hover:brightness-110"
+              >
+                PICK A SESSION · {PREVIEW_PRICE}
+              </a>
             </div>
           </div>
         </div>
@@ -230,170 +200,151 @@ const Preview = () => {
             </p>
           </div>
 
-          {isOver ? (
-            <div className="mx-auto mt-12 max-w-2xl border border-border p-10 text-center">
-              <p className="font-display text-2xl text-foreground">THIS EVENING HAS BEEN AND GONE</p>
-              <p className="mt-4 font-body text-base text-secondary-foreground">
-                You can still try padel any day of the week. Start here.
-              </p>
-              <Link
-                to="/new-to-padel"
-                className="mt-8 inline-flex items-center gap-2 bg-primary px-8 py-3 font-display tracking-widest text-primary-foreground transition-all hover:brightness-110"
-              >
-                NEW TO PADEL <ArrowRight size={18} className="nudge" />
-              </Link>
-            </div>
-          ) : (
-            <Reveal variant="stagger" className="mt-12 grid gap-6 md:grid-cols-3">
-              {sessions.map((s, i) => (
-                <div key={s.start} className="flex flex-col border border-border bg-secondary p-8 text-center">
-                  <span className="font-body text-xs tracking-[0.2em] uppercase text-muted-foreground">
-                    Session {i + 1}
-                  </span>
-                  <p className="mt-3 font-display text-4xl leading-none text-foreground">
-                    {clock(s.start)} <span className="text-primary">to</span> {clock(s.end)}
-                  </p>
-                  <p className="mt-3 font-body text-sm text-secondary-foreground">
-                    {PREVIEW_PRICE} per person{" · "}
-                    {s.spotsLeft != null && !s.full && s.spotsLeft > 0 ? (
-                      <span className="text-foreground">
-                        {s.spotsLeft} {s.spotsLeft === 1 ? "spot" : "spots"} left
-                      </span>
-                    ) : s.full ? (
-                      <>sold out</>
-                    ) : (
-                      <>{PREVIEW_SESSION_CAPACITY} spots</>
-                    )}
-                  </p>
+          <Reveal variant="stagger" className="mt-12 grid gap-6 md:grid-cols-3">
+            {sessions.map((s, i) => (
+              <div key={s.start} className="flex flex-col border border-border bg-secondary p-8 text-center">
+                <span className="font-body text-xs tracking-[0.2em] uppercase text-muted-foreground">
+                  Session {i + 1}
+                </span>
+                <p className="mt-3 font-display text-4xl leading-none text-foreground">
+                  {clock(s.start)} <span className="text-primary">to</span> {clock(s.end)}
+                </p>
+                <p className="mt-3 font-body text-sm text-secondary-foreground">
+                  {PREVIEW_PRICE} per person{" · "}
+                  {s.spotsLeft != null && !s.full && s.spotsLeft > 0 ? (
+                    <span className="text-foreground">
+                      {s.spotsLeft} {s.spotsLeft === 1 ? "spot" : "spots"} left
+                    </span>
+                  ) : s.full ? (
+                    <>sold out</>
+                  ) : (
+                    <>{PREVIEW_SESSION_CAPACITY} spots</>
+                  )}
+                </p>
 
-                  <div className="mt-8 flex flex-1 flex-col justify-end">
-                    {s.full ? (
-                      s.waitlistUrl ? (
-                        <a
-                          href={s.waitlistUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="border border-primary px-6 py-3 font-display tracking-widest text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
-                        >
-                          FULL · JOIN THE WAITLIST
-                        </a>
-                      ) : (
-                        <span className="border border-border px-6 py-3 font-display tracking-widest text-muted-foreground">
-                          SESSION FULL
-                        </span>
-                      )
-                    ) : s.bookUrl ? (
+                <div className="mt-8 flex flex-1 flex-col justify-end">
+                  {s.full ? (
+                    s.waitlistUrl ? (
                       <a
-                        href={s.bookUrl}
+                        href={s.waitlistUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="bg-primary px-6 py-3 font-display tracking-widest text-primary-foreground transition-all hover:brightness-110"
+                        className="border border-primary px-6 py-3 font-display tracking-widest text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
                       >
-                        BOOK THIS SESSION
+                        FULL · JOIN THE WAITLIST
                       </a>
                     ) : (
                       <span className="border border-border px-6 py-3 font-display tracking-widest text-muted-foreground">
-                        BOOKING OPENS SOON
+                        SESSION FULL
                       </span>
-                    )}
-                  </div>
+                    )
+                  ) : s.bookUrl ? (
+                    <a
+                      href={s.bookUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-primary px-6 py-3 font-display tracking-widest text-primary-foreground transition-all hover:brightness-110"
+                    >
+                      BOOK THIS SESSION
+                    </a>
+                  ) : (
+                    <span className="border border-border px-6 py-3 font-display tracking-widest text-muted-foreground">
+                      BOOKING OPENS SOON
+                    </span>
+                  )}
                 </div>
-              ))}
-            </Reveal>
-          )}
+              </div>
+            ))}
+          </Reveal>
 
-          {!isOver && (
-            <p className="mx-auto mt-10 max-w-2xl text-center font-body text-sm leading-relaxed text-muted-foreground">
-              {anyBookable ? (
-                <>
-                  {/* Playtomic's tournament page will not take a registration in the
-                      browser: on a phone it says "Open in app to register". Someone who
-                      has never heard of Playtomic needs to be told that before they tap,
-                      or the button looks broken. */}
-                  Booking is in Playtomic, the free app the club runs on. Tap your session,
-                  then choose "Open in app" to pay and hold your spot. New to it? Get the app
-                  for{" "}
-                  <a href={PLAYTOMIC_APP_STORE_URL} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                    iPhone
-                  </a>{" "}
-                  or{" "}
-                  <a href={PLAYTOMIC_PLAY_STORE_URL} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                    Android
-                  </a>
-                  , make a free account, then come back and tap your session again. It is the
-                  same app you would use to book a court afterwards. Rather talk to a person?{" "}
-                </>
-              ) : (
-                <>Online booking for the evening is being set up. To hold a spot now, </>
-              )}
-              <a href={`tel:${PHONE_TEL}`} className="whitespace-nowrap text-primary hover:underline">
-                call {PHONE_DISPLAY}
-              </a>
-              .
-            </p>
-          )}
+          <p className="mx-auto mt-10 max-w-2xl text-center font-body text-sm leading-relaxed text-muted-foreground">
+            {anyBookable ? (
+              <>
+                {/* Playtomic's tournament page will not take a registration in the
+                    browser: on a phone it says "Open in app to register". Someone who
+                    has never heard of Playtomic needs to be told that before they tap,
+                    or the button looks broken. */}
+                Booking is in Playtomic, the free app the club runs on. Tap your session,
+                then choose "Open in app" to pay and hold your spot. New to it? Get the app
+                for{" "}
+                <a href={PLAYTOMIC_APP_STORE_URL} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  iPhone
+                </a>{" "}
+                or{" "}
+                <a href={PLAYTOMIC_PLAY_STORE_URL} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  Android
+                </a>
+                , make a free account, then come back and tap your session again. It is the
+                same app you would use to book a court afterwards. Rather talk to a person?{" "}
+              </>
+            ) : (
+              <>Online booking for the evening is being set up. To hold a spot now, </>
+            )}
+            <a href={`tel:${PHONE_TEL}`} className="whitespace-nowrap text-primary hover:underline">
+              call {PHONE_DISPLAY}
+            </a>
+            .
+          </p>
         </div>
       </section>
 
-      {/* What the price covered. Gone once the evening has: it is a sales pitch. */}
-      {!isOver && (
-        <section className="px-6 pb-8">
-          <div className="mx-auto max-w-5xl">
-            <div className="section-divider mb-16" />
-            <Reveal className="grid gap-12 md:grid-cols-2 md:items-center">
-              <div>
-                <h2 className={sectionHeading}>
-                  <span className="text-primary">{PREVIEW_PRICE}</span> AND YOU'RE SET
-                </h2>
-                <p className="mt-6 font-body text-base leading-relaxed text-secondary-foreground">
-                  One price per person covers the whole evening. Nothing to buy first and nothing
-                  to bring but shoes.
-                </p>
-                <ul className="mt-8 space-y-4">
-                  {PREVIEW_INCLUDES.map((item) => (
-                    <li key={item} className="flex items-start gap-3 font-body text-base text-foreground">
-                      <Check size={20} className="mt-0.5 shrink-0 text-primary" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-                <p className="mt-6 font-body text-xs tracking-[0.1em] uppercase text-muted-foreground">
-                  Beer and wine for ages 21 and over
-                </p>
-                {/* The suppliers' marks, in the page's cream on nothing, the way the Foundry
-                    lockup sits on this page. Their own colours are in the partner band. */}
-                <div className="mt-8 flex flex-wrap items-center gap-x-10 gap-y-6">
-                  {suppliers.map((s) => (
-                    <div key={s.name} className="flex items-center gap-4">
-                      <span className="font-body text-[10px] tracking-[0.2em] uppercase text-muted-foreground">
-                        {s.role}
-                      </span>
-                      <img
-                        src={s.src}
-                        alt={s.name}
-                        className={s.className}
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    </div>
-                  ))}
-                </div>
-                <p className="mt-4 font-body text-sm text-secondary-foreground">
-                  Both from our neighbors down the hill in St. Johns.
-                </p>
+      {/* What the price covers */}
+      <section className="px-6 pb-8">
+        <div className="mx-auto max-w-5xl">
+          <div className="section-divider mb-16" />
+          <Reveal className="grid gap-12 md:grid-cols-2 md:items-center">
+            <div>
+              <h2 className={sectionHeading}>
+                <span className="text-primary">{PREVIEW_PRICE}</span> AND YOU'RE SET
+              </h2>
+              <p className="mt-6 font-body text-base leading-relaxed text-secondary-foreground">
+                One price per person covers the whole evening. Nothing to buy first and nothing
+                to bring but shoes.
+              </p>
+              <ul className="mt-8 space-y-4">
+                {PREVIEW_INCLUDES.map((item) => (
+                  <li key={item} className="flex items-start gap-3 font-body text-base text-foreground">
+                    <Check size={20} className="mt-0.5 shrink-0 text-primary" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-6 font-body text-xs tracking-[0.1em] uppercase text-muted-foreground">
+                Beer and wine for ages 21 and over
+              </p>
+              {/* The suppliers' marks, in the page's cream on nothing, the way the Foundry
+                  lockup sits on this page. Their own colours are in the partner band. */}
+              <div className="mt-8 flex flex-wrap items-center gap-x-10 gap-y-6">
+                {suppliers.map((s) => (
+                  <div key={s.name} className="flex items-center gap-4">
+                    <span className="font-body text-[10px] tracking-[0.2em] uppercase text-muted-foreground">
+                      {s.role}
+                    </span>
+                    <img
+                      src={s.src}
+                      alt={s.name}
+                      className={s.className}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </div>
+                ))}
               </div>
-              <div className="aspect-[4/3] overflow-hidden border border-border">
-                <Photo
-                  name="paddle-tap-four"
-                  dir={GALLERY_IMAGE_DIR}
-                  alt="Four players tap paddles across the net after a match at Foundry Padel"
-                  className="h-full w-full object-cover"
-                />
-              </div>
-            </Reveal>
-          </div>
-        </section>
-      )}
+              <p className="mt-4 font-body text-sm text-secondary-foreground">
+                Both from our neighbors down the hill in St. Johns.
+              </p>
+            </div>
+            <div className="aspect-[4/3] overflow-hidden border border-border">
+              <Photo
+                name="paddle-tap-four"
+                dir={GALLERY_IMAGE_DIR}
+                alt="Four players tap paddles across the net after a match at Foundry Padel"
+                className="h-full w-full object-cover"
+              />
+            </div>
+          </Reveal>
+        </div>
+      </section>
 
       {/* What to expect */}
       <section className="px-6 py-20">
@@ -409,37 +360,11 @@ const Preview = () => {
         </div>
       </section>
 
-      {/* Where */}
-      <section className="px-6 pb-20">
-        <div className="mx-auto max-w-3xl border border-border p-10 text-center">
-          <h2 className="font-display text-3xl text-foreground">FIND US</h2>
-          <p className="mt-4 font-body text-base text-secondary-foreground">
-            8613 N Crawford St, Portland, OR 97203
-            <br />
-            In St. Johns, next to Cathedral Park
-          </p>
-          <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <a
-              href={GOOGLE_MAPS_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 border border-primary px-8 py-3 font-display tracking-widest text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
-            >
-              <MapPin size={18} /> GET DIRECTIONS
-            </a>
-            <a
-              href={`tel:${PHONE_TEL}`}
-              className="inline-flex items-center gap-2 border border-border px-8 py-3 font-display tracking-widest text-foreground transition-colors hover:border-primary"
-            >
-              <Phone size={18} /> {PHONE_DISPLAY}
-            </a>
-          </div>
-        </div>
-      </section>
+      <FindUs />
 
       {/* Nobody who scanned a newspaper ad should leave with nothing to do. Until the
           sessions can be booked, offer the list, so the club can tell them when they can. */}
-      {!isOver && !anyBookable && (
+      {!anyBookable && (
         <section className="px-6 pb-24">
           <div className="mx-auto max-w-2xl text-center">
             <StayInTouchForm
@@ -451,6 +376,18 @@ const Preview = () => {
       )}
     </main>
   );
+};
+
+/** One URL, two pages: the evening until its day is over, then a thank-you that points at
+ *  the next evening's list and at what can be booked this week (PreviewThanks). Starts from
+ *  the build's day, so a deploy after the evening prerenders the thank-you, title and all,
+ *  and the browser then corrects it to today. It used to start at "not over", which kept the
+ *  booking button, the sales copy and Google's "EventScheduled" in the static HTML for good
+ *  once the evening had passed. */
+const Preview = () => {
+  const [isOver, setIsOver] = useState(BUILD_DAY != null && BUILD_DAY > PREVIEW_DATE);
+  useEffect(() => setIsOver(clubToday() > PREVIEW_DATE), []);
+  return isOver ? <PreviewThanks /> : <PreviewEvening />;
 };
 
 export default Preview;

@@ -27,6 +27,11 @@ type Props = {
   /** Heading typography (default: large page title) */
   headingClassName?: string;
   subtitleClassName?: string;
+  /** Defaults to "Stay In Touch" / the news line; /preview asks about the next evening. */
+  heading?: string;
+  subtitle?: string;
+  /** Interests ticked before the visitor touches the form. They can untick them. */
+  defaultInterests?: string[];
 };
 
 const PRERENDER_CHALLENGE = { a: 3, b: 4, answer: 7 };
@@ -61,10 +66,13 @@ const StayInTouchForm = ({
   source,
   headingClassName = "font-display text-5xl sm:text-6xl text-foreground mb-3",
   subtitleClassName = "font-body text-sm tracking-[0.15em] uppercase text-muted-foreground mb-12",
+  heading = "Stay In Touch",
+  subtitle = "Be first to all the latest news and updates.",
+  defaultInterests = [],
 }: Props) => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [interests, setInterests] = useState<string[]>([]);
+  const [interests, setInterests] = useState<string[]>(defaultInterests);
   const [countryCode, setCountryCode] = useState(DEFAULT_COUNTRY_CODE);
   const [nationalDigits, setNationalDigits] = useState("");
   const [smsConsent, setSmsConsent] = useState(false);
@@ -141,7 +149,7 @@ const StayInTouchForm = ({
     }
 
     if (parseInt(captchaInput, 10) !== captcha.answer) {
-      toast({ title: "Incorrect answer — please try again", variant: "destructive" });
+      toast({ title: "Incorrect answer. Please try again.", variant: "destructive" });
       refreshCaptcha();
       return;
     }
@@ -203,8 +211,8 @@ const StayInTouchForm = ({
       {/* Only the heading rises in. The form below is left as painted: inputs are what
           someone came here to use, and they should never be waiting on a scroll. */}
       <Reveal>
-        <h2 className={headingClassName}>Stay In Touch</h2>
-        <p className={subtitleClassName}>Be first to all the latest news and updates.</p>
+        <h2 className={headingClassName}>{heading}</h2>
+        <p className={subtitleClassName}>{subtitle}</p>
       </Reveal>
 
       {submitted ? (
@@ -253,7 +261,7 @@ const StayInTouchForm = ({
 
           <div>
             <p className="mb-2 font-body text-[10px] tracking-[0.18em] uppercase text-muted-foreground">
-              What are you into? (toggle any — we&apos;ll only email what you pick)
+              What are you into? (Pick any. We&apos;ll only email what you choose.)
             </p>
             <div className="grid grid-cols-2 gap-2">
               {INTERESTS.map((opt) => {
