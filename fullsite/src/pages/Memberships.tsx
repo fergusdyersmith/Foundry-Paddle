@@ -399,16 +399,12 @@ const Memberships = () => {
             benefit before then, and give at least 60 days notice of any change.
           </p>
           <p className="font-body text-xs leading-relaxed text-muted-foreground">
-            Monthly benefits do not carry over. Your guest pass expires at the end of the
-            calendar month. Your club credit is different: it recharges on your own renewal
-            date, set by the day you joined and not by the calendar, so if you join on the
-            20th your credit arrives on the 20th. Credit is for clinics, tournaments and events at
-            PEAK times. Off-peak ones are discounted directly instead, the same on every
-            tier: 50% off tournaments and 25% off clinics and lessons. Peak court time is
-            covered by your tier's court discount, which applies to your own share of the
-            court rather than the whole court. Part
-            payment is not possible, so if something costs more than your balance, top your
-            wallet up before you book.
+            Your guest pass does not carry over: it expires at the end of the calendar
+            month. At PEAK times your tier's tournament discount comes off at checkout, with
+            nothing to spend first. Off-peak, the discount is the same on every tier: 50% off
+            tournaments and 25% off clinics and lessons. Peak court time is covered by your
+            tier's court discount, which applies to your own share of the court rather than
+            the whole court.
           </p>
           <p className="font-body text-xs leading-relaxed text-muted-foreground">
             Your guest pass code is emailed to you within 24 hours of joining, and again at
