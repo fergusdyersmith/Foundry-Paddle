@@ -13,6 +13,12 @@ export default {
       },
     },
     extend: {
+      // text-primary reads a lighter clay than bg-primary / border-primary: see
+      // --primary-text in index.css. Only the DEFAULT is overridden, so
+      // text-primary-foreground is unchanged.
+      textColor: {
+        primary: { DEFAULT: "hsl(var(--primary-text))" },
+      },
       fontFamily: {
         display: ["var(--font-display)", "sans-serif"],
         body: ["var(--font-body)", "sans-serif"],

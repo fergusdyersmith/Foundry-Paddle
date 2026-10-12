@@ -20,12 +20,18 @@
 
     --primary: 15 35% 51%;
     --primary-foreground: 40 48% 94%;
+    /* Clay as TEXT (text-primary, via tailwind.config textColor). The brand clay above is
+       2.7:1 on the green, below even the 3:1 large text needs; this lighter clay is 4.5:1
+       on the background and 5.4:1 on cards (WCAG AA). Fills, borders and buttons keep the
+       brand clay. */
+    --primary-text: 15 35% 67%;
 
     --secondary: 156 11% 18%;
     --secondary-foreground: 69 16% 83%;
 
     --muted: 156 11% 18%;
-    --muted-foreground: 75 6% 58%;
+    /* 64% rather than 58%: fine print at 4.6:1 on the background instead of 3.9:1. */
+    --muted-foreground: 75 6% 64%;
 
     --accent: 15 35% 51%;
     --accent-foreground: 40 48% 94%;
