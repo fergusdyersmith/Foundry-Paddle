@@ -27,6 +27,7 @@ import {
 import { mergePreviewSessions, type PreviewSession } from "@/lib/previewEvening";
 import type { PadelEvent } from "@/types/events";
 import { clubToday } from "@/lib/clubTime";
+import { useTurnstile } from "@/hooks/useTurnstile";
 
 /**
  * The junior clinic: the target of the QR code and printed URL on its ad.
@@ -441,6 +442,7 @@ function SignupForm({ days, full, closedLabel }: { days: JuniorDay[]; full: bool
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<{ dayLabel: string; count: number } | null>(null);
+  const human = useTurnstile();
 
   // The page decides "today" after mount, so the day list can arrive after first render.
   useEffect(() => {
@@ -490,21 +492,27 @@ function SignupForm({ days, full, closedLabel }: { days: JuniorDay[]; full: bool
       }
       payload.push({ name: c.name.trim(), age, session });
     }
+    if (!human.ready) {
+      setError("One moment: we are still checking this came from a person. Try again in a second.");
+      return;
+    }
     setSubmitting(true);
     try {
       const phone = form.phone.trim();
       const res = await fetch("/api/juniors/register", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...human.headers() },
         body: JSON.stringify({ ...form, phone, day, children: payload, ...(phone ? { smsConsent } : {}) }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
+        human.reset();
         setError(json.error || "Something went wrong. Please try again.");
         return;
       }
       setDone({ dayLabel: json.dayLabel, count: payload.length });
     } catch {
+      human.reset();
       setError("We could not reach the club. Please try again.");
     } finally {
       setSubmitting(false);
@@ -598,6 +606,7 @@ function SignupForm({ days, full, closedLabel }: { days: JuniorDay[]; full: bool
             <div className="hidden" aria-hidden="true"><input tabIndex={-1} autoComplete="off" value={form.website} onChange={set("website")} /></div>
 
             {error && <p role="alert" className="font-body text-sm text-primary">{error}</p>}
+            <div ref={human.ref} />
             <button type="submit" disabled={submitting} className="w-full bg-primary px-8 py-4 font-display text-lg tracking-widest text-primary-foreground transition-all hover:brightness-110 disabled:opacity-60">
               {submitting ? "SAVING" : "HOLD THEIR PLACE"}
             </button>
@@ -628,6 +637,8 @@ function NextDatesSignup({ nextLabel }: { nextLabel: string | null }) {
   const toggleAge = (group: string) =>
     setAges((a) => (a.includes(group) ? a.filter((g) => g !== group) : [...a, group]));
 
+  const human = useTurnstile();
+
   async function submit(e: FormEvent) {
     e.preventDefault();
     setError(null);
@@ -635,22 +646,28 @@ function NextDatesSignup({ nextLabel }: { nextLabel: string | null }) {
       setError("A name, an email and at least one age group are needed.");
       return;
     }
+    if (!human.ready) {
+      setError("One moment: we are still checking this came from a person. Try again in a second.");
+      return;
+    }
     setSubmitting(true);
     try {
       const phone = form.phone.trim();
       const res = await fetch("/api/juniors/notify", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...human.headers() },
         // Consent travels only with a number, as on the stay-in-touch form.
         body: JSON.stringify({ ...form, phone, ages, ...(phone ? { smsConsent } : {}) }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
+        human.reset();
         setError(json.error || "Something went wrong. Please try again.");
         return;
       }
       setDone(true);
     } catch {
+      human.reset();
       setError("We could not reach the club. Please try again.");
     } finally {
       setSubmitting(false);
@@ -709,6 +726,7 @@ function NextDatesSignup({ nextLabel }: { nextLabel: string | null }) {
             <div className="hidden" aria-hidden="true"><input tabIndex={-1} autoComplete="off" value={form.website} onChange={set("website")} /></div>
 
             {error && <p role="alert" className="font-body text-sm text-primary">{error}</p>}
+            <div ref={human.ref} />
             <button type="submit" disabled={submitting} className="w-full bg-primary px-8 py-4 font-display text-lg tracking-widest text-primary-foreground transition-all hover:brightness-110 disabled:opacity-60">
               {submitting ? "SAVING" : "LET ME KNOW"}
             </button>

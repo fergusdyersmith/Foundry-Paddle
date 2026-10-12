@@ -20,6 +20,7 @@ import {
   WAIVER_TITLE,
 } from "@shared/juniorWaiver";
 import { clubToday } from "@/lib/clubTime";
+import { useTurnstile } from "@/hooks/useTurnstile";
 
 /**
  * The junior waiver, signed online instead of at the desk.
@@ -134,6 +135,8 @@ function WaiverForm({ defaultSessionDates, today }: { defaultSessionDates: strin
   const setChild = (i: number, patch: Partial<ChildForm>) =>
     setChildren((cs) => cs.map((c, j) => (j === i ? { ...c, ...patch } : c)));
 
+  const human = useTurnstile();
+
   async function submit(e: FormEvent) {
     e.preventDefault();
     setError(null);
@@ -172,11 +175,15 @@ function WaiverForm({ defaultSessionDates, today }: { defaultSessionDates: strin
       setError("Type your full name as your signature.");
       return;
     }
+    if (!human.ready) {
+      setError("One moment: we are still checking this came from a person. Try again in a second.");
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await fetch("/api/juniors/waiver", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...human.headers() },
         body: JSON.stringify({
           parent, emergency, pickup,
           children: children.map((c) => ({ ...c, program: "Junior Padel Clinic" })),
@@ -185,12 +192,14 @@ function WaiverForm({ defaultSessionDates, today }: { defaultSessionDates: strin
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
+        human.reset();
         setError(json.error || "Something went wrong. Please try again.");
         return;
       }
       setDone({ children: json.children ?? children.map((c) => c.name.trim()), unmatched: json.unmatched ?? [] });
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch {
+      human.reset();
       setError("We could not reach the club. Please try again.");
     } finally {
       setSubmitting(false);
@@ -375,6 +384,7 @@ function WaiverForm({ defaultSessionDates, today }: { defaultSessionDates: strin
           <div className="hidden" aria-hidden="true"><input tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} /></div>
 
           {error && <p role="alert" className="mt-6 font-body text-sm text-primary">{error}</p>}
+          <div ref={human.ref} />
           <button type="submit" disabled={submitting} className="mt-6 w-full bg-primary px-8 py-4 font-display text-lg tracking-widest text-primary-foreground transition-all hover:brightness-110 disabled:opacity-60">
             {submitting ? "FILING THE WAIVER" : "SIGN AND SUBMIT"}
           </button>

@@ -29,6 +29,7 @@ import {
   SHIRT_SIZES,
 } from "@/constants/openTournament";
 import { clubToday } from "@/lib/clubTime";
+import { useTurnstile } from "@/hooks/useTurnstile";
 
 /**
  * The December open. The page has one job the others do not: ask which level someone
@@ -96,6 +97,8 @@ const Open = () => {
 
   const set = (k: keyof typeof form) => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
+  const human = useTurnstile();
+
   async function submit(e: FormEvent) {
     e.preventDefault();
     setError(null);
@@ -103,20 +106,26 @@ const Open = () => {
       setError("Pick the level you want to play.");
       return;
     }
+    if (!human.ready) {
+      setError("One moment: we are still checking this came from a person. Try again in a second.");
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await fetch("/api/open/register", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...human.headers() },
         body: JSON.stringify(form),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
+        human.reset();
         setError(json.error || "Something went wrong. Please try again.");
         return;
       }
       setDone(json);
     } catch {
+      human.reset();
       setError("We could not reach the club. Nothing has been charged; please try again.");
     } finally {
       setSubmitting(false);
@@ -294,6 +303,7 @@ const Open = () => {
               <div className="hidden" aria-hidden="true"><input tabIndex={-1} autoComplete="off" value={form.website} onChange={set("website")} /></div>
 
               {error && <p role="alert" className="font-body text-sm text-primary">{error}</p>}
+              <div ref={human.ref} />
               <button type="submit" disabled={submitting} className="w-full bg-primary px-8 py-4 font-display text-lg tracking-widest text-primary-foreground transition-all hover:brightness-110 disabled:opacity-60">
                 {submitting ? "SAVING" : isEarly ? `LOCK IN $${price} · CONTINUE TO PAYMENT` : `CONTINUE TO PAYMENT · $${price}`}
               </button>

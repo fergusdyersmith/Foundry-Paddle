@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
+import { useTurnstile } from "@/hooks/useTurnstile";
 import { generateChallenge } from "@/lib/interestWebhook";
 import SmsConsentCheckbox from "@/components/SmsConsentCheckbox";
 import Reveal from "@/components/motion/Reveal";
@@ -79,6 +80,7 @@ const StayInTouchForm = ({
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
+  const human = useTurnstile();
 
   const dialDigits = useMemo(
     () => COUNTRY_DIAL_CODES.find((c) => c.code === countryCode)?.dial ?? "1",
@@ -144,6 +146,11 @@ const StayInTouchForm = ({
       return;
     }
 
+    if (!human.ready) {
+      toast({ title: "One moment, please", description: "We are still checking this came from a person. Try again in a second." });
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -168,7 +175,7 @@ const StayInTouchForm = ({
 
       const res = await fetch(REGISTER_INTEREST_ENDPOINT, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...human.headers() },
         body: JSON.stringify(body),
       });
 
@@ -177,6 +184,7 @@ const StayInTouchForm = ({
       setSubmitted(true);
       toast({ title: "You're on the list!", description: "We'll be in touch soon." });
     } catch {
+      human.reset();
       toast({
         title: "Something went wrong",
         description: "Please try again in a moment.",
@@ -352,6 +360,9 @@ const StayInTouchForm = ({
               ↻
             </button>
           </div>
+
+          {/* Turnstile, when its key is set (hooks/useTurnstile): usually invisible. */}
+          <div ref={human.ref} />
 
           <button
             type="submit"

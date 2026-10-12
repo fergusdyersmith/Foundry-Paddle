@@ -13,6 +13,7 @@
  *   fonts.googleapis / gstatic            the web fonts (index.css)
  *   playtomic.io / playtomic.com          the booking iframe on /book (.io redirects to .com)
  *   www.google.com                        the map embed (footer, /contact)
+ *   challenges.cloudflare.com             Turnstile, once its keys are set (server/turnstile.js)
  *
  * Left out on purpose: browser.sentry-cdn.com, which Wistia's player loads for its own
  * error reporting. Blocking it costs the video nothing, so expect it in the reports.
@@ -33,6 +34,7 @@ const POLICY = {
     "https://www.googletagmanager.com",
     "https://fast.wistia.com",
     "https://fast.wistia.net",
+    "https://challenges.cloudflare.com",
   ],
   "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://fast.wistia.com", "https://fast.wistia.net"],
   "font-src": ["'self'", "data:", "https://fonts.gstatic.com", "https://fast.wistia.com", "https://fast.wistia.net"],
@@ -54,6 +56,7 @@ const POLICY = {
     "https://*.playtomic.com",
     "https://www.google.com",
     "https://fast.wistia.net",
+    "https://challenges.cloudflare.com",
   ],
   "worker-src": ["'self'", "blob:"],
   "object-src": ["'none'"],
