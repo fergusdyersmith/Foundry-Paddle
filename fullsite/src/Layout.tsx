@@ -3,8 +3,6 @@ import { Outlet } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MotionConfig } from "framer-motion";
 import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ScrollToTop from "@/components/ScrollToTop";
@@ -40,21 +38,20 @@ const Layout = () => {
       {/* The framer-driven bits (menus, panels) follow the visitor's reduced-motion
           setting, as the CSS entrances already do. */}
       <MotionConfig reducedMotion="user">
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <ScrollToTop />
-          <Analytics />
-          <Header />
-          <Outlet />
-          <Footer />
-          <ChatWidget />
-          {ThemeLab && (
-            <Suspense fallback={null}>
-              <ThemeLab />
-            </Suspense>
-          )}
-        </TooltipProvider>
+        {/* Only the radix Toaster: nothing used Sonner or a Tooltip, and their providers
+            put both libraries (and floating-ui) in every page's download. */}
+        <Toaster />
+        <ScrollToTop />
+        <Analytics />
+        <Header />
+        <Outlet />
+        <Footer />
+        <ChatWidget />
+        {ThemeLab && (
+          <Suspense fallback={null}>
+            <ThemeLab />
+          </Suspense>
+        )}
       </MotionConfig>
     </QueryClientProvider>
   );
