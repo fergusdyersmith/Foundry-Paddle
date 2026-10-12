@@ -63,7 +63,10 @@ const FoundingMemberBar = () => {
             <span className="text-foreground">
               <CountUp value={data.sold} /> of {data.cap} claimed
             </span>
-            <span className="text-muted-foreground">{data.remaining} left</span>
+            {/* The server clamps an oversold roster, so 0 is as low as this goes. */}
+            <span className="text-muted-foreground">
+              {data.remaining > 0 ? `${data.remaining} left` : "All claimed"}
+            </span>
           </div>
         </div>
       )}

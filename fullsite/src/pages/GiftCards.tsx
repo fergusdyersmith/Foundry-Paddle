@@ -104,8 +104,13 @@ export default function GiftCards() {
         // The backend writes these to be read by a buyer, so they go through as-is.
         throw new Error(body.detail || "We could not start that checkout.");
       }
-      // Square's hosted page. Card details never touch this site.
-      window.location.href = body.checkout_url;
+      // Square's hosted page. Card details never touch this site. Anything but an https
+      // link is a backend fault, and following it sent the buyer to /gift-cards/undefined.
+      const checkoutUrl = typeof body.checkout_url === "string" ? body.checkout_url : "";
+      if (!/^https:\/\//i.test(checkoutUrl)) {
+        throw new Error("We could not start that checkout. Please try again in a moment.");
+      }
+      window.location.href = checkoutUrl;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
       setBusy(false);
