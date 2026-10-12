@@ -247,7 +247,8 @@ export function buildWaiverSlackText(w, ages, filed) {
   ];
   if (filed) {
     if (filed.matched?.length) bits.push(`Signup rows marked: ${filed.matched.map(escapeSlack).join(", ")}`);
-    if (filed.unmatched?.length) bits.push(`:warning: No signup row found for: ${filed.unmatched.map(escapeSlack).join(", ")} (walk-up, or a different spelling; check the sheet)`);
+    if (filed.nameOnly?.length) bits.push(`:eyes: Marked by name only (the signup used a different email; check it is the same family): ${filed.nameOnly.map(escapeSlack).join(", ")}`);
+    if (filed.unmatched?.length) bits.push(`:warning: No signup row marked for: ${filed.unmatched.map(escapeSlack).join(", ")} (walk-up, a different spelling, or the name is on the list under two families; check the sheet)`);
     if (filed.files?.length) bits.push(filed.files.map((f) => `<${f.url}|${escapeSlack(f.child)} PDF>`).join("  ·  "));
   }
   return bits.join("\n");

@@ -41,8 +41,10 @@ function doPost(e) {
   try {
     var body = JSON.parse(e.postData.contents || "{}");
     var secret = PropertiesService.getScriptProperties().getProperty("SECRET") || "";
-    if (secret && body.secret !== secret) {
-      return out.setContent(JSON.stringify({ ok: false, error: "bad secret" }));
+    // Fails closed: a copy installed without the SECRET property refuses everyone,
+    // rather than taking any POST from anyone who finds the /exec URL.
+    if (!secret || body.secret !== secret) {
+      return out.setContent(JSON.stringify({ ok: false, error: secret ? "bad secret" : "no SECRET set" }));
     }
     // One write at a time. Two families submitting in the same second each get their own
     // execution; the lock keeps one's Status write from reading row numbers the other is
@@ -93,7 +95,7 @@ function fileWaiver(ss, body) {
   var tab = waiverTab(ss);
   var when = body.stamp || new Date().toLocaleString();
   var shortDate = when.split(",")[0];
-  var files = [], blobs = [], matched = [], unmatched = [];
+  var files = [], blobs = [], matched = [], nameOnly = [], unmatched = [];
 
   body.children.forEach(function (c) {
     // The Drive converter does the HTML-to-PDF; the server already laid the page out.
@@ -102,7 +104,9 @@ function fileWaiver(ss, body) {
     blobs.push(pdf);
     files.push({ child: c.name, url: file.getUrl() });
 
-    if (markSigned(signups, data, body.parent.email, c.name, shortDate)) matched.push(c.name);
+    var how = markSigned(signups, data, body.parent.email, c.name, shortDate);
+    if (how === "email") matched.push(c.name);
+    else if (how === "name") nameOnly.push(c.name);
     else unmatched.push(c.name);
 
     tab.appendRow([
@@ -118,12 +122,12 @@ function fileWaiver(ss, body) {
   // already filed, so a failure here is reported, not fatal.
   var emailed = true, emailError = "";
   try {
-    sendDeskEmail(body, files, blobs, matched, unmatched, when);
+    sendDeskEmail(body, files, blobs, matched, nameOnly, unmatched, when);
     sendParentCopy(body, blobs);
   } catch (err) {
     emailed = false; emailError = String(err);
   }
-  return { ok: true, files: files, matched: matched, unmatched: unmatched, emailed: emailed, emailError: emailError };
+  return { ok: true, files: files, matched: matched, nameOnly: nameOnly, unmatched: unmatched, emailed: emailed, emailError: emailError };
 }
 
 function contact(p) {
@@ -131,22 +135,43 @@ function contact(p) {
   return p.phone ? p.name + " " + p.phone : p.name;
 }
 
-// Every signup row for this child gets the status (a child may be signed up for more than
-// one day). A row is the child's when the child's name matches, or when the parent's email
-// matches and the first name does: "Josie Rivera" on the waiver, "Josie" on the signup.
+// Writes "Waiver signed" on every signup row for this child (a child may be signed up for
+// more than one day) and says how it found them:
+//   "email"  the parent's email matches the signup AND so does the child's name, or its
+//            first name ("Josie Rivera" on the waiver, "Josie" on the signup).
+//   "name"   no row with that email, but the child's full name is on the list for exactly
+//            ONE family. A parent can sign with a different address than they signed up
+//            with, so this still marks the rows, but says so in the Status and the email.
+//   null     nothing, or the same full name under two or more families: a name alone
+//            cannot say whose child it is, so the desk checks by hand.
+// It used to match on the full name alone, so a waiver for one "Sam Lee" marked every
+// "Sam Lee" on the list, and anyone could mark any child signed by typing their name.
 function markSigned(sheet, data, email, childName, shortDate) {
-  var em = norm(email), nm = norm(childName), fn = first(childName), hit = false;
+  var em = norm(email), nm = norm(childName), fn = first(childName);
+  var byEmail = [], byName = [], families = {};
   for (var i = 1; i < data.length; i++) {
-    var r = data[i];
-    var rowName = norm(r[COL.child]);
-    var mine = rowName === nm || (em && norm(r[COL.email]) === em && (first(rowName) === fn || rowName === fn));
-    if (!mine) continue;
-    hit = true;
-    if (norm(r[COL.status]).indexOf("waiver signed") !== 0) {
-      sheet.getRange(i + 1, COL.status + 1).setValue("Waiver signed " + shortDate);
+    var rowName = norm(data[i][COL.child]), rowEmail = norm(data[i][COL.email]);
+    if (em && rowEmail === em && (rowName === nm || first(rowName) === fn || rowName === fn)) {
+      byEmail.push(i);
+    } else if (rowName === nm) {
+      byName.push(i);
+      families[rowEmail] = true;
     }
   }
-  return hit;
+  var rows, label, how;
+  if (byEmail.length) {
+    rows = byEmail; label = "Waiver signed " + shortDate; how = "email";
+  } else if (byName.length && Object.keys(families).length === 1) {
+    rows = byName; label = "Waiver signed " + shortDate + " (name match, signed as " + em + ")"; how = "name";
+  } else {
+    return null;
+  }
+  rows.forEach(function (i) {
+    if (norm(data[i][COL.status]).indexOf("waiver signed") !== 0) {
+      sheet.getRange(i + 1, COL.status + 1).setValue(label);
+    }
+  });
+  return how;
 }
 
 function waiverTab(ss) {
@@ -179,7 +204,7 @@ function waiverFolder() {
   return folder;
 }
 
-function sendDeskEmail(body, files, blobs, matched, unmatched, when) {
+function sendDeskEmail(body, files, blobs, matched, nameOnly, unmatched, when) {
   var kids = body.children.map(function (c) { return c.name + " (" + c.age + ")"; }).join(", ");
   var lines = [
     body.parent.name + " (" + body.parent.relationship + ") signed the junior waiver online on " + when + " for " + kids + ".",
@@ -191,7 +216,8 @@ function sendDeskEmail(body, files, blobs, matched, unmatched, when) {
   if (alone.length) lines.push("May leave on their own: " + alone.join(", "));
   lines.push("");
   if (matched.length) lines.push("Signup rows marked \"Waiver signed\": " + matched.join(", "));
-  if (unmatched.length) lines.push("NOT found on the signup list (walk-up, or spelled differently): " + unmatched.join(", "));
+  if (nameOnly.length) lines.push("Marked by the child's name only, since the signup used a different email. Please check it is the same family: " + nameOnly.join(", "));
+  if (unmatched.length) lines.push("NOT marked: not on the signup list (walk-up, or spelled differently), or the same name is there under more than one family: " + unmatched.join(", "));
   lines.push("", "The PDFs are attached and filed in Drive > " + FOLDER_NAME + ":");
   files.forEach(function (f) { lines.push("  " + f.child + ": " + f.url); });
   lines.push("", "Medical answers are in the PDF and on the Waivers tab of the signups sheet.");

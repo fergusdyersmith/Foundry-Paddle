@@ -28,8 +28,10 @@ function doPost(e) {
   try {
     var body = JSON.parse(e.postData.contents || "{}");
     var secret = PropertiesService.getScriptProperties().getProperty("SECRET") || "";
-    if (secret && body.secret !== secret) {
-      return out.setContent(JSON.stringify({ ok: false, error: "bad secret" }));
+    // Fails closed: a copy installed without the SECRET property refuses everyone,
+    // rather than taking any POST from anyone who finds the /exec URL.
+    if (!secret || body.secret !== secret) {
+      return out.setContent(JSON.stringify({ ok: false, error: secret ? "bad secret" : "no SECRET set" }));
     }
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
     if (body.action === "paid") {

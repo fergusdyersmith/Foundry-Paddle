@@ -123,7 +123,7 @@ describe("the Slack line", () => {
     const t = buildWaiverSlackText(w, [11, 13], { matched: ["Josie Rivera"], unmatched: ["Max Rivera"], files: [{ child: "Josie Rivera", url: "https://drive/x" }] });
     expect(t).toContain("Josie Rivera (11, media yes)");
     expect(t).toContain("Max Rivera (13, media no)");
-    expect(t).toContain("No signup row found for: Max Rivera");
+    expect(t).toContain("No signup row marked for: Max Rivera");
     expect(t).toContain("<https://drive/x|Josie Rivera PDF>");
     expect(t).not.toContain("Peanuts");
     expect(t).not.toContain("EpiPen");
