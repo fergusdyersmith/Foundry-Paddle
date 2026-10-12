@@ -19,6 +19,7 @@ import {
   PREVIEW_TITLE_PATTERN,
 } from "@/constants/previewEvening";
 import { mergePreviewSessions } from "@/lib/previewEvening";
+import { clubToday } from "@/lib/clubTime";
 import type { PadelEvent } from "@/types/events";
 
 /**
@@ -85,8 +86,7 @@ const Preview = () => {
   const [isOver, setIsOver] = useState(false);
 
   useEffect(() => {
-    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(new Date());
-    setIsOver(today > PREVIEW_DATE);
+    setIsOver(clubToday() > PREVIEW_DATE);
 
     let cancelled = false;
     fetch(`/api/events?date=${PREVIEW_DATE}`)

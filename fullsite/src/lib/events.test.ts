@@ -19,7 +19,7 @@ import type { PadelEvent } from "@/types/events";
 // that is over. This is the rule that decides whether such a card still offers a BOOK
 // button — i.e. whether the site sends someone to Playtomic to join last Tuesday's clinic.
 describe("an event that has finished is marked past", () => {
-  const NOW = new Date(2026, 7, 28, 14, 30); // Fri 28 Aug 2026, 2:30pm local
+  const NOW = new Date("2026-08-28T14:30:00-07:00"); // Fri 28 Aug 2026, 2:30pm in Portland
 
   function event(overrides: Partial<PadelEvent> = {}): PadelEvent {
     return {
@@ -65,9 +65,19 @@ describe("an event that has finished is marked past", () => {
   });
 
   it("compares dates by their zero-padded parts, not a loose string", () => {
-    const jan = new Date(2026, 0, 9, 9, 0);
+    const jan = new Date("2026-01-09T09:00:00-08:00");
     expect(isPastEvent(event({ date: "2026-01-08" }), jan)).toBe(true);
     expect(isPastEvent(event({ date: "2026-01-10" }), jan)).toBe(false);
+  });
+
+  it("reads Portland's clock, not the visitor's", () => {
+    // 9:30pm in New York is 6:30pm in Portland: tonight's 7pm session has not started.
+    const newYorkEvening = new Date("2026-08-28T21:30:00-04:00");
+    expect(isPastEvent(event({ start_time: "19:00", end_time: "20:30" }), newYorkEvening)).toBe(false);
+    // And after 5pm in Portland it is still the 28th there, though UTC has moved on.
+    const lateEvening = new Date("2026-08-28T22:00:00-07:00");
+    expect(isPastEvent(event({ date: "2026-08-29", start_time: "07:00" }), lateEvening)).toBe(false);
+    expect(isPastEvent(event({ start_time: "21:00", end_time: "22:30" }), lateEvening)).toBe(false);
   });
 
   it("falls back to the start time when an event has no end time", () => {

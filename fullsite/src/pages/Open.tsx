@@ -28,6 +28,7 @@ import {
   OPEN_TIERS,
   SHIRT_SIZES,
 } from "@/constants/openTournament";
+import { clubToday } from "@/lib/clubTime";
 
 /**
  * The December open. The page has one job the others do not: ask which level someone
@@ -55,10 +56,6 @@ type Status = { tier: string; label: string; price: number; closed: boolean; boo
 type Registered = { bookUrl: string | null; price: number; pay: number; tier: string };
 type Bracket = { level: string; stage: string; updated?: string; rows: string[][] };
 
-function todayInPortland(): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(new Date());
-}
-
 /** The same tier rule as the server, for the prerender. */
 function tierFor(today: string) {
   let tier: (typeof OPEN_TIERS)[number] = OPEN_TIERS[0];
@@ -78,7 +75,7 @@ const Open = () => {
   const [done, setDone] = useState<Registered | null>(null);
 
   useEffect(() => {
-    setToday(todayInPortland());
+    setToday(clubToday());
     fetch("/api/open/status").then((r) => (r.ok ? r.json() : null)).then((s) => s && setStatus(s)).catch(() => {});
     fetch(OPEN_BRACKETS_URL).then((r) => (r.ok ? r.json() : null)).then((b) => Array.isArray(b) && b.length && setBrackets(b)).catch(() => {});
   }, []);

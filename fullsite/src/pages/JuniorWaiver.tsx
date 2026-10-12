@@ -19,6 +19,7 @@ import {
   WAIVER_SUBTITLE,
   WAIVER_TITLE,
 } from "@shared/juniorWaiver";
+import { clubToday } from "@/lib/clubTime";
 
 /**
  * The junior waiver, signed online instead of at the desk.
@@ -61,10 +62,6 @@ const blankChild = (sessionDates: string): ChildForm => ({
   leaveAlone: false, media: "", participantSigned: "",
 });
 
-function todayInPortland(): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(new Date());
-}
-
 /** Whole years from a YYYY-MM-DD, or null while the date is incomplete. */
 function ageFrom(dob: string, today: string): number | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dob)) return null;
@@ -77,7 +74,7 @@ function ageFrom(dob: string, today: string): number | null {
 
 const JuniorWaiver = () => {
   const [today, setToday] = useState<string>("");
-  useEffect(() => setToday(todayInPortland()), []);
+  useEffect(() => setToday(clubToday()), []);
   // Only an announced day pre-fills the session dates; otherwise the parent writes them in.
   const nextDay = useMemo(() => announcedDays(today || null)[0] ?? null, [today]);
 
@@ -153,7 +150,7 @@ function WaiverForm({ defaultSessionDates, today }: { defaultSessionDates: strin
         setError("Each child needs their full name and date of birth.");
         return;
       }
-      const age = ageFrom(c.dob, today || todayInPortland());
+      const age = ageFrom(c.dob, today || clubToday());
       if (age == null || age < 3) {
         setError(`${c.name.trim()}'s date of birth does not look right.`);
         return;
@@ -273,7 +270,7 @@ function WaiverForm({ defaultSessionDates, today }: { defaultSessionDates: strin
           <p className={`mt-4 ${legal}`}>{MEDICAL_INTRO} Leave a medical line blank and we record it as "None".</p>
           <div className="mt-6 space-y-8">
             {children.map((c, i) => {
-              const age = ageFrom(c.dob, today || todayInPortland());
+              const age = ageFrom(c.dob, today || clubToday());
               return (
                 <fieldset key={i} className="border border-border p-6 sm:p-8">
                   <legend className="px-3 font-display text-2xl text-foreground">

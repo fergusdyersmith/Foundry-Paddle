@@ -26,6 +26,7 @@ import {
 } from "@/constants/juniorClinic";
 import { mergePreviewSessions, type PreviewSession } from "@/lib/previewEvening";
 import type { PadelEvent } from "@/types/events";
+import { clubToday } from "@/lib/clubTime";
 
 /**
  * The junior clinic: the target of the QR code and printed URL on its ad.
@@ -51,10 +52,6 @@ const fieldLabel = "mb-2 block font-body text-xs tracking-[0.2em] uppercase text
  *  the next date only until more sessions are actually created. Raise this when they are. */
 const DAYS_SHOWN = 1;
 
-function todayInPortland(): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(new Date());
-}
-
 type DayWithSessions = { day: JuniorDay; sessions: PreviewSession[] };
 
 const Juniors = () => {
@@ -65,7 +62,7 @@ const Juniors = () => {
   const [trueSpots, setTrueSpots] = useState<Record<string, number>>({});
 
   // Decided in the browser: prerendering "today" would freeze whichever day the deploy ran.
-  useEffect(() => setToday(todayInPortland()), []);
+  useEffect(() => setToday(clubToday()), []);
 
   // Announced days only: the district calendar is in JUNIOR_DAYS too, but a day the club
   // has not confirmed must not carry a SIGN UP button (see JuniorDay.announced).

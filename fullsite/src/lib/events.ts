@@ -3,6 +3,7 @@ import { OFF_PEAK_MEMBER_DISCOUNT, PEAK_WINDOWS } from "@/constants/memberPricin
 import { getDay, parseISO } from "date-fns";
 import { PLAYTOMIC_TENANT_URL } from "@/constants/booking";
 import type { PadelEvent } from "@/types/events";
+import { clubNow } from "@/lib/clubTime";
 
 /** "13:00" -> "01:00 PM" */
 export function formatTime(t: string): string {
@@ -56,17 +57,15 @@ export function bookableFirst(events: PadelEvent[]): PadelEvent[] {
   return [...open, ...closed];
 }
 
-/** Has this event already finished? The API returns a local date plus "HH:mm" strings,
- *  so the comparison is done in those same terms against the visitor's clock — the same
- *  reading /book already uses to drop matches that have started. A visitor in another
- *  timezone can be a few hours out; nothing here does more than dim a card and swap its
- *  BOOK button, so that is a fair trade for not shipping a timezone library.
+/** Has this event already finished? The API returns a Portland date plus "HH:mm"
+ *  strings, so the comparison is made on the club's clock (lib/clubTime), wherever the
+ *  visitor happens to be. It used to read the visitor's clock, which put a 7pm Portland
+ *  session in the past for anyone checking from New York after 10.
  *
  *  Pure and exported so the rule is testable: it decides whether the page offers someone
  *  a booking link to a session that is already over. */
 export function isPastEvent(event: PadelEvent, now: Date = new Date()): boolean {
-  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-  const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+  const { date: today, time } = clubNow(now);
   if (event.date !== today) return event.date < today;
   return (event.end_time || event.start_time) <= time;
 }

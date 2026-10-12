@@ -6,7 +6,7 @@ import {
   format,
   isAfter,
   isBefore,
-  startOfDay,
+  parseISO,
   startOfMonth,
   subMonths,
 } from "date-fns";
@@ -16,6 +16,7 @@ import { TYPE_DOT_COLORS, TYPE_LABELS } from "@/constants/events";
 import { groupEventsByDate, sortTypesByOrder } from "@/lib/events";
 import { monthGridRange, monthNeedsHistory } from "@/lib/calendar";
 import { useScheduleEvents } from "@/hooks/useScheduleEvents";
+import { clubToday } from "@/lib/clubTime";
 import MonthGrid from "@/components/schedule/MonthGrid";
 import AgendaList from "@/components/schedule/AgendaList";
 import EventCard from "@/components/schedule/EventCard";
@@ -24,19 +25,26 @@ import PageHeader from "@/components/PageHeader";
 import Reveal from "@/components/motion/Reveal";
 import BallLoader from "@/components/motion/BallLoader";
 
-const today = startOfDay(new Date());
-const thisMonth = startOfMonth(today);
-// Playtomic only returns ~30 days out, so the calendar spans at most this month
-// and the next.
-const maxMonth = startOfMonth(addDays(today, 30));
-// ...and back this far, for a visitor who wants to see what a full week here actually
-// looks like. Three is a bound on how much history one page can ask Playtomic for, not a
-// claim about the data. History is only ever loaded for a month that HAS been — see
-// showPast below.
+// How far back the calendar goes, for a visitor who wants to see what a full week here
+// actually looks like. Three is a bound on how much history one page can ask Playtomic
+// for, not a claim about the data. History is only ever loaded for a month that HAS
+// been — see showPast below.
 const HISTORY_MONTHS = 3;
-const minMonth = startOfMonth(subMonths(today, HISTORY_MONTHS));
 
 const Schedule = () => {
+  // Portland's today, read on render rather than frozen when the module loaded.
+  const todayKey = clubToday();
+  const { today, thisMonth, minMonth, maxMonth } = useMemo(() => {
+    const today = parseISO(todayKey);
+    return {
+      today,
+      thisMonth: startOfMonth(today),
+      minMonth: startOfMonth(subMonths(today, HISTORY_MONTHS)),
+      // Playtomic only returns ~30 days out, so the calendar spans at most this month
+      // and the next.
+      maxMonth: startOfMonth(addDays(today, 30)),
+    };
+  }, [todayKey]);
   const [monthStart, setMonthStart] = useState(thisMonth);
   const [activeType, setActiveType] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);

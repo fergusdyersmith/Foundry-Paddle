@@ -2,7 +2,7 @@ import type { AccordionSingleProps } from "@radix-ui/react-accordion";
 import { Link } from "react-router-dom";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import BookCTA from "@/components/BookCTA";
-import { HOURS_SENTENCE } from "@/constants/hours";
+import { HOURS_META, HOURS_SENTENCE } from "@/constants/hours";
 import Seo from "@/components/Seo";
 import PageHeader from "@/components/PageHeader";
 import Reveal from "@/components/motion/Reveal";
@@ -77,7 +77,7 @@ const FAQ = () => {
     <main className="bg-background min-h-screen pt-24">
       <Seo
         title="Padel FAQ — Beginners, Gear, Hours & Location | Foundry Padel"
-        description="Never played padel? A first-timer's guide: no partner needed, racket rentals from $5, hours (6am–midnight daily), pricing, and how to find us in St. Johns, Portland."
+        description={`Never played padel? A first-timer's guide: no partner needed, racket rentals from $5, hours (${HOURS_META} daily), pricing, and how to find us in St. Johns, Portland.`}
         path="/faq"
       />
       <section className="py-20 px-6">

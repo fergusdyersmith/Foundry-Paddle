@@ -1,8 +1,9 @@
-import { eachDayOfInterval, format, isBefore, isSameMonth, isToday, startOfDay } from "date-fns";
+import { eachDayOfInterval, format, isBefore, isSameMonth } from "date-fns";
 import { monthGridRange, WEEKDAYS } from "@/lib/calendar";
 import { TYPE_DOT_COLORS, TYPE_LABELS } from "@/constants/events";
 import { isFullEvent } from "@/lib/events";
 import type { PadelEvent } from "@/types/events";
+import { clubToday, clubTodayDate } from "@/lib/clubTime";
 
 
 const MAX_CHIPS = 3;
@@ -40,7 +41,9 @@ export default function MonthGrid({
   // The same range the page FETCHES, so every cell drawn here had a chance to be filled.
   const { start: gridStart, end: gridEnd } = monthGridRange(monthStart);
   const days = eachDayOfInterval({ start: gridStart, end: gridEnd });
-  const todayStart = startOfDay(new Date());
+  // Portland's today: the grid is the club's calendar, wherever the visitor is.
+  const todayKey = clubToday();
+  const todayStart = clubTodayDate();
   // Dimming a finished day only says something when there are live ones beside it. In a
   // month that has entirely been, it would put the whole grid behind a veil.
   const gridHasFuture = !isBefore(gridEnd, todayStart);
@@ -65,7 +68,7 @@ export default function MonthGrid({
           const key = format(day, "yyyy-MM-dd");
           const dayEvents = eventsByDate.get(key) ?? [];
           const inMonth = isSameMonth(day, monthStart);
-          const today = isToday(day);
+          const today = key === todayKey;
           const past = isBefore(day, todayStart);
           const hasEvents = dayEvents.length > 0;
 

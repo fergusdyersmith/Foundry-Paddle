@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { addDays, format, startOfDay } from "date-fns";
+import { addDays, parseISO } from "date-fns";
 import {
   ArrowRight,
   Calendar,
@@ -18,22 +18,14 @@ import {
 import { OPEN_MATCH_CAPACITY } from "@/constants/events";
 import { formatUsd, ratesOn } from "@shared/rates";
 import { openFirst } from "@/lib/events";
+import { clubNow, clubToday } from "@/lib/clubTime";
 import { useScheduleEvents } from "@/hooks/useScheduleEvents";
 import BookEventRow from "@/components/book/BookEventRow";
 import Seo from "@/components/Seo";
 import PageHeader from "@/components/PageHeader";
 import Reveal from "@/components/motion/Reveal";
 import BallLoader from "@/components/motion/BallLoader";
-
-const today = startOfDay(new Date());
-const todayKey = format(today, "yyyy-MM-dd");
-// Today's published rates. Dated in shared/rates.js, which the schedule prices open
-// matches from too, so the drop-in line below cannot say one number while a match on the
-// same page says another — and it steps up on its own the day the club's rates do.
-const rates = ratesOn(todayKey);
-// Playtomic only returns ~30 days out, so fetch that whole window once and
-// slice it into the clinic and open-match lists below.
-const rangeEnd = addDays(today, 30);
+import { HOURS_META } from "@/constants/hours";
 
 const CLINIC_TYPES = new Set(["PUBLIC_CLASS", "COURSE_CLASS"]);
 // Clinics someone can still join, then a couple that are already full. Kept as two
@@ -89,6 +81,20 @@ const ListStatus = ({ children }: { children: React.ReactNode }) => (
 const Book = () => {
   const [showAllMatches, setShowAllMatches] = useState(false);
 
+  // Read on every render, in Portland's terms, rather than once when the module loaded:
+  // a module-level date froze at whatever day the tab was opened (or the build ran).
+  const todayKey = clubToday();
+  // Today's published rates. Dated in shared/rates.js, which the schedule prices open
+  // matches from too, so the drop-in line below cannot say one number while a match on the
+  // same page says another — and it steps up on its own the day the club's rates do.
+  const rates = ratesOn(todayKey);
+  // Playtomic only returns ~30 days out, so fetch that whole window once and
+  // slice it into the clinic and open-match lists below.
+  const [today, rangeEnd] = useMemo(() => {
+    const start = parseISO(todayKey);
+    return [start, addDays(start, 30)];
+  }, [todayKey]);
+
   const {
     data: events = [],
     isLoading,
@@ -110,12 +116,12 @@ const Book = () => {
   // started. Recomputed on every refetch (60s), so full matches drop off live.
   // The API returns events sorted by date then start time.
   const upcomingMatches = useMemo(() => {
-    const nowTime = format(new Date(), "HH:mm");
+    const now = clubNow();
     return events.filter(
       (e) =>
         e.booking_type === "OPEN_MATCH" &&
         e.signed_up < OPEN_MATCH_CAPACITY &&
-        (e.date > todayKey || (e.date === todayKey && e.start_time > nowTime)),
+        (e.date > now.date || (e.date === now.date && e.start_time > now.time)),
     );
   }, [events]);
 
@@ -128,7 +134,7 @@ const Book = () => {
           quietly as in the copy — Google shows this text long after a price changes. */}
       <Seo
         title={`Book a Padel Court in Portland — ${formatUsd(rates.court90)} / 90 min | Foundry Padel`}
-        description={`Book an indoor padel court at Foundry in Portland — ${formatUsd(rates.court90)} per court for 90 minutes (${formatUsd(rates.perPlayer90)} per player). Join a beginner clinic or an open match, racket rentals from $5. Open daily 6am–midnight.`}
+        description={`Book an indoor padel court at Foundry in Portland — ${formatUsd(rates.court90)} per court for 90 minutes (${formatUsd(rates.perPlayer90)} per player). Join a beginner clinic or an open match, racket rentals from $5. Open daily ${HOURS_META}.`}
         path="/book"
       />
 
@@ -181,7 +187,7 @@ const Book = () => {
           <Reveal>
             <SectionHeading
               title="RESERVE A COURT"
-              sub="Have your four? Choose a time and court below. Open daily 6am–midnight · 90-minute sessions · 4 WPT-spec glass courts."
+              sub={`Have your four? Choose a time and court below. Open daily ${HOURS_META} · 90-minute sessions · 4 WPT-spec glass courts.`}
             />
           </Reveal>
           <div className="overflow-hidden rounded-sm border border-border bg-muted/30">

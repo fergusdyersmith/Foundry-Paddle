@@ -10,6 +10,7 @@ import Seo from "@/components/Seo";
 import PageHeader from "@/components/PageHeader";
 import Reveal from "@/components/motion/Reveal";
 import CourtSlots from "@/components/motion/CourtSlots";
+import { HOURS_SENTENCE } from "@/constants/hours";
 
 // The t-shirt lives here rather than in each tier's list: it was the same line repeated
 // three times, which is what this section is for.
@@ -439,7 +440,7 @@ const Memberships = () => {
             </div>
           </div>
           <p className="font-body text-xs text-muted-foreground text-center mt-4">
-            The club is open 6am to midnight every day. Drop-in and guest pricing is the same at any
+            The club is open {HOURS_SENTENCE}. Drop-in and guest pricing is the same at any
             hour; peak and off-peak apply to member play only.
           </p>
         </Reveal>

@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { format, isToday, parseISO } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { ChevronDown } from "lucide-react";
 import type { PadelEvent } from "@/types/events";
 import EventCard from "./EventCard";
+import { clubToday } from "@/lib/clubTime";
 
-function DayGroup({ dayKey, events }: { dayKey: string; events: PadelEvent[] }) {
+function DayGroup({ dayKey, events, isToday }: { dayKey: string; events: PadelEvent[]; isToday: boolean }) {
   const date = parseISO(dayKey);
   return (
     <div>
@@ -15,7 +16,7 @@ function DayGroup({ dayKey, events }: { dayKey: string; events: PadelEvent[] }) 
         <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
           {format(date, "MMMM")}
         </span>
-        {isToday(date) && (
+        {isToday && (
           <span className="bg-primary px-2 py-0.5 font-display text-[10px] uppercase tracking-wider text-primary-foreground">
             Today
           </span>
@@ -47,7 +48,8 @@ export default function AgendaList({
 
   const days = [...eventsByDate.keys()].sort();
   // The whole of today counts as upcoming, so a day already half over still leads.
-  const todayKey = format(new Date(), "yyyy-MM-dd");
+  // Portland's today: the days are the club's days, wherever the visitor is.
+  const todayKey = clubToday();
   const past = days.filter((d) => d < todayKey);
   const upcoming = days.filter((d) => d >= todayKey);
   const pastOpen = showPast || upcoming.length === 0;
@@ -78,11 +80,11 @@ export default function AgendaList({
 
       {pastOpen &&
         past.map((key) => (
-          <DayGroup key={key} dayKey={key} events={eventsByDate.get(key) ?? []} />
+          <DayGroup key={key} dayKey={key} isToday={key === todayKey} events={eventsByDate.get(key) ?? []} />
         ))}
 
       {upcoming.map((key) => (
-        <DayGroup key={key} dayKey={key} events={eventsByDate.get(key) ?? []} />
+        <DayGroup key={key} dayKey={key} isToday={key === todayKey} events={eventsByDate.get(key) ?? []} />
       ))}
     </div>
   );

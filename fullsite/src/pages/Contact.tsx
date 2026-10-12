@@ -4,7 +4,7 @@ import StayInTouchForm from "@/components/StayInTouchForm";
 import WhatsAppJoinLink from "@/components/WhatsAppJoinLink";
 import WhatsAppIcon from "@/components/WhatsAppIcon";
 import Photo from "@/components/Photo";
-import { HOURS_LINE } from "@/constants/hours";
+import { HOURS_LINE, HOURS_META } from "@/constants/hours";
 import Seo from "@/components/Seo";
 import PageHeader from "@/components/PageHeader";
 import Reveal from "@/components/motion/Reveal";
@@ -20,7 +20,7 @@ const Contact = () => {
     <main className="bg-background min-h-screen pt-24">
       <Seo
         title="Contact & Location — 8613 N Crawford St | Foundry Padel Portland"
-        description="Find Foundry Padel at 8613 N Crawford St, Portland, OR 97203 — in St. Johns near Cathedral Park. Open daily 6am–midnight. Parking on site, plus map, directions and how to find the entrance."
+        description={`Find Foundry Padel at 8613 N Crawford St, Portland, OR 97203 — in St. Johns near Cathedral Park. Open daily ${HOURS_META}. Parking on site, plus map, directions and how to find the entrance.`}
         path="/contact"
       />
       <section className="py-20 px-6">

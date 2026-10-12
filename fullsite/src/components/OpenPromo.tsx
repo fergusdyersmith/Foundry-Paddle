@@ -15,16 +15,7 @@ import {
   PREVIEW_SESSION_CAPACITY,
 } from "@/constants/previewEvening";
 import { JUNIOR_COACH, JUNIOR_FREE_LINE, JUNIOR_SESSION_TIMES, announcedDays } from "@/constants/juniorClinic";
-
-/**
- * The homepage's "coming up": the dated things the club is selling right now, soonest
- * first, each card gone the day after its own deadline. Reads the same constants as
- * /preview and /open, so prices and dates cannot drift, and works out in the browser
- * which day it is: a prerendered "N days left" would freeze the day the deploy ran.
- */
-function todayInPortland(): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(new Date());
-}
+import { clubToday } from "@/lib/clubTime";
 
 // Before the browser knows the day, decide by the build's day (vite.config.ts), as the
 // junior clinic card already does. Treating "unknown" as "still on" kept the 10 October
@@ -41,9 +32,15 @@ type Card = {
   cta: string;
 };
 
+/**
+ * The homepage's "coming up": the dated things the club is selling right now, soonest
+ * first, each card gone the day after its own deadline. Reads the same constants as
+ * /preview and /open, so prices and dates cannot drift, and works out in the browser
+ * which day it is: a prerendered "N days left" would freeze the day the deploy ran.
+ */
 const OpenPromo = () => {
   const [today, setToday] = useState<string | null>(null);
-  useEffect(() => setToday(todayInPortland()), []);
+  useEffect(() => setToday(clubToday()), []);
 
   const cards: Card[] = [];
   const day = today ?? BUILD_DAY;

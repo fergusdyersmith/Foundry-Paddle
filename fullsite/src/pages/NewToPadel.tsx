@@ -1,4 +1,5 @@
 import { formatUsd, ratesOn } from "@shared/rates";
+import { clubToday } from "@/lib/clubTime";
 import { Link } from "react-router-dom";
 import { ArrowRight, Footprints, CalendarCheck, Handshake, Timer } from "lucide-react";
 import { BOOK_PAGE_PATH } from "@/constants/booking";
@@ -30,8 +31,9 @@ const pickleballPoints = [
   },
 ];
 
-// Same dated source as /book, so this cannot quote August's price in September.
-const rates = ratesOn(new Date().toISOString().slice(0, 10));
+// Same dated source as /book, so this cannot quote August's price in September. Portland's
+// date, not UTC's, which turns over at 5pm.
+const rates = ratesOn(clubToday());
 
 const firstVisitSteps = [
   {
