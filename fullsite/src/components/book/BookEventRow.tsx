@@ -9,6 +9,7 @@ import {
   memberPrice,
 } from "@/lib/events";
 import type { PadelEvent } from "@/types/events";
+import CourtSlots from "@/components/motion/CourtSlots";
 
 /** Compact one-line event row for the Book page's clinic and open-match
  *  lists. The whole row is a link to the event's Playtomic deep link. Open
@@ -54,6 +55,10 @@ export default function BookEventRow({ event }: { event: PadelEvent }) {
           )}
         </p>
       </div>
+      {/* The four places on court, taken ones in clay. Decorative (aria-hidden): the
+          count beside it already says the same in words. From sm up only, so on a
+          phone the title keeps the room. */}
+      {isMatch && <CourtSlots filled={event.signed_up} className="hidden sm:block" />}
       {isMatch ? (
         spotsLeft === 1 ? (
           <span className="shrink-0 rounded bg-primary px-2 py-0.5 font-display text-[10px] tracking-wider text-primary-foreground">

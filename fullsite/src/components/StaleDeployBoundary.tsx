@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useRouteError } from "react-router-dom";
+import { RELOAD_FLAG } from "@/lib/staleDeploy";
 
 /**
  * Recovers a tab that was open across a deploy.
@@ -24,8 +25,6 @@ import { useRouteError } from "react-router-dom";
  * the error is something else and we must show it rather than spin the tab
  * forever — an infinite reload loop is a far worse failure than a visible error.
  */
-const RELOAD_FLAG = "fp:stale-deploy-reload";
-
 function isStaleDeploy(error: unknown): boolean {
   const msg = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
   return (

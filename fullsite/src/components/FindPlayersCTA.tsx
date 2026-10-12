@@ -1,6 +1,6 @@
-import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ArrowRight, MessageCircle } from "lucide-react";
+import Reveal from "@/components/motion/Reveal";
 
 /** Homepage: the answer to the question BOOK A COURT leaves hanging.
  *
@@ -28,13 +28,7 @@ const FindPlayersCTA = ({
   body = "You do not need to bring three friends. Tell us your level and the times you play, and we will message you open matches that fit. Or see which times fill fastest before you post one of your own.",
 }: Props = {}) => (
   <section className="px-6 pb-20">
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.6 }}
-      className="mx-auto max-w-4xl border border-border bg-card p-8 sm:p-12"
-    >
+    <Reveal className="mx-auto max-w-4xl border border-border bg-card p-8 sm:p-12">
       <div className="flex flex-col items-center gap-8 text-center md:flex-row md:items-center md:gap-12 md:text-left">
         <div className="flex-1">
           <span className="font-body text-xs uppercase tracking-[0.2em] text-primary">
@@ -61,13 +55,13 @@ const FindPlayersCTA = ({
           </a>
           <Link
             to="/find-players"
-            className="inline-flex items-center gap-2 font-body text-xs uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-primary"
+            className="group inline-flex items-center gap-2 font-body text-xs uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-primary"
           >
-            See the best times to post <ArrowRight className="h-3.5 w-3.5" />
+            See the best times to post <ArrowRight aria-hidden="true" className="nudge h-3.5 w-3.5" />
           </Link>
         </div>
       </div>
-    </motion.div>
+    </Reveal>
   </section>
 );
 

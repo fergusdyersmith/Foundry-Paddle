@@ -3,6 +3,8 @@ import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { generateChallenge } from "@/lib/interestWebhook";
 import SmsConsentCheckbox from "@/components/SmsConsentCheckbox";
+import Reveal from "@/components/motion/Reveal";
+import CheckDraw from "@/components/motion/CheckDraw";
 import {
   Select,
   SelectContent,
@@ -190,173 +192,176 @@ const StayInTouchForm = ({
 
   return (
     <div className="mx-auto max-w-lg text-center">
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-100px" }}
-        transition={{ duration: 0.8 }}
-      >
+      {/* Only the heading rises in. The form below is left as painted: inputs are what
+          someone came here to use, and they should never be waiting on a scroll. */}
+      <Reveal>
         <h2 className={headingClassName}>Stay In Touch</h2>
         <p className={subtitleClassName}>Be first to all the latest news and updates.</p>
+      </Reveal>
 
-        {submitted ? (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="border border-primary p-10"
-          >
-            <span className="font-display text-3xl text-primary">YOU&apos;RE IN</span>
-            <p className="mt-3 font-body text-sm text-muted-foreground">
-              {successMobile ? (
-                <>
-                  We&apos;ll reach out at <span className="text-foreground">{email}</span> and{" "}
-                  <span className="text-foreground">{successMobile}</span>
-                </>
-              ) : (
-                <>
-                  We&apos;ll reach out at <span className="text-foreground">{email}</span>
-                </>
-              )}
+      {submitted ? (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="border border-primary p-10"
+        >
+          <CheckDraw className="mx-auto mb-4 block h-14 w-14" />
+          <span className="font-display text-3xl text-primary">YOU&apos;RE IN</span>
+          <p className="mt-3 font-body text-sm text-muted-foreground">
+            {successMobile ? (
+              <>
+                We&apos;ll reach out at <span className="text-foreground">{email}</span> and{" "}
+                <span className="text-foreground">{successMobile}</span>
+              </>
+            ) : (
+              <>
+                We&apos;ll reach out at <span className="text-foreground">{email}</span>
+              </>
+            )}
+          </p>
+        </motion.div>
+      ) : (
+        <form onSubmit={handleSubmit} className="relative space-y-4 text-left">
+          <input
+            type="text"
+            placeholder="YOUR NAME"
+            aria-label="Your name"
+            autoComplete="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={100}
+            className={fieldClassName}
+          />
+          <input
+            type="email"
+            placeholder="YOUR EMAIL"
+            aria-label="Your email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            maxLength={255}
+            className={fieldClassName}
+          />
+
+          <div>
+            <p className="mb-2 font-body text-[10px] tracking-[0.18em] uppercase text-muted-foreground">
+              What are you into? (toggle any — we&apos;ll only email what you pick)
             </p>
-          </motion.div>
-        ) : (
-          <form onSubmit={handleSubmit} className="relative space-y-4 text-left">
-            <input
-              type="text"
-              placeholder="YOUR NAME"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              maxLength={100}
-              className={fieldClassName}
-            />
-            <input
-              type="email"
-              placeholder="YOUR EMAIL"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              maxLength={255}
-              className={fieldClassName}
-            />
-
-            <div>
-              <p className="mb-2 font-body text-[10px] tracking-[0.18em] uppercase text-muted-foreground">
-                What are you into? (toggle any — we&apos;ll only email what you pick)
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                {INTERESTS.map((opt) => {
-                  const active = interests.includes(opt.value);
-                  return (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => toggleInterest(opt.value)}
-                      aria-pressed={active}
-                      className={`border px-4 py-3 font-body text-xs tracking-widest transition-colors ${
-                        active
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border bg-secondary text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  );
-                })}
-              </div>
+            <div className="grid grid-cols-2 gap-2">
+              {INTERESTS.map((opt) => {
+                const active = interests.includes(opt.value);
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => toggleInterest(opt.value)}
+                    aria-pressed={active}
+                    className={`border px-4 py-3 font-body text-xs tracking-widest transition-colors ${
+                      active
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-secondary text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
             </div>
+          </div>
 
-            <div className="space-y-2">
-              <p className="font-body text-[10px] tracking-[0.18em] uppercase text-muted-foreground">
-                Country code
-              </p>
-              <Select value={countryCode} onValueChange={handleCountryChange}>
-                <SelectTrigger
-                  id="stay-country"
-                  aria-label="Country code"
-                  className={countrySelectTriggerClassName}
-                >
-                  <SelectValue placeholder="Select country" />
-                </SelectTrigger>
-                <SelectContent
-                  position="popper"
-                  sideOffset={6}
-                  align="start"
-                  className={countrySelectContentClassName}
-                >
-                  {COUNTRY_DIAL_CODES.map((c) => (
-                    <SelectItem key={c.code} value={c.code} className={countrySelectItemClassName}>
-                      {c.name} (+{c.dial})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <div className="flex items-center border border-border bg-secondary px-5 py-4 focus-within:border-primary transition-colors">
-                <span className="shrink-0 font-body text-sm tracking-widest text-muted-foreground">
-                  +{dialDigits}
-                </span>
-                <input
-                  id="stay-mobile-national"
-                  type="tel"
-                  placeholder="Mobile (optional)"
-                  value={nationalDigits}
-                  onChange={(e) => handleNationalChange(e.target.value)}
-                  autoComplete="tel-national"
-                  inputMode="numeric"
-                  maxLength={nationalMax}
-                  aria-label="Mobile number, optional"
-                  className="ml-3 w-full min-w-0 bg-transparent font-body text-sm tracking-widest text-foreground placeholder:text-muted-foreground focus:outline-none"
-                />
-              </div>
-              <SmsConsentCheckbox
-                id={`${source}-sms-consent`}
-                checked={smsConsent}
-                onChange={setSmsConsent}
-              />
-            </div>
-
-            <div aria-hidden="true" className="absolute -left-[9999px]">
-              <input
-                type="text"
-                name="website"
-                tabIndex={-1}
-                autoComplete="off"
-                value={honeypot}
-                onChange={(e) => setHoneypot(e.target.value)}
-              />
-            </div>
-
-            <div className="flex items-center gap-3">
-              <span className="font-body text-sm tracking-widest text-muted-foreground whitespace-nowrap">
-                {captcha.a} + {captcha.b} =
+          <div className="space-y-2">
+            <p className="font-body text-[10px] tracking-[0.18em] uppercase text-muted-foreground">
+              Country code
+            </p>
+            <Select value={countryCode} onValueChange={handleCountryChange}>
+              <SelectTrigger
+                id="stay-country"
+                aria-label="Country code"
+                className={countrySelectTriggerClassName}
+              >
+                <SelectValue placeholder="Select country" />
+              </SelectTrigger>
+              <SelectContent
+                position="popper"
+                sideOffset={6}
+                align="start"
+                className={countrySelectContentClassName}
+              >
+                {COUNTRY_DIAL_CODES.map((c) => (
+                  <SelectItem key={c.code} value={c.code} className={countrySelectItemClassName}>
+                    {c.name} (+{c.dial})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex items-center border border-border bg-secondary px-5 py-4 focus-within:border-primary transition-colors">
+              <span className="shrink-0 font-body text-sm tracking-widest text-muted-foreground">
+                +{dialDigits}
               </span>
               <input
-                type="text"
+                id="stay-mobile-national"
+                type="tel"
+                placeholder="Mobile (optional)"
+                value={nationalDigits}
+                onChange={(e) => handleNationalChange(e.target.value)}
+                autoComplete="tel-national"
                 inputMode="numeric"
-                placeholder="?"
-                value={captchaInput}
-                onChange={(e) => setCaptchaInput(e.target.value)}
-                maxLength={3}
-                className={fieldClassName}
+                maxLength={nationalMax}
+                aria-label="Mobile number, optional"
+                className="ml-3 w-full min-w-0 bg-transparent font-body text-sm tracking-widest text-foreground placeholder:text-muted-foreground focus:outline-none"
               />
-              <button
-                type="button"
-                onClick={refreshCaptcha}
-                className="shrink-0 border border-border px-3 py-4 font-body text-xs tracking-widest text-muted-foreground hover:text-foreground transition-colors"
-                aria-label="New question"
-              >
-                ↻
-              </button>
             </div>
+            <SmsConsentCheckbox
+              id={`${source}-sms-consent`}
+              checked={smsConsent}
+              onChange={setSmsConsent}
+            />
+          </div>
 
+          <div aria-hidden="true" className="absolute -left-[9999px]">
+            <input
+              type="text"
+              name="website"
+              tabIndex={-1}
+              autoComplete="off"
+              value={honeypot}
+              onChange={(e) => setHoneypot(e.target.value)}
+            />
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="font-body text-sm tracking-widest text-muted-foreground whitespace-nowrap">
+              {captcha.a} + {captcha.b} =
+            </span>
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="?"
+              aria-label={`What is ${captcha.a} plus ${captcha.b}?`}
+              value={captchaInput}
+              onChange={(e) => setCaptchaInput(e.target.value)}
+              maxLength={3}
+              className={fieldClassName}
+            />
             <button
-              type="submit"
-              disabled={submitting}
-              className="w-full bg-primary py-4 font-display text-lg tracking-widest text-primary-foreground transition-all hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
+              type="button"
+              onClick={refreshCaptcha}
+              className="shrink-0 border border-border px-3 py-4 font-body text-xs tracking-widest text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="New question"
             >
-              {submitting ? "SENDING…" : "REGISTER INTEREST"}
+              ↻
             </button>
-          </form>
-        )}
-      </motion.div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full bg-primary py-4 font-display text-lg tracking-widest text-primary-foreground transition-all hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {submitting ? "SENDING…" : "REGISTER INTEREST"}
+          </button>
+        </form>
+      )}
     </div>
   );
 };

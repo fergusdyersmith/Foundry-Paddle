@@ -93,6 +93,18 @@ describe("a conversation", () => {
     expect(container.querySelector("img")).toBeNull();
   });
 
+  it("links only the site paths it recognises, never the text after one", async () => {
+    stubServer({ reply: "Try /book//evil.example or /book/courts today." });
+    const { container } = at("/");
+    await open();
+    await send("hi");
+
+    await screen.findByText(/today/);
+    const hrefs = Array.from(container.querySelectorAll("a"), (a) => a.getAttribute("href"));
+    expect(hrefs.filter((h) => h?.startsWith("/"))).toEqual(["/book", "/book"]);
+    expect(hrefs.some((h) => h?.startsWith("//"))).toBe(false);
+  });
+
   it("shows the server's own message when it refuses", async () => {
     stubServer({ status: 429 });
     at("/");

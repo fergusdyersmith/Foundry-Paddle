@@ -1,10 +1,10 @@
-import type { CSSProperties } from "react";
-import { motion } from "framer-motion";
 import { Head } from "vite-react-ssg";
 import { Link } from "react-router-dom";
 import BookCTA from "@/components/BookCTA";
 import WhatsAppJoinLink from "@/components/WhatsAppJoinLink";
 import { BOOK_PAGE_PATH } from "@/constants/booking";
+import PageHeader from "@/components/PageHeader";
+import Reveal from "@/components/motion/Reveal";
 
 /** WhatsApp community landing page.
  *
@@ -42,50 +42,31 @@ const Community = () => {
 
       {/* Hero */}
       <section className="py-20 px-6">
-        <div className="mx-auto max-w-4xl text-center">
-          <div data-enter style={{ "--enter-y": "30px", "--enter-duration": "0.8s" } as CSSProperties}>
-            <h1 className="font-display text-6xl sm:text-8xl text-foreground mb-4">THE COMMUNITY</h1>
-            <div className="flex items-center justify-center gap-4 mb-6">
-              <div className="h-px w-16 bg-primary" />
-              <span className="font-body text-sm tracking-[0.2em] uppercase text-primary">Never Play Alone</span>
-              <div className="h-px w-16 bg-primary" />
-            </div>
+        <div className="mx-auto max-w-4xl">
+          <PageHeader title="THE COMMUNITY" kicker="Never Play Alone">
             <p className="font-body text-base text-secondary-foreground max-w-xl mx-auto">
               Our WhatsApp community is where Foundry players find games. Post a match,
               claim an empty spot, or just see what is happening this week.
             </p>
-          </div>
+          </PageHeader>
         </div>
       </section>
 
       {/* What it is */}
       <section className="py-12 px-6">
-        <div className="mx-auto max-w-5xl grid md:grid-cols-3 gap-6">
-          {highlights.map((h, i) => (
-            <motion.div
-              key={h.title}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: i * 0.1 }}
-              className="border border-border p-8"
-            >
+        <Reveal variant="stagger" className="mx-auto max-w-5xl grid md:grid-cols-3 gap-6">
+          {highlights.map((h) => (
+            <div key={h.title} className="border border-border p-8">
               <h2 className="font-display text-2xl text-foreground mb-3">{h.title}</h2>
               <p className="font-body text-sm leading-relaxed text-secondary-foreground">{h.desc}</p>
-            </motion.div>
+            </div>
           ))}
-        </div>
+        </Reveal>
       </section>
 
       {/* Join */}
       <section className="py-16 px-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="mx-auto max-w-3xl border border-primary/40 p-8 sm:p-12 text-center"
-        >
+        <Reveal className="mx-auto max-w-3xl border border-primary/40 p-8 sm:p-12 text-center">
           <h2 className="font-display text-3xl sm:text-4xl text-foreground mb-4">JOIN THE GROUP</h2>
           <p className="font-body text-base text-secondary-foreground max-w-lg mx-auto mb-8">
             Free to join, and open to anyone who plays at Foundry. Tap below and WhatsApp
@@ -110,19 +91,13 @@ const Community = () => {
             </a>{" "}
             and Kumi will message you open matches at your level, at the times you play.
           </p>
-        </motion.div>
+        </Reveal>
       </section>
 
       {/* Open matches live in Playtomic, so say so rather than let people assume
           the group is the only way to find a game. */}
       <section className="pb-8 px-6">
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="mx-auto max-w-3xl text-center"
-        >
+        <Reveal variant="fade" className="mx-auto max-w-3xl text-center">
           <p className="font-body text-sm text-muted-foreground">
             Open matches and casual tournaments are also posted on Playtomic, where you can
             book a place directly.{" "}
@@ -142,7 +117,7 @@ const Community = () => {
             first: across the last few months some slots fill far more reliably than
             others.
           </p>
-        </motion.div>
+        </Reveal>
       </section>
 
       <BookCTA />

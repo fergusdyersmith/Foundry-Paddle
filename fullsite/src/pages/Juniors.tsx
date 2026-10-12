@@ -1,12 +1,13 @@
-import type { CSSProperties, FormEvent } from "react";
+import type { FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
 import { Head } from "vite-react-ssg";
 import { Check, MapPin, Phone } from "lucide-react";
 import { Link } from "react-router-dom";
 import Photo from "@/components/Photo";
 import Seo from "@/components/Seo";
 import SmsConsentCheckbox from "@/components/SmsConsentCheckbox";
+import CheckDraw from "@/components/motion/CheckDraw";
+import Reveal from "@/components/motion/Reveal";
 import { GALLERY_IMAGE_DIR } from "@/data/gallery";
 import { GOOGLE_MAPS_URL } from "@/constants/location";
 import {
@@ -197,7 +198,7 @@ const Juniors = () => {
           <div className="hero-gradient absolute inset-0" />
         </div>
         <div className="relative z-10 mx-auto max-w-3xl px-6 pt-24 text-center">
-          <div data-enter style={{ "--enter-y": "30px", "--enter-duration": "0.8s" } as CSSProperties}>
+          <div data-enter>
             <span className="font-body text-sm tracking-[0.2em] uppercase text-primary">Junior padel clinic</span>
             <h1 className="mt-4 font-display text-5xl sm:text-7xl leading-none text-foreground">
               SCHOOL'S OUT. COURTS ARE OPEN.
@@ -269,14 +270,10 @@ const Juniors = () => {
               </a>
             </div>
           ) : (
-            <div className="mt-12 space-y-6">
+            <Reveal variant="stagger" className="mt-12 space-y-6">
               {days.map(({ day, sessions }, i) => (
-                <motion.div
+                <div
                   key={day.date}
-                  initial={{ opacity: 0, y: 24 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-60px" }}
-                  transition={{ duration: 0.6, delay: i * 0.06 }}
                   className="grid gap-6 border border-border bg-secondary p-8 md:grid-cols-[1.2fr_1fr_1fr] md:items-center"
                 >
                   <div>
@@ -329,9 +326,9 @@ const Juniors = () => {
                       </div>
                     );
                   })}
-                </motion.div>
+                </div>
               ))}
-            </div>
+            </Reveal>
           )}
 
           <p className="mx-auto mt-10 max-w-2xl text-center font-body text-sm leading-relaxed text-muted-foreground">
@@ -358,13 +355,7 @@ const Juniors = () => {
       <section className="px-6 pb-8">
         <div className="mx-auto max-w-5xl">
           <div className="section-divider mb-16" />
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.8 }}
-            className="grid gap-12 md:grid-cols-2 md:items-start"
-          >
+          <Reveal className="grid gap-12 md:grid-cols-2 md:items-start">
             <div>
               <h2 className={sectionHeading}>WHO IT'S FOR</h2>
               <div className="mt-8 space-y-6">
@@ -410,7 +401,7 @@ const Juniors = () => {
                 />
               </div>
             </div>
-          </motion.div>
+          </Reveal>
         </div>
       </section>
 
@@ -539,6 +530,7 @@ function SignupForm({ days, full, closedLabel }: { days: JuniorDay[]; full: bool
 
         {done ? (
           <div className="mt-12 border border-primary bg-secondary p-10 text-center">
+            <CheckDraw className="mx-auto mb-6 h-14 w-14 text-foreground" />
             <p className="font-display text-3xl text-foreground">
               {done.count === 1 ? "THEY'RE IN" : "THEY'RE ALL IN"}
             </p>
@@ -583,11 +575,11 @@ function SignupForm({ days, full, closedLabel }: { days: JuniorDay[]; full: bool
                 <div key={i} className="grid gap-3 sm:grid-cols-[1fr_8rem_auto] sm:items-end">
                   <div>
                     {i === 0 && <label className="mb-2 block font-body text-xs text-muted-foreground" htmlFor={`s-child-${i}`}>Child's name</label>}
-                    <input id={`s-child-${i}`} className={field} value={c.name} onChange={setChild(i, "name")} placeholder="First and last name" />
+                    <input id={`s-child-${i}`} aria-label={i === 0 ? undefined : `Child ${i + 1}'s name`} className={field} value={c.name} onChange={setChild(i, "name")} placeholder="First and last name" />
                   </div>
                   <div>
                     {i === 0 && <label className="mb-2 block font-body text-xs text-muted-foreground" htmlFor={`s-age-${i}`}>Age</label>}
-                    <input id={`s-age-${i}`} className={field} inputMode="numeric" value={c.age} onChange={setChild(i, "age")} placeholder="12" />
+                    <input id={`s-age-${i}`} aria-label={i === 0 ? undefined : `Child ${i + 1}'s age`} className={field} inputMode="numeric" value={c.age} onChange={setChild(i, "age")} placeholder="12" />
                   </div>
                   {children.length > 1 ? (
                     <button type="button" onClick={() => setChildren((cs) => cs.filter((_, j) => j !== i))} className="border border-border px-4 py-4 font-body text-xs tracking-widest text-muted-foreground hover:border-primary">
@@ -608,7 +600,7 @@ function SignupForm({ days, full, closedLabel }: { days: JuniorDay[]; full: bool
             <div><label className={fieldLabel} htmlFor="s-notes">Anything we should know</label><textarea id="s-notes" className={`${field} min-h-[5rem]`} value={form.notes} onChange={set("notes")} placeholder="Racket experience, anything a coach should know" /></div>
             <div className="hidden" aria-hidden="true"><input tabIndex={-1} autoComplete="off" value={form.website} onChange={set("website")} /></div>
 
-            {error && <p className="font-body text-sm text-primary">{error}</p>}
+            {error && <p role="alert" className="font-body text-sm text-primary">{error}</p>}
             <button type="submit" disabled={submitting} className="w-full bg-primary px-8 py-4 font-display text-lg tracking-widest text-primary-foreground transition-all hover:brightness-110 disabled:opacity-60">
               {submitting ? "SAVING" : "HOLD THEIR PLACE"}
             </button>
@@ -681,6 +673,7 @@ function NextDatesSignup({ nextLabel }: { nextLabel: string | null }) {
 
         {done ? (
           <div className="mt-12 border border-primary bg-secondary p-10 text-center">
+            <CheckDraw className="mx-auto mb-6 h-14 w-14 text-foreground" />
             <p className="font-display text-3xl text-foreground">YOU'RE ON THE LIST</p>
             <p className="mt-4 font-body text-base text-secondary-foreground">
               We will be in touch as soon as the next dates are set.
@@ -718,7 +711,7 @@ function NextDatesSignup({ nextLabel }: { nextLabel: string | null }) {
             {/* Honeypot: hidden from people, filled by bots. */}
             <div className="hidden" aria-hidden="true"><input tabIndex={-1} autoComplete="off" value={form.website} onChange={set("website")} /></div>
 
-            {error && <p className="font-body text-sm text-primary">{error}</p>}
+            {error && <p role="alert" className="font-body text-sm text-primary">{error}</p>}
             <button type="submit" disabled={submitting} className="w-full bg-primary px-8 py-4 font-display text-lg tracking-widest text-primary-foreground transition-all hover:brightness-110 disabled:opacity-60">
               {submitting ? "SAVING" : "LET ME KNOW"}
             </button>

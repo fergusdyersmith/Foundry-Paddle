@@ -1,9 +1,10 @@
-import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, Minus, Plus } from "lucide-react";
+import { Minus, Plus } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import Seo from "@/components/Seo";
+import BallLoader from "@/components/motion/BallLoader";
 
 /**
  * Gift certificates.
@@ -60,7 +61,7 @@ export default function GiftCards() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const items = data?.items ?? [];
+  const items = useMemo(() => data?.items ?? [], [data]);
   const maxPer = data?.max_per_item ?? 10;
 
   const bump = (sku: string, by: number) =>
@@ -121,34 +122,22 @@ export default function GiftCards() {
 
       <section className="py-16 px-6">
         <div className="mx-auto max-w-3xl text-center">
-          <div
-            data-enter style={{ "--enter-y": "16px", "--enter-duration": "0.5s" } as CSSProperties}
+          <PageHeader
+            title="GIFT CERTIFICATES"
+            kicker="Give a game"
+            titleClassName="text-[clamp(2.25rem,11vw,3.75rem)] leading-none sm:text-7xl"
           >
-            <h1 className="font-display text-[clamp(2.25rem,11vw,3.75rem)] leading-none sm:text-7xl text-foreground mb-4">
-              GIFT CERTIFICATES
-            </h1>
-            <div className="flex items-center justify-center gap-4 mb-6">
-              <div className="h-px w-16 bg-primary" />
-              <span className="font-body text-sm tracking-[0.2em] uppercase text-primary">
-                Give a game
-              </span>
-              <div className="h-px w-16 bg-primary" />
-            </div>
             <p className="font-body text-base text-secondary-foreground max-w-xl mx-auto">
               Delivered by email within minutes, with a printable certificate you can hand
               over. Redeemed in the Playtomic promo code field at checkout.
             </p>
-          </div>
+          </PageHeader>
         </div>
       </section>
 
       <form onSubmit={submit} className="px-6 pb-24">
         <div className="mx-auto max-w-3xl">
-          {isLoading && (
-            <div className="flex justify-center py-16 text-secondary-foreground">
-              <Loader2 className="h-6 w-6 animate-spin" />
-            </div>
-          )}
+          {isLoading && <BallLoader label="Loading the gift options" className="py-16" />}
 
           {isError && (
             <p className="font-body text-center text-secondary-foreground py-16">
@@ -216,120 +205,126 @@ export default function GiftCards() {
             })}
           </div>
 
-          {chosen.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mt-10 border-t border-border pt-8"
-            >
-              <div className="flex items-baseline justify-between">
-                <span className="font-body text-sm tracking-[0.2em] uppercase text-primary">
-                  Total
-                </span>
-                <span className="font-display text-3xl text-foreground">
-                  {money(subtotal)}
-                </span>
-              </div>
-
-              <div className="mt-8 space-y-5">
-                <label className="block">
-                  <span className="font-body text-sm tracking-[0.12em] uppercase text-primary">
-                    Your email
+          {/* Arrives with the first item and leaves, the same way, when the last one is
+              taken back out. */}
+          <AnimatePresence>
+            {chosen.length > 0 && (
+              <motion.div
+                key="checkout"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 8 }}
+                className="mt-10 border-t border-border pt-8"
+              >
+                <div className="flex items-baseline justify-between">
+                  <span className="font-body text-sm tracking-[0.2em] uppercase text-primary">
+                    Total
                   </span>
-                  <input
-                    type="email"
-                    required
-                    value={buyerEmail}
-                    onChange={(e) => setBuyerEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    className="mt-2 w-full bg-transparent border border-border px-4 py-3 font-body text-foreground placeholder:text-secondary-foreground/50 focus:border-primary focus:outline-none"
-                  />
-                  <span className="mt-2 block font-body text-xs text-secondary-foreground">
-                    The codes and the printable certificate go here. Forward it on, or
-                    print it and hand it over.
+                  <span className="font-display text-3xl text-foreground">
+                    {money(subtotal)}
                   </span>
-                </label>
+                </div>
 
-                <div className="grid gap-5 sm:grid-cols-2">
+                <div className="mt-8 space-y-5">
                   <label className="block">
                     <span className="font-body text-sm tracking-[0.12em] uppercase text-primary">
-                      Your name <span className="normal-case tracking-normal opacity-60">(optional)</span>
+                      Your email
                     </span>
                     <input
-                      type="text"
-                      value={buyerName}
-                      onChange={(e) => setBuyerName(e.target.value)}
-                      className="mt-2 w-full bg-transparent border border-border px-4 py-3 font-body text-foreground focus:border-primary focus:outline-none"
-                    />
-                  </label>
-                  <label className="block">
-                    <span className="font-body text-sm tracking-[0.12em] uppercase text-primary">
-                      Who is it for <span className="normal-case tracking-normal opacity-60">(optional)</span>
-                    </span>
-                    <input
-                      type="text"
-                      value={recipientName}
-                      onChange={(e) => setRecipientName(e.target.value)}
-                      placeholder="Printed on the certificate"
+                      type="email"
+                      required
+                      value={buyerEmail}
+                      onChange={(e) => setBuyerEmail(e.target.value)}
+                      placeholder="you@example.com"
                       className="mt-2 w-full bg-transparent border border-border px-4 py-3 font-body text-foreground placeholder:text-secondary-foreground/50 focus:border-primary focus:outline-none"
+                    />
+                    <span className="mt-2 block font-body text-xs text-secondary-foreground">
+                      The codes and the printable certificate go here. Forward it on, or
+                      print it and hand it over.
+                    </span>
+                  </label>
+
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    <label className="block">
+                      <span className="font-body text-sm tracking-[0.12em] uppercase text-primary">
+                        Your name <span className="normal-case tracking-normal opacity-60">(optional)</span>
+                      </span>
+                      <input
+                        type="text"
+                        value={buyerName}
+                        onChange={(e) => setBuyerName(e.target.value)}
+                        className="mt-2 w-full bg-transparent border border-border px-4 py-3 font-body text-foreground focus:border-primary focus:outline-none"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="font-body text-sm tracking-[0.12em] uppercase text-primary">
+                        Who is it for <span className="normal-case tracking-normal opacity-60">(optional)</span>
+                      </span>
+                      <input
+                        type="text"
+                        value={recipientName}
+                        onChange={(e) => setRecipientName(e.target.value)}
+                        placeholder="Printed on the certificate"
+                        className="mt-2 w-full bg-transparent border border-border px-4 py-3 font-body text-foreground placeholder:text-secondary-foreground/50 focus:border-primary focus:outline-none"
+                      />
+                    </label>
+                  </div>
+
+                  <label className="block">
+                    <span className="font-body text-sm tracking-[0.12em] uppercase text-primary">
+                      A short message <span className="normal-case tracking-normal opacity-60">(optional)</span>
+                    </span>
+                    <textarea
+                      rows={2}
+                      maxLength={200}
+                      value={giftMessage}
+                      onChange={(e) => setGiftMessage(e.target.value)}
+                      placeholder="Printed under their name."
+                      className="mt-2 w-full bg-transparent border border-border px-4 py-3 font-body text-foreground placeholder:text-secondary-foreground/50 focus:border-primary focus:outline-none resize-none"
                     />
                   </label>
                 </div>
 
-                <label className="block">
-                  <span className="font-body text-sm tracking-[0.12em] uppercase text-primary">
-                    A short message <span className="normal-case tracking-normal opacity-60">(optional)</span>
-                  </span>
-                  <textarea
-                    rows={2}
-                    maxLength={200}
-                    value={giftMessage}
-                    onChange={(e) => setGiftMessage(e.target.value)}
-                    placeholder="Printed under their name."
-                    className="mt-2 w-full bg-transparent border border-border px-4 py-3 font-body text-foreground placeholder:text-secondary-foreground/50 focus:border-primary focus:outline-none resize-none"
-                  />
-                </label>
-              </div>
+                {/* The terms, stated before payment rather than only in the receipt. The
+                    tick is stored against the order with the time on it. */}
+                <div className="mt-8 border border-border p-5">
+                  <p className="font-body text-xs leading-relaxed text-secondary-foreground">
+                    Each gift is a fixed dollar credit, applied in the Playtomic promo code
+                    field at checkout. No change or refund is given if the booking costs less
+                    than the credit. Rates may change; if the price has risen when it is
+                    redeemed, the difference goes on the card. One use per code.
+                    Non-refundable. Transferable. Valid {data?.valid_months ?? 12} months.
+                  </p>
+                  <label className="mt-4 flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={termsAck}
+                      onChange={(e) => setTermsAck(e.target.checked)}
+                      className="mt-1 h-4 w-4 shrink-0 accent-[hsl(var(--primary))]"
+                    />
+                    <span className="font-body text-sm text-foreground">
+                      I understand these credits give no change.
+                    </span>
+                  </label>
+                </div>
 
-              {/* The terms, stated before payment rather than only in the receipt. The
-                  tick is stored against the order with the time on it. */}
-              <div className="mt-8 border border-border p-5">
-                <p className="font-body text-xs leading-relaxed text-secondary-foreground">
-                  Each gift is a fixed dollar credit, applied in the Playtomic promo code
-                  field at checkout. No change or refund is given if the booking costs less
-                  than the credit. Rates may change; if the price has risen when it is
-                  redeemed, the difference goes on the card. One use per code.
-                  Non-refundable. Transferable. Valid {data?.valid_months ?? 12} months.
+                {error && (
+                  <p className="mt-6 font-body text-sm text-destructive">{error}</p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={!canSubmit}
+                  className="mt-8 w-full bg-primary text-primary-foreground font-body text-sm tracking-[0.2em] uppercase py-4 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {busy ? "Taking you to checkout…" : `Pay ${money(subtotal)}`}
+                </button>
+                <p className="mt-3 text-center font-body text-xs text-secondary-foreground">
+                  Payment is handled by Square. Card details never touch this site.
                 </p>
-                <label className="mt-4 flex items-start gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={termsAck}
-                    onChange={(e) => setTermsAck(e.target.checked)}
-                    className="mt-1 h-4 w-4 shrink-0 accent-[hsl(var(--primary))]"
-                  />
-                  <span className="font-body text-sm text-foreground">
-                    I understand these credits give no change.
-                  </span>
-                </label>
-              </div>
-
-              {error && (
-                <p className="mt-6 font-body text-sm text-destructive">{error}</p>
-              )}
-
-              <button
-                type="submit"
-                disabled={!canSubmit}
-                className="mt-8 w-full bg-primary text-primary-foreground font-body text-sm tracking-[0.2em] uppercase py-4 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {busy ? "Taking you to checkout…" : `Pay ${money(subtotal)}`}
-              </button>
-              <p className="mt-3 text-center font-body text-xs text-secondary-foreground">
-                Payment is handled by Square. Card details never touch this site.
-              </p>
-            </motion.div>
-          )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </form>
     </main>

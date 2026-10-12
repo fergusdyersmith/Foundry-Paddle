@@ -99,20 +99,153 @@
   width: 1px;
 }
 
-/* First-paint entrance for page heroes. Pages are prerendered, so a framer-motion
-   `initial`/`animate` pair meant the hero arrived visible in the HTML, vanished when React
-   hydrated, then faded in: a flash on every page load. A CSS animation carries its own
-   starting state in the markup, so the first paint is already hidden and the only thing
-   the visitor sees is the entrance. Timing and distance are set inline per element. */
-[data-enter] {
-  animation: enter var(--enter-duration, 0.8s) ease-out var(--enter-delay, 0s) both;
+/* ─── Motion ────────────────────────────────────────────────────────────────────────
+   One vocabulary for every animation on the site (docs/motion.md has the full guide).
+   Two triggers share these tokens and keyframes:
+
+   data-enter   First paint, for page heroes. Pages are prerendered, so a framer-motion
+                `initial`/`animate` pair meant the hero arrived visible in the HTML,
+                vanished when React hydrated, then faded in: a flash on every page load.
+                A CSS animation carries its own starting state in the markup, so the
+                first paint is already hidden and the only thing the visitor sees is the
+                entrance. Optional --enter-delay (a time), --enter-y, --enter-duration.
+
+   data-reveal  On scroll, for everything below the fold. Nothing here is hidden in the
+                HTML: lib/motion.ts sets html[data-motion] once the app has hydrated, and
+                only then do elements still below the fold wait for [data-shown]. So the
+                prerendered page reads fine with no JavaScript (crawlers, slow phones), and
+                what was already on screen at hydration is never hidden and re-shown.
+                Optional --reveal-delay, counted in stagger steps.
+
+   Both are switched off entirely under prefers-reduced-motion. */
+:root {
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --motion-enter: 0.8s;
+  --motion-reveal: 0.7s;
+  --motion-draw: 1.4s;
+  --motion-step: 80ms;
+  --motion-distance: 24px;
 }
-@keyframes enter {
-  from { opacity: 0; transform: translateY(var(--enter-y, 30px)); }
-  to { opacity: 1; transform: none; }
+
+@keyframes rise { from { opacity: 0; transform: translate3d(0, var(--enter-y, var(--motion-distance)), 0); } }
+@keyframes fade { from { opacity: 0; } }
+@keyframes from-left { from { opacity: 0; transform: translate3d(calc(-1 * var(--motion-distance)), 0, 0); } }
+@keyframes from-right { from { opacity: 0; transform: translate3d(var(--motion-distance), 0, 0); } }
+@keyframes grow-x { from { transform: scaleX(0); } }
+@keyframes draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes pop { from { opacity: 0; transform: scale(0); } }
+
+/* Strokes that draw themselves: an SVG path with pathLength="1" and class "draw". Fully
+   drawn by default, so a still page (no JS, reduced motion) shows the finished line. */
+.draw { stroke-dasharray: 1; }
+.pop { transform-box: fill-box; transform-origin: center; }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* ── First paint ── */
+  [data-enter] {
+    animation: rise var(--enter-duration, var(--motion-enter)) var(--ease-out) var(--enter-delay, 0s) both;
+  }
+  [data-enter="fade"] { animation-name: fade; }
+  /* The 1px rules beside a page title grow outward from the kicker between them. */
+  [data-enter="rule-l"], [data-enter="rule-r"] { animation-name: grow-x; animation-duration: var(--motion-draw); }
+  [data-enter="rule-l"] { transform-origin: right; }
+  [data-enter="rule-r"] { transform-origin: left; }
+  [data-enter="draw"] { animation: none; }
+  [data-enter="draw"] .draw {
+    animation: draw var(--motion-draw) var(--ease-in-out) calc(var(--enter-delay, 0s) + var(--d, 0) * var(--motion-step)) both;
+  }
+  [data-enter="draw"] .pop {
+    animation: pop 0.5s var(--ease-out) calc(var(--enter-delay, 0s) + var(--d, 0) * var(--motion-step)) both;
+  }
+
+  /* ── On scroll ── */
+  html[data-motion] [data-reveal]:not([data-shown]):not([data-reveal="stagger"]):not([data-reveal="draw"]),
+  html[data-motion] .section-divider:not([data-shown]),
+  html[data-motion] [data-reveal="stagger"]:not([data-shown]) > * {
+    opacity: 0;
+  }
+  html[data-motion] [data-reveal][data-shown],
+  html[data-motion] .section-divider[data-shown],
+  html[data-motion] [data-reveal="stagger"][data-shown] > * {
+    /* `backwards`, not `both`: once the entrance ends the element is back on its own
+       styles, so a card's hover transform still works afterwards. */
+    animation: var(--reveal-name, rise) var(--motion-reveal) var(--ease-out)
+      calc((var(--reveal-delay, 0) + var(--i, 0)) * var(--motion-step)) backwards;
+  }
+  [data-reveal="fade"] { --reveal-name: fade; }
+  [data-reveal="left"] { --reveal-name: from-left; }
+  [data-reveal="right"] { --reveal-name: from-right; }
+  /* A bar that fills from its start, e.g. a percentage. */
+  [data-reveal="bar"] { --reveal-name: grow-x; transform-origin: left; }
+  .section-divider, [data-reveal="rule"] { --reveal-name: grow-x; }
+  html[data-motion] .section-divider[data-shown], html[data-motion] [data-reveal="rule"][data-shown] {
+    animation-duration: var(--motion-draw);
+  }
+
+  /* A stagger container doesn't move; its children follow each other in. */
+  html[data-motion] [data-reveal="stagger"][data-shown] { animation: none; }
+  [data-reveal="stagger"] > :nth-child(2) { --i: 1; }
+  [data-reveal="stagger"] > :nth-child(3) { --i: 2; }
+  [data-reveal="stagger"] > :nth-child(4) { --i: 3; }
+  [data-reveal="stagger"] > :nth-child(5) { --i: 4; }
+  [data-reveal="stagger"] > :nth-child(6) { --i: 5; }
+  [data-reveal="stagger"] > :nth-child(7) { --i: 6; }
+  [data-reveal="stagger"] > :nth-child(n + 8) { --i: 7; }
+
+  /* A drawing container doesn't move either; its strokes draw and its dots pop. */
+  html[data-motion] [data-reveal="draw"][data-shown] { animation: none; }
+  html[data-motion] [data-reveal="draw"]:not([data-shown]) .draw { stroke-dashoffset: 1; }
+  html[data-motion] [data-reveal="draw"]:not([data-shown]) .pop { opacity: 0; }
+  html[data-motion] [data-reveal="draw"][data-shown] .draw {
+    animation: draw var(--motion-draw) var(--ease-in-out)
+      calc((var(--reveal-delay, 0) + var(--d, 0)) * var(--motion-step)) both;
+  }
+  html[data-motion] [data-reveal="draw"][data-shown] .pop {
+    animation: pop 0.5s var(--ease-out) calc((var(--reveal-delay, 0) + var(--d, 0)) * var(--motion-step)) both;
+  }
+}
+
+/* BallLoader's rally: 40 units across in 0.9s, up and down twice as often. */
+@keyframes ball-x { to { transform: translateX(40px); } }
+@keyframes ball-y { to { transform: translateY(-19px); } }
+@keyframes ball-shadow { to { transform: scale(0.35); opacity: 0.1; } }
+.ball-loader-shadow { transform-box: fill-box; transform-origin: center; }
+@media (prefers-reduced-motion: no-preference) {
+  .ball-loader-x { animation: ball-x 0.9s linear infinite alternate; }
+  /* ease-out climbing; an alternate iteration runs its timing backwards, so the same
+     curve falls as ease-in. Together: a parabola. */
+  .ball-loader-y { animation: ball-y 0.45s cubic-bezier(0.33, 0.66, 0.66, 1) infinite alternate; }
+  .ball-loader-shadow { animation: ball-shadow 0.45s cubic-bezier(0.33, 0.66, 0.66, 1) infinite alternate; }
 }
 @media (prefers-reduced-motion: reduce) {
-  [data-enter] { animation: none; }
+  .ball-loader-x { transform: translateX(20px); }
+  .ball-loader-y { transform: translateY(-19px); }
+}
+
+/* Header menu button: the outer bars swing to the middle and cross; the middle fades. */
+.menu-toggle path {
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: square;
+  transform-box: view-box;
+  transform-origin: 12px 12px;
+  transition: transform 0.35s var(--ease-out), opacity 0.2s linear;
+}
+.menu-toggle[data-open] .menu-toggle-top { transform: rotate(45deg) translateY(6px); }
+.menu-toggle[data-open] .menu-toggle-mid { opacity: 0; }
+.menu-toggle[data-open] .menu-toggle-bottom { transform: rotate(-45deg) translateY(-6px); }
+@media (prefers-reduced-motion: reduce) {
+  .menu-toggle path { transition: none; }
+}
+
+/* A trailing arrow ("Explore →") leans the way it points when its card is hovered. */
+.nudge {
+  display: inline-block;
+  transition: transform 0.2s var(--ease-out);
+}
+.group:hover .nudge, .group:focus-visible .nudge, a:hover > .nudge {
+  transform: translateX(4px);
 }
 
 .hero-gradient {

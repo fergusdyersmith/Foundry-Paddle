@@ -1,5 +1,6 @@
-import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
+import Reveal from "@/components/motion/Reveal";
+import CountUp from "@/components/motion/CountUp";
 
 /** How many of the 100 founding memberships are gone.
  *
@@ -33,37 +34,38 @@ function useMembershipCount() {
 /** Nothing is rendered until the real count arrives, and nothing is rendered if it never
  *  does: a scarcity bar is only worth showing when it is true, and a hardcoded fallback
  *  is exactly how a number like this goes stale without anyone noticing. The height is
- *  reserved either way so the hero does not jump when it loads. */
+ *  reserved either way so the hero does not jump when it loads.
+ *
+ *  The count arrives after hydration, so the block fades in on mount (data-enter), and
+ *  the fill grows from the left when the bar reaches the viewport (Reveal "bar"); on a
+ *  short phone that is on scroll rather than on load. */
 const FoundingMemberBar = () => {
   const { data } = useMembershipCount();
-  const pct = data ? Math.min(100, Math.round((data.sold / data.cap) * 100)) : 0;
+  // A cap of 0 would divide to NaN, and "NaN%" is an invalid width the browser drops.
+  const pct = data && data.cap > 0 ? Math.min(100, Math.round((data.sold / data.cap) * 100)) : 0;
 
   return (
     <div className="mx-auto mt-5 min-h-[3.5rem] max-w-sm">
       {data && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
+        <div data-enter="fade">
           <div
             className="h-2 w-full border border-border bg-secondary"
             role="progressbar"
+            aria-label="Founding memberships claimed"
             aria-valuemin={0}
             aria-valuemax={data.cap}
             aria-valuenow={data.sold}
             aria-valuetext={`${data.sold} of ${data.cap} founding memberships claimed`}
           >
-            <motion.div
-              className="h-full bg-primary"
-              initial={{ width: 0 }}
-              animate={{ width: `${pct}%` }}
-              transition={{ duration: 1.1, ease: "easeOut" }}
-            />
+            <Reveal variant="bar" className="h-full bg-primary" style={{ width: `${pct}%` }} />
           </div>
           <div className="mt-2 flex items-baseline justify-between font-body text-xs uppercase tracking-[0.15em]">
             <span className="text-foreground">
-              {data.sold} of {data.cap} claimed
+              <CountUp value={data.sold} /> of {data.cap} claimed
             </span>
             <span className="text-muted-foreground">{data.remaining} left</span>
           </div>
-        </motion.div>
+        </div>
       )}
     </div>
   );

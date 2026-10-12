@@ -1,10 +1,10 @@
-import type { CSSProperties } from "react";
-import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import BookCTA from "@/components/BookCTA";
 import FindPlayersCTA from "@/components/FindPlayersCTA";
+import PageHeader from "@/components/PageHeader";
 import Photo from "@/components/Photo";
 import Seo from "@/components/Seo";
+import Reveal from "@/components/motion/Reveal";
 import { PHOTOS } from "@/data/gallery";
 
 const spaces = [
@@ -49,17 +49,11 @@ const TheClub = () => {
       {/* Hero */}
       <section className="py-20 px-6">
         <div className="mx-auto max-w-4xl text-center">
-          <div data-enter style={{ "--enter-y": "30px", "--enter-duration": "0.8s" } as CSSProperties}>
-            <h1 className="font-display text-6xl sm:text-8xl text-foreground mb-4">THE CLUB</h1>
-            <div className="flex items-center justify-center gap-4 mb-6">
-              <div className="h-px w-16 bg-primary" />
-              <span className="font-body text-sm tracking-[0.2em] uppercase text-primary">Portland</span>
-              <div className="h-px w-16 bg-primary" />
-            </div>
+          <PageHeader title="THE CLUB" kicker="Portland">
             <p className="font-body text-base text-secondary-foreground max-w-xl mx-auto">
               More than a venue — a home for the sport. Four courts, a bar, social spaces, and a pro shop, all steps from Cathedral Park in Portland.
             </p>
-          </div>
+          </PageHeader>
         </div>
       </section>
 
@@ -67,28 +61,30 @@ const TheClub = () => {
       <section className="py-16 px-6">
         <div className="mx-auto max-w-5xl">
           <div className="section-divider mb-16" />
-          {spaces.map((space, i) => (
-            <motion.div
-              key={space.title}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
-              className={`grid md:grid-cols-2 gap-12 items-center mb-20 ${i % 2 === 1 ? "md:direction-rtl" : ""}`}
-            >
-              <div className={i % 2 === 1 ? "md:order-2" : ""}>
-                <span className="font-display text-6xl text-primary/20">{String(i + 1).padStart(2, "0")}</span>
-                <h2 className="font-display text-4xl text-foreground mb-4">{space.title}</h2>
-                <p className="font-body text-base leading-relaxed text-secondary-foreground mb-4">{space.desc}</p>
-                <p className="font-body text-xs tracking-[0.15em] uppercase text-primary">{space.detail}</p>
-              </div>
+          {spaces.map((space, i) => {
+            // Odd rows put the photo first at md+ (the order-* classes), so each half
+            // slides in from the side it sits on.
+            const flipped = i % 2 === 1;
+            return (
               <div
-                className={`aspect-[4/3] overflow-hidden bg-secondary border border-border ${i % 2 === 1 ? "md:order-1" : ""}`}
+                key={space.title}
+                className="grid md:grid-cols-2 gap-12 items-center mb-20"
               >
-                <Photo name={space.image} alt={space.imageAlt} className="h-full w-full object-cover" />
+                <Reveal variant={flipped ? "right" : "left"} className={flipped ? "md:order-2" : ""}>
+                  <span className="font-display text-6xl text-primary/20">{String(i + 1).padStart(2, "0")}</span>
+                  <h2 className="font-display text-4xl text-foreground mb-4">{space.title}</h2>
+                  <p className="font-body text-base leading-relaxed text-secondary-foreground mb-4">{space.desc}</p>
+                  <p className="font-body text-xs tracking-[0.15em] uppercase text-primary">{space.detail}</p>
+                </Reveal>
+                <Reveal
+                  variant={flipped ? "left" : "right"}
+                  className={`aspect-[4/3] overflow-hidden bg-secondary border border-border ${flipped ? "md:order-1" : ""}`}
+                >
+                  <Photo name={space.image} alt={space.imageAlt} className="h-full w-full object-cover" />
+                </Reveal>
               </div>
-            </motion.div>
-          ))}
+            );
+          })}
         </div>
       </section>
 
@@ -96,7 +92,7 @@ const TheClub = () => {
       <section className="py-20 px-6">
         <div className="mx-auto max-w-3xl text-center">
           <div className="section-divider mb-16" />
-          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}>
+          <Reveal>
             <h2 className="font-display text-5xl text-foreground mb-8">THE VIBE</h2>
             <p className="font-body text-base leading-relaxed text-secondary-foreground mb-6">
               Industrial warmth meets athletic precision. Exposed concrete, steel framing, and amber light — 
@@ -107,28 +103,22 @@ const TheClub = () => {
               Evening leagues under low light. Weekend tournaments with spectators on the mezzanine. 
               Tuesday morning coaching, post-match beers at the bar. This is padel culture, built from the ground up.
             </p>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8, delay: 0.15 }}
-            className="mt-12 aspect-[3/2] overflow-hidden border border-border bg-secondary"
-          >
+          </Reveal>
+          <Reveal delay={1} className="mt-12 aspect-[3/2] overflow-hidden border border-border bg-secondary">
             <Photo
               name="club-vibe"
               alt="Amber light, exposed steel and concrete over the blue courts at Foundry Padel in St. Johns, Portland"
               className="h-full w-full object-cover"
             />
-          </motion.div>
+          </Reveal>
           {/* The gallery is deliberately not in the top nav (see the nav
               consolidation note in Header.tsx); this is the page that earns the
               click. */}
           <Link
             to="/gallery"
-            className="mt-8 inline-block border border-border px-7 py-3 font-body text-xs tracking-[0.2em] uppercase text-secondary-foreground transition-colors hover:border-primary hover:text-primary"
+            className="group mt-8 inline-block border border-border px-7 py-3 font-body text-xs tracking-[0.2em] uppercase text-secondary-foreground transition-colors hover:border-primary hover:text-primary"
           >
-            See the gallery — {PHOTOS.length} photos →
+            See the gallery — {PHOTOS.length} photos <span aria-hidden="true" className="nudge">→</span>
           </Link>
           <div className="section-divider mt-16" />
         </div>

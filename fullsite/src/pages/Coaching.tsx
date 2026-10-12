@@ -1,12 +1,14 @@
-import type { CSSProperties } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Award, ExternalLink, Globe, Loader2, Mail, Target } from "lucide-react";
+import { Award, ExternalLink, Globe, Mail, Target } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { type CoachProfile, coachMatchesName, TEAM_COACHES } from "@/constants/coaches";
 import { PLAYTOMIC_TENANT_URL } from "@/constants/booking";
 import Seo from "@/components/Seo";
+import PageHeader from "@/components/PageHeader";
+import Reveal from "@/components/motion/Reveal";
+import BallLoader from "@/components/motion/BallLoader";
 
 /** A coach-led class from Kumi's public discovery endpoint (Playtomic data,
  *  proxied through our server). */
@@ -100,29 +102,22 @@ const Coaching = () => {
 
       {/* Header */}
       <section className="px-6 pt-20 pb-12">
-        <div className="mx-auto max-w-4xl text-center">
-          <div data-enter style={{ "--enter-y": "30px", "--enter-duration": "0.8s" } as CSSProperties}>
-            <h1 className="font-display text-6xl sm:text-8xl text-foreground mb-4">COACHING</h1>
-            <div className="mb-6 flex items-center justify-center gap-4">
-              <div className="h-px w-16 bg-primary" />
-              <span className="font-body text-sm tracking-[0.2em] uppercase text-primary">
-                Clinics · Group Lessons · Privates
-              </span>
-              <div className="h-px w-16 bg-primary" />
-            </div>
+        <div className="mx-auto max-w-4xl">
+          <PageHeader title="COACHING" kicker="Clinics · Group Lessons · Privates">
             <p className="font-body text-base text-secondary-foreground">
               RPP-certified coaches for every level, from your first rally to tournament play.
               Tap a coach to see their upcoming sessions and how to book.
             </p>
-          </div>
+          </PageHeader>
         </div>
       </section>
 
-      {/* Team grid — order rotates every page load */}
+      {/* Team grid — order rotates every page load. The stagger runs off DOM position
+          (nth-child), not off a coach, so the shuffle after mount does not disturb it. */}
       <section className="px-6 py-8">
         <div className="mx-auto max-w-4xl">
           <div className="section-divider mb-12" />
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 lg:gap-6">
+          <Reveal variant="stagger" className="grid grid-cols-2 gap-4 lg:grid-cols-3 lg:gap-6">
             {team.map((coach) => (
               <button
                 key={coach.id}
@@ -151,7 +146,7 @@ const Coaching = () => {
                 </div>
               </button>
             ))}
-          </div>
+          </Reveal>
         </div>
       </section>
 
@@ -167,12 +162,16 @@ const Coaching = () => {
             Clinics and group lessons over the next two weeks. Book on Playtomic.
           </p>
           {isLoading ? (
-            <div className="flex justify-center py-10">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            </div>
-          ) : isError || !bookable.length ? (
+            <BallLoader label="Loading sessions" className="py-10" />
+          ) : isError ? (
             <p className="text-center font-body text-sm text-muted-foreground">
               Couldn't load sessions right now. See the full schedule instead.
+            </p>
+          ) : !bookable.length ? (
+            // A quiet fortnight is not an outage, so it should not read like one.
+            <p className="text-center font-body text-sm text-muted-foreground">
+              No sessions open for booking in the next two weeks. See the full schedule for
+              what is coming up.
             </p>
           ) : (
             <div className="flex flex-col gap-2.5">
@@ -248,9 +247,7 @@ const Coaching = () => {
                     UPCOMING SESSIONS
                   </h4>
                   {isLoading ? (
-                    <div className="flex justify-center py-6">
-                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                    </div>
+                    <BallLoader label="Loading sessions" className="py-6" />
                   ) : isError ? (
                     <p className="font-body text-sm text-muted-foreground">
                       Couldn't load sessions. Check the Playtomic app.

@@ -1,10 +1,10 @@
-import type { CSSProperties } from "react";
-import { motion } from "framer-motion";
 import { Head } from "vite-react-ssg";
 import { Link } from "react-router-dom";
 import { ArrowRight, Mail, Phone } from "lucide-react";
 import Photo from "@/components/Photo";
 import Seo from "@/components/Seo";
+import Reveal from "@/components/motion/Reveal";
+import CountUp from "@/components/motion/CountUp";
 import { GALLERY_IMAGE_DIR } from "@/data/gallery";
 import { GOOGLE_MAPS_URL } from "@/constants/location";
 import { HOURS_SENTENCE } from "@/constants/hours";
@@ -27,11 +27,13 @@ const EVENTS_PHONE_DISPLAY = "(971) 378-7499";
 const EVENTS_PHONE_TEL = "+19713787499";
 const MAILTO = `mailto:${EVENTS_EMAIL}?subject=${encodeURIComponent("Event inquiry — Foundry Padel")}`;
 
-const headlineStats = [
-  { stat: "18,600", label: "Square feet" },
-  { stat: "250", label: "Reception capacity" },
-  { stat: "43 ft", label: "Clear ceilings" },
-  { stat: "4", label: "Glass courts" },
+// Numbers, not strings, so each one can count up; CountUp formats them back to exactly
+// "18,600", "250", "43 ft" and "4", which is also what the prerendered HTML carries.
+const headlineStats: { value: number; suffix?: string; label: string }[] = [
+  { value: 18600, label: "Square feet" },
+  { value: 250, label: "Reception capacity" },
+  { value: 43, suffix: " ft", label: "Clear ceilings" },
+  { value: 4, label: "Glass courts" },
 ];
 
 const spaces = [
@@ -155,7 +157,7 @@ const Events = () => {
           <div className="hero-gradient absolute inset-0" />
         </div>
         <div className="relative z-10 mx-auto max-w-3xl px-6 pt-24 text-center">
-          <div data-enter style={{ "--enter-y": "30px", "--enter-duration": "0.8s" } as CSSProperties}>
+          <div data-enter>
             <span className="font-body text-sm tracking-[0.2em] uppercase text-primary">
               Group bookings · Offsites · Buyouts
             </span>
@@ -180,20 +182,17 @@ const Events = () => {
       {/* Headline numbers */}
       <section className="px-6 py-20">
         <div className="mx-auto max-w-4xl">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.8 }}
+          <Reveal
+            variant="stagger"
             className="grid grid-cols-2 gap-10 border border-border p-10 text-center sm:grid-cols-4"
           >
             {headlineStats.map((f) => (
               <div key={f.label}>
-                <span className="font-display text-4xl text-primary">{f.stat}</span>
+                <CountUp value={f.value} suffix={f.suffix} className="font-display text-4xl text-primary" />
                 <p className="mt-2 font-body text-xs tracking-[0.15em] uppercase text-muted-foreground">{f.label}</p>
               </div>
             ))}
-          </motion.div>
+          </Reveal>
         </div>
       </section>
 
@@ -201,13 +200,7 @@ const Events = () => {
       <section className="px-6 pb-8">
         <div className="mx-auto max-w-5xl">
           <div className="section-divider mb-16" />
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.8 }}
-            className="grid gap-12 md:grid-cols-2 md:items-center"
-          >
+          <Reveal className="grid gap-12 md:grid-cols-2 md:items-center">
             <div>
               <h2 className={sectionHeading}>THE VENUE</h2>
               <p className="mt-6 font-body text-base leading-relaxed text-secondary-foreground">
@@ -238,19 +231,14 @@ const Events = () => {
                 className="h-full w-full object-cover"
               />
             </div>
-          </motion.div>
+          </Reveal>
         </div>
       </section>
 
       {/* Space inventory */}
       <section className="px-6 py-16">
         <div className="mx-auto max-w-5xl">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.8 }}
-          >
+          <Reveal>
             <h2 className={sectionHeading}>SPACE INVENTORY</h2>
             <div className="mt-8 overflow-x-auto border border-border">
               <table className="w-full min-w-[34rem] border-collapse">
@@ -281,19 +269,14 @@ const Events = () => {
                 </tbody>
               </table>
             </div>
-          </motion.div>
+          </Reveal>
         </div>
       </section>
 
       {/* Capacity */}
       <section className="px-6 pb-16">
         <div className="mx-auto max-w-5xl">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.8 }}
-          >
+          <Reveal>
             <h2 className={sectionHeading}>CAPACITY BY CONFIGURATION</h2>
             <div className="mt-8 overflow-x-auto border border-border">
               <table className="w-full min-w-[34rem] border-collapse">
@@ -322,13 +305,13 @@ const Events = () => {
               staff, coaching and catering crew. A full buyout reception distributes guests
               across the court floor, the lounge and the mezzanine.
             </p>
-          </motion.div>
+          </Reveal>
         </div>
       </section>
 
       {/* Two things most venues cannot offer */}
       <section className="px-6 pb-16">
-        <div className="mx-auto grid max-w-5xl gap-8 md:grid-cols-2">
+        <Reveal variant="stagger" className="mx-auto grid max-w-5xl gap-8 md:grid-cols-2">
           {[
             {
               title: "43 FOOT CLEAR CEILINGS",
@@ -338,32 +321,20 @@ const Events = () => {
               title: "ROLLING EVENT FORMAT",
               body: "Courts rotate on 10 to 15 minute blocks. Over a four hour event that is roughly 220 player slots across the four courts — enough for 100 guests to play about 30 minutes each, or for every guest at a 200 person event to get court time. Non-playing guests gather in the lounge and on the mezzanine, so the group stays together and nobody waits.",
             },
-          ].map((c, i) => (
-            <motion.div
-              key={c.title}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: i * 0.1 }}
-              className="border-l-2 border-primary bg-secondary/40 p-8"
-            >
+          ].map((c) => (
+            <div key={c.title} className="border-l-2 border-primary bg-secondary/40 p-8">
               <h3 className="font-display text-xl text-foreground">{c.title}</h3>
               <p className="mt-3 font-body text-sm leading-relaxed text-muted-foreground">{c.body}</p>
-            </motion.div>
+            </div>
           ))}
-        </div>
+        </Reveal>
       </section>
 
       {/* Formats */}
       <section className="px-6 py-16">
         <div className="mx-auto max-w-5xl">
           <div className="section-divider mb-16" />
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.8 }}
-          >
+          <Reveal>
             <h2 className={sectionHeading}>WHAT WE HOST</h2>
             <ul className="mt-8 grid gap-x-10 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
               {formats.map((f) => (
@@ -373,19 +344,14 @@ const Events = () => {
                 </li>
               ))}
             </ul>
-          </motion.div>
+          </Reveal>
         </div>
       </section>
 
       {/* Specifications */}
       <section className="px-6 pb-16">
         <div className="mx-auto max-w-5xl">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.8 }}
-          >
+          <Reveal>
             <h2 className={sectionHeading}>FACILITY SPECIFICATIONS</h2>
             <div className="mt-8 grid gap-10 md:grid-cols-2">
               {specs.map((s) => (
@@ -405,7 +371,7 @@ const Events = () => {
                 </div>
               ))}
             </div>
-          </motion.div>
+          </Reveal>
         </div>
       </section>
 
@@ -413,13 +379,7 @@ const Events = () => {
       <section className="px-6 py-16">
         <div className="mx-auto max-w-5xl">
           <div className="section-divider mb-16" />
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.8 }}
-            className="grid gap-12 md:grid-cols-2 md:items-center"
-          >
+          <Reveal className="grid gap-12 md:grid-cols-2 md:items-center">
             <div className="aspect-[3/2] overflow-hidden border border-border bg-secondary md:order-2">
               <Photo
                 name="club-bar"
@@ -439,64 +399,61 @@ const Events = () => {
                 No exclusive vendor list, and no mandatory in-house catering.
               </p>
             </div>
-          </motion.div>
+          </Reveal>
         </div>
       </section>
 
       {/* Inquire */}
       <section className="px-6 pb-28 pt-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="mx-auto max-w-2xl text-center"
-        >
+        <div className="mx-auto max-w-2xl text-center">
           <div className="section-divider mb-12" />
-          <h2 className="font-display text-5xl sm:text-6xl text-foreground mb-4">PLAN YOUR EVENT</h2>
-          <p className="mb-10 font-body text-sm leading-relaxed text-muted-foreground">
-            Individual courts, court blocks and full facility buyouts are all available.
-            Tell us your group size, your date and roughly how long you have, and we will
-            come back with a format and a price.
-          </p>
-          <a
-            href={MAILTO}
-            className="inline-block bg-primary px-12 py-4 font-display text-xl tracking-widest text-primary-foreground transition-all hover:brightness-110"
-          >
-            EMAIL US
-          </a>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
+          {/* The dividers stay outside: a .section-divider reveals itself. */}
+          <Reveal>
+            <h2 className="font-display text-5xl sm:text-6xl text-foreground mb-4">PLAN YOUR EVENT</h2>
+            <p className="mb-10 font-body text-sm leading-relaxed text-muted-foreground">
+              Individual courts, court blocks and full facility buyouts are all available.
+              Tell us your group size, your date and roughly how long you have, and we will
+              come back with a format and a price.
+            </p>
             <a
               href={MAILTO}
-              className="inline-flex items-center gap-2 font-body text-sm text-secondary-foreground transition-colors hover:text-primary"
+              className="inline-block bg-primary px-12 py-4 font-display text-xl tracking-widest text-primary-foreground transition-all hover:brightness-110"
             >
-              <Mail size={16} className="text-primary" />
-              {EVENTS_EMAIL}
+              EMAIL US
             </a>
-            <a
-              href={`tel:${EVENTS_PHONE_TEL}`}
-              className="inline-flex items-center gap-2 font-body text-sm text-secondary-foreground transition-colors hover:text-primary"
-            >
-              <Phone size={16} className="text-primary" />
-              {EVENTS_PHONE_DISPLAY}
-            </a>
-          </div>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
-            <Link
-              to="/gallery"
-              className="inline-flex items-center gap-2 font-display text-xs tracking-[0.2em] text-muted-foreground transition-colors hover:text-primary"
-            >
-              SEE THE SPACE <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-            <Link
-              to="/the-sport"
-              className="inline-flex items-center gap-2 font-display text-xs tracking-[0.2em] text-muted-foreground transition-colors hover:text-primary"
-            >
-              WHAT IS PADEL? <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
+              <a
+                href={MAILTO}
+                className="inline-flex items-center gap-2 font-body text-sm text-secondary-foreground transition-colors hover:text-primary"
+              >
+                <Mail size={16} className="text-primary" />
+                {EVENTS_EMAIL}
+              </a>
+              <a
+                href={`tel:${EVENTS_PHONE_TEL}`}
+                className="inline-flex items-center gap-2 font-body text-sm text-secondary-foreground transition-colors hover:text-primary"
+              >
+                <Phone size={16} className="text-primary" />
+                {EVENTS_PHONE_DISPLAY}
+              </a>
+            </div>
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
+              <Link
+                to="/gallery"
+                className="inline-flex items-center gap-2 font-display text-xs tracking-[0.2em] text-muted-foreground transition-colors hover:text-primary"
+              >
+                SEE THE SPACE <ArrowRight className="nudge h-3.5 w-3.5" />
+              </Link>
+              <Link
+                to="/the-sport"
+                className="inline-flex items-center gap-2 font-display text-xs tracking-[0.2em] text-muted-foreground transition-colors hover:text-primary"
+              >
+                WHAT IS PADEL? <ArrowRight className="nudge h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </Reveal>
           <div className="section-divider mt-12" />
-        </motion.div>
+        </div>
       </section>
     </main>
   );

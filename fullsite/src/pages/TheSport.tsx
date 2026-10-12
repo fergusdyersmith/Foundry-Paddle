@@ -1,5 +1,3 @@
-import type { CSSProperties } from "react";
-import { motion } from "framer-motion";
 import BookCTA from "@/components/BookCTA";
 import FindPlayersCTA from "@/components/FindPlayersCTA";
 import WistiaVideo from "@/components/WistiaVideo";
@@ -7,6 +5,9 @@ import Photo from "@/components/Photo";
 import PhotoCycle, { type CycleFrame } from "@/components/PhotoCycle";
 import { GALLERY_IMAGE_DIR, PHOTOS } from "@/data/gallery";
 import Seo from "@/components/Seo";
+import PageHeader from "@/components/PageHeader";
+import Reveal from "@/components/motion/Reveal";
+import RuleDiagram, { type RuleKind } from "@/components/motion/RuleDiagram";
 
 const comparisons = [
   { sport: "Tennis", padel: "Enclosed glass walls — balls stay in play", other: "Open court — balls go out" },
@@ -94,12 +95,14 @@ const heroFrames: CycleFrame[] = ROTATION.map(({ file }, i) => {
 const rules = [
   {
     title: "DOUBLES ONLY",
+    diagram: "doubles" as RuleKind,
     desc: "Padel is played in doubles on a 10m x 20m enclosed court with glass walls and metallic mesh.",
     photo: "sport-rule-doubles",
     alt: "Two pairs rally across the net on a glass-walled doubles court at Foundry Padel",
   },
   {
     title: "UNDERARM SERVE",
+    diagram: "serve" as RuleKind,
     desc: "The serve must be underarm, hit at or below waist height. Easier to learn, still tactical.",
     photo: "sport-rule-serve",
     alt: "A player drops low for an underarm serve at Foundry Padel",
@@ -108,12 +111,14 @@ const rules = [
   },
   {
     title: "WALLS IN PLAY",
+    diagram: "walls" as RuleKind,
     desc: "Like squash, the ball can bounce off the glass walls. This creates unique angles and rallies.",
     photo: "sport-rule-walls",
     alt: "Players deep in the court by the glass back wall at Foundry Padel",
   },
   {
     title: "SCORING",
+    diagram: "scoring" as RuleKind,
     desc: "Same scoring as tennis — 15, 30, 40, deuce, advantage. Best of 3 sets wins the match.",
     photo: "sport-rule-scoring",
     alt: "A padel ball resting against the net on Foundry Padel's blue court",
@@ -131,39 +136,26 @@ const TheSport = () => {
       {/* Hero */}
       <section className="py-20 px-6">
         <div className="mx-auto max-w-4xl text-center">
-          <div data-enter style={{ "--enter-y": "30px", "--enter-duration": "0.8s" } as CSSProperties}>
-            <h1 className="font-display text-6xl sm:text-8xl text-foreground mb-4">THE SPORT</h1>
-            <div className="flex items-center justify-center gap-4 mb-8">
-              <div className="h-px w-16 bg-primary" />
-              <span className="font-body text-sm tracking-[0.2em] uppercase text-primary">World's Fastest Growing Racquet Sport</span>
-              <div className="h-px w-16 bg-primary" />
-            </div>
-          </div>
+          <PageHeader title="THE SPORT" kicker="World's Fastest Growing Racquet Sport" />
         </div>
       </section>
 
       {/* Real courts, before any of the explaining starts. The frames rotate so
           the page does not open on the same single player every visit. */}
       <section className="px-6">
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="mx-auto max-w-4xl"
-        >
+        <Reveal variant="fade" className="mx-auto max-w-4xl">
           <PhotoCycle
             frames={heroFrames}
             className="aspect-[3/2] overflow-hidden border border-border bg-secondary"
           />
-        </motion.div>
+        </Reveal>
       </section>
 
       {/* What is Padel */}
       <section className="py-16 px-6">
         <div className="mx-auto max-w-4xl">
           <div className="section-divider mb-16" />
-          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="grid md:grid-cols-2 gap-12 items-center">
+          <Reveal className="grid md:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="font-display text-4xl text-foreground mb-6">WHAT IS PADEL?</h2>
               <p className="font-body text-base leading-relaxed text-secondary-foreground mb-4">
@@ -177,43 +169,37 @@ const TheSport = () => {
               </p>
             </div>
             <WistiaVideo />
-          </motion.div>
+          </Reveal>
         </div>
       </section>
 
       {/* How to Play */}
       <section className="py-16 px-6">
         <div className="mx-auto max-w-4xl">
-          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}>
-            <h2 className="font-display text-4xl text-foreground mb-12 text-center">HOW TO PLAY</h2>
-            <div className="grid sm:grid-cols-2 gap-6">
-              {rules.map((rule, i) => (
-                <motion.div
-                  key={rule.title}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: i * 0.1 }}
-                  className="border border-border"
-                >
-                  <div className="aspect-[3/2] overflow-hidden bg-secondary">
-                    <Photo
-                      name={rule.photo}
-                      alt={rule.alt}
-                      width={rule.portrait ? 1067 : 1600}
-                      height={rule.portrait ? 1600 : 1067}
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                  <div className="p-6">
+          <Reveal as="h2" className="font-display text-4xl text-foreground mb-12 text-center">HOW TO PLAY</Reveal>
+          <Reveal variant="stagger" className="grid sm:grid-cols-2 gap-6">
+            {rules.map((rule, i) => (
+              <div key={rule.title} className="border border-border">
+                <div className="aspect-[3/2] overflow-hidden bg-secondary">
+                  <Photo
+                    name={rule.photo}
+                    alt={rule.alt}
+                    width={rule.portrait ? 1067 : 1600}
+                    height={rule.portrait ? 1600 : 1067}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                <div className="p-6">
+                  <div className="flex items-start justify-between gap-4">
                     <span className="font-display text-5xl text-primary/30">{String(i + 1).padStart(2, "0")}</span>
-                    <h3 className="font-display text-xl text-foreground mt-2 mb-2">{rule.title}</h3>
-                    <p className="font-body text-sm text-muted-foreground leading-relaxed">{rule.desc}</p>
+                    <RuleDiagram kind={rule.diagram} className="mt-1 h-12 w-24 shrink-0 text-muted-foreground" />
                   </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
+                  <h3 className="font-display text-xl text-foreground mt-2 mb-2">{rule.title}</h3>
+                  <p className="font-body text-sm text-muted-foreground leading-relaxed">{rule.desc}</p>
+                </div>
+              </div>
+            ))}
+          </Reveal>
         </div>
       </section>
 
@@ -221,23 +207,23 @@ const TheSport = () => {
       <section className="py-16 px-6">
         <div className="mx-auto max-w-4xl">
           <div className="section-divider mb-16" />
-          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}>
+          <Reveal>
             <h2 className="font-display text-4xl text-foreground mb-12 text-center">PADEL VS. THE REST</h2>
-            <div className="border border-border overflow-hidden">
-              <div className="grid grid-cols-3 bg-secondary">
-                <div className="p-4 font-display text-sm tracking-widest text-muted-foreground">VS.</div>
-                <div className="p-4 font-display text-sm tracking-widest text-primary">PADEL</div>
-                <div className="p-4 font-display text-sm tracking-widest text-muted-foreground">OTHER</div>
+            <div role="table" aria-label="Padel compared with tennis, squash and pickleball" className="border border-border overflow-hidden">
+              <div role="row" className="grid grid-cols-3 bg-secondary">
+                <div role="columnheader" className="p-4 font-display text-sm tracking-widest text-muted-foreground">VS.</div>
+                <div role="columnheader" className="p-4 font-display text-sm tracking-widest text-primary">PADEL</div>
+                <div role="columnheader" className="p-4 font-display text-sm tracking-widest text-muted-foreground">OTHER</div>
               </div>
               {comparisons.map((c) => (
-                <div key={c.sport} className="grid grid-cols-3 border-t border-border">
-                  <div className="p-4 font-display text-lg text-foreground">{c.sport}</div>
-                  <div className="p-4 font-body text-sm text-secondary-foreground">{c.padel}</div>
-                  <div className="p-4 font-body text-sm text-muted-foreground">{c.other}</div>
+                <div key={c.sport} role="row" className="grid grid-cols-3 border-t border-border">
+                  <div role="rowheader" className="p-4 font-display text-lg text-foreground">{c.sport}</div>
+                  <div role="cell" className="p-4 font-body text-sm text-secondary-foreground">{c.padel}</div>
+                  <div role="cell" className="p-4 font-body text-sm text-muted-foreground">{c.other}</div>
                 </div>
               ))}
             </div>
-          </motion.div>
+          </Reveal>
         </div>
       </section>
 

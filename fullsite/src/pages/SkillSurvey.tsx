@@ -1,5 +1,4 @@
-import type { CSSProperties } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, ChevronDown, ChevronUp, RotateCcw } from "lucide-react";
 import {
@@ -12,6 +11,7 @@ import {
 } from "@/constants/skillTree";
 import { APP_URL } from "@/constants/app";
 import Seo from "@/components/Seo";
+import PageHeader from "@/components/PageHeader";
 
 /** Same self-assessment tree as the member profile in the Foundry app, minus
  *  the account: ratings live in this browser only (localStorage). Members are
@@ -31,10 +31,22 @@ function loadComfort(): ComfortMap {
 }
 
 const SkillSurvey = () => {
-  const [comfort, setComfort] = useState<ComfortMap>(loadComfort);
+  // Starts empty, as the prerendered page does, and picks up saved ratings after
+  // hydration. Read during the first render, a returning visitor's ratings made the client
+  // disagree with the HTML, and React threw the page away and rendered it again.
+  const [comfort, setComfort] = useState<ComfortMap>({});
+  const firstSave = useRef(true);
   const [open, setOpen] = useState<string | null>(SKILL_TREE[0].id);
 
+  useEffect(() => setComfort(loadComfort()), []);
+
   useEffect(() => {
+    // The first run still holds the empty start (the load above lands on the next
+    // render), and saving it would wipe the visitor's ratings.
+    if (firstSave.current) {
+      firstSave.current = false;
+      return;
+    }
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(comfort));
     } catch {
@@ -72,20 +84,14 @@ const SkillSurvey = () => {
 
       {/* Header */}
       <section className="px-6 pt-20 pb-10">
-        <div className="mx-auto max-w-3xl text-center">
-          <div data-enter style={{ "--enter-y": "30px", "--enter-duration": "0.8s" } as CSSProperties}>
-            <h1 className="font-display text-6xl sm:text-8xl text-foreground mb-4">SKILL SURVEY</h1>
-            <div className="mb-6 flex items-center justify-center gap-4">
-              <div className="h-px w-16 bg-primary" />
-              <span className="font-body text-sm tracking-[0.2em] uppercase text-primary">Find Your Level</span>
-              <div className="h-px w-16 bg-primary" />
-            </div>
+        <div className="mx-auto max-w-3xl">
+          <PageHeader title="SKILL SURVEY" kicker="Find Your Level">
             <p className="font-body text-base text-secondary-foreground">
               Rate how comfortable you are with each padel shot. Rate at least {MIN_RATED} and
               we'll show your Kumi Level and an estimated Playtomic level. It's the same skill
               tree our coaches use, and your answers stay in this browser.
             </p>
-          </div>
+          </PageHeader>
         </div>
       </section>
 

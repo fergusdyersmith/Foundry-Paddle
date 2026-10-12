@@ -1,10 +1,11 @@
-import type { CSSProperties } from "react";
-import { motion } from "framer-motion";
+import type { AccordionSingleProps } from "@radix-ui/react-accordion";
 import { Link } from "react-router-dom";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import BookCTA from "@/components/BookCTA";
 import { HOURS_SENTENCE } from "@/constants/hours";
 import Seo from "@/components/Seo";
+import PageHeader from "@/components/PageHeader";
+import Reveal from "@/components/motion/Reveal";
 import WhatsAppJoinLink from "@/components/WhatsAppJoinLink";
 
 interface Faq {
@@ -59,13 +60,17 @@ const faqs: Faq[] = [
   },
   {
     q: "Where exactly is Foundry Padel?",
-    a: "We're in St. John's, Portland — right next to Cathedral Park at 8613 N Crawford St, Portland, OR 97203. Directions and map links are on our Contact page.",
+    a: "We're in St. Johns, Portland — right next to Cathedral Park at 8613 N Crawford St, Portland, OR 97203. Directions and map links are on our Contact page.",
   },
   {
     q: "What are your hours?",
     a: `We're open! All four courts are available ${HOURS_SENTENCE}. Book a court online or through the Playtomic app, and check the Schedule page for clinics, open play, lessons, and tournaments.`,
   },
 ];
+
+/** The Accordion pinned to single mode. Reveal's props can't carry Radix's
+ *  single|multiple union, but they can carry one side of it. */
+const SingleAccordion = (props: AccordionSingleProps) => <Accordion {...props} />;
 
 const FAQ = () => {
   return (
@@ -77,56 +82,43 @@ const FAQ = () => {
       />
       <section className="py-20 px-6">
         <div className="mx-auto max-w-4xl text-center">
-          <div data-enter style={{ "--enter-y": "30px", "--enter-duration": "0.8s" } as CSSProperties}>
-            <h1 className="font-display text-6xl sm:text-8xl text-foreground mb-4">FAQ</h1>
-            <div className="flex items-center justify-center gap-4 mb-6">
-              <div className="h-px w-16 bg-primary" />
-              <span className="font-body text-sm tracking-[0.2em] uppercase text-primary">First-Timer Friendly</span>
-              <div className="h-px w-16 bg-primary" />
-            </div>
-          </div>
+          <PageHeader title="FAQ" kicker="First-Timer Friendly" />
         </div>
       </section>
 
       <section className="pb-20 px-6">
         <div className="mx-auto max-w-3xl">
           <div className="section-divider mb-12" />
-          <Accordion type="single" collapsible className="space-y-2">
+          {/* The Accordion root is the stagger container, so its items follow each other
+              in (capped at seven steps). */}
+          <Reveal as={SingleAccordion} variant="stagger" type="single" collapsible className="space-y-2">
             {faqs.map((faq, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: i * 0.05 }}
-              >
-                <AccordionItem value={`item-${i}`} className="border border-border px-6">
-                  <AccordionTrigger className="font-display text-lg text-foreground hover:text-primary hover:no-underline">
-                    {faq.q}
-                  </AccordionTrigger>
-                  <AccordionContent className="font-body text-sm text-secondary-foreground leading-relaxed">
-                    {faq.a}
-                    {faq.cta === "whatsapp" && (
-                      <WhatsAppJoinLink
-                        iconSize={16}
-                        className="mt-4 inline-flex items-center gap-2 border border-primary px-4 py-2 font-display text-xs tracking-widest text-primary transition-all hover:bg-primary hover:text-primary-foreground"
-                      >
-                        JOIN THE WHATSAPP GROUP
-                      </WhatsAppJoinLink>
-                    )}
-                    {faq.cta === "coaching" && (
-                      <Link
-                        to="/coaching"
-                        className="mt-4 inline-flex items-center gap-2 border border-primary px-4 py-2 font-display text-xs tracking-widest text-primary transition-all hover:bg-primary hover:text-primary-foreground"
-                      >
-                        MEET THE COACHES
-                      </Link>
-                    )}
-                  </AccordionContent>
-                </AccordionItem>
-              </motion.div>
+              <AccordionItem key={i} value={`item-${i}`} className="border border-border px-6">
+                <AccordionTrigger className="font-display text-lg text-foreground hover:text-primary hover:no-underline">
+                  {faq.q}
+                </AccordionTrigger>
+                <AccordionContent className="font-body text-sm text-secondary-foreground leading-relaxed">
+                  {faq.a}
+                  {faq.cta === "whatsapp" && (
+                    <WhatsAppJoinLink
+                      iconSize={16}
+                      className="mt-4 inline-flex items-center gap-2 border border-primary px-4 py-2 font-display text-xs tracking-widest text-primary transition-all hover:bg-primary hover:text-primary-foreground"
+                    >
+                      JOIN THE WHATSAPP GROUP
+                    </WhatsAppJoinLink>
+                  )}
+                  {faq.cta === "coaching" && (
+                    <Link
+                      to="/coaching"
+                      className="mt-4 inline-flex items-center gap-2 border border-primary px-4 py-2 font-display text-xs tracking-widest text-primary transition-all hover:bg-primary hover:text-primary-foreground"
+                    >
+                      MEET THE COACHES
+                    </Link>
+                  )}
+                </AccordionContent>
+              </AccordionItem>
             ))}
-          </Accordion>
+          </Reveal>
           <div className="section-divider mt-12" />
         </div>
       </section>

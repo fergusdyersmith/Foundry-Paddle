@@ -1,6 +1,5 @@
 import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
-import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { addDays, format, startOfDay } from "date-fns";
 import {
@@ -9,7 +8,6 @@ import {
   ChevronDown,
   ChevronUp,
   GraduationCap,
-  Loader2,
   Zap,
 } from "lucide-react";
 import {
@@ -23,6 +21,9 @@ import { openFirst } from "@/lib/events";
 import { useScheduleEvents } from "@/hooks/useScheduleEvents";
 import BookEventRow from "@/components/book/BookEventRow";
 import Seo from "@/components/Seo";
+import PageHeader from "@/components/PageHeader";
+import Reveal from "@/components/motion/Reveal";
+import BallLoader from "@/components/motion/BallLoader";
 
 const today = startOfDay(new Date());
 const todayKey = format(today, "yyyy-MM-dd");
@@ -43,24 +44,29 @@ const FULL_CLINIC_LIMIT = 2;
 // Open matches shown before the "view more" expander.
 const MATCHES_VISIBLE = 3;
 
+// `enter` staggers the three cards in on first paint (they are above the fold on
+// desktop, so data-enter rather than Reveal).
 const WAYS_TO_PLAY = [
   {
     id: "reserve",
     icon: Calendar,
     title: "RESERVE A COURT",
     desc: "Got your group of four? Book a 90-minute court.",
+    enter: "0.2s",
   },
   {
     id: "clinics",
     icon: GraduationCap,
     title: "LEARN THE BASICS",
     desc: "New to padel? Join a coach-led clinic.",
+    enter: "0.28s",
   },
   {
     id: "matches",
     icon: Zap,
     title: "OPEN MATCHES",
     desc: "Need players? Hop into a match at your level.",
+    enter: "0.36s",
   },
 ];
 
@@ -129,16 +135,7 @@ const Book = () => {
       {/* Header + ways to play */}
       <section className="py-20 px-6">
         <div className="mx-auto max-w-4xl">
-          <div
-            data-enter style={{ "--enter-y": "30px", "--enter-duration": "0.8s" } as CSSProperties}
-            className="text-center"
-          >
-            <h1 className="font-display text-6xl sm:text-8xl text-foreground mb-4">BOOK A COURT</h1>
-            <div className="flex items-center justify-center gap-4 mb-6">
-              <div className="h-px w-16 bg-primary" />
-              <span className="font-body text-sm tracking-[0.2em] uppercase text-primary">Three Ways to Play</span>
-              <div className="h-px w-16 bg-primary" />
-            </div>
+          <PageHeader title="BOOK A COURT" kicker="Three Ways to Play">
             <p className="font-body text-base text-secondary-foreground">
               Drop-in play is{" "}
               <span className="text-foreground font-semibold">
@@ -152,23 +149,22 @@ const Book = () => {
               Racket rentals are <span className="text-foreground font-semibold">$5</span> ($10 for
               a high-end demo racket), and balls are for sale at the club. No partner needed.
             </p>
-          </div>
+          </PageHeader>
 
-          <div
-            data-enter style={{ "--enter-y": "20px", "--enter-duration": "0.6s", "--enter-delay": "0.2s" } as CSSProperties}
-            className="mt-12 grid gap-3 sm:grid-cols-3"
-          >
+          <div className="mt-12 grid gap-3 sm:grid-cols-3">
             {WAYS_TO_PLAY.map((w) => (
               <button
                 key={w.id}
                 onClick={() => scrollToSection(w.id)}
+                data-enter
+                style={{ "--enter-delay": w.enter } as CSSProperties}
                 className="group border border-border p-6 text-left transition-colors hover:border-primary"
               >
                 <w.icon size={22} className="text-primary mb-3" />
                 <h2 className="font-display text-lg text-foreground mb-1">{w.title}</h2>
                 <p className="font-body text-xs text-muted-foreground">{w.desc}</p>
                 <span className="mt-3 inline-flex items-center gap-1 font-display text-[10px] tracking-[0.2em] text-primary opacity-70 transition-opacity group-hover:opacity-100">
-                  JUMP TO <ArrowRight className="h-3 w-3" />
+                  JUMP TO <ArrowRight className="nudge h-3 w-3" />
                 </span>
               </button>
             ))}
@@ -180,61 +176,58 @@ const Book = () => {
       <section id="reserve" className="scroll-mt-28 px-6 py-12">
         <div className="mx-auto max-w-4xl">
           <div className="section-divider mb-16" />
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-          >
+          {/* Only the heading moves: the Playtomic iframe is left out of the motion
+              system (docs/motion.md, "Where not to animate"). */}
+          <Reveal>
             <SectionHeading
               title="RESERVE A COURT"
               sub="Have your four? Choose a time and court below. Open daily 6am–midnight · 90-minute sessions · 4 WPT-spec glass courts."
             />
-            <div className="overflow-hidden rounded-sm border border-border bg-muted/30">
-              <iframe
-                src={PLAYTOMIC_BOOKING_URL}
-                title="Book a court — Playtomic"
-                className="block h-[min(45vh,450px)] w-full min-h-[320px]"
-                loading="lazy"
-                allow="payment *; fullscreen"
-              />
+          </Reveal>
+          <div className="overflow-hidden rounded-sm border border-border bg-muted/30">
+            <iframe
+              src={PLAYTOMIC_BOOKING_URL}
+              title="Book a court — Playtomic"
+              className="block h-[min(45vh,450px)] w-full min-h-[320px]"
+              loading="lazy"
+              allow="payment *; fullscreen"
+            />
+          </div>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 font-body text-xs text-muted-foreground">
+            <span className="uppercase tracking-[0.2em]">Or book in the Playtomic app</span>
+            <div className="flex items-center gap-3">
+              <a
+                href={PLAYTOMIC_APP_STORE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-9 items-center transition-opacity hover:opacity-90"
+                aria-label="Download Playtomic on the App Store"
+              >
+                <img
+                  src={`${import.meta.env.BASE_URL}store-badge-apple-store.svg`}
+                  alt=""
+                  className="h-9 w-auto object-contain"
+                  width={120}
+                  height={40}
+                />
+              </a>
+              <a
+                href={PLAYTOMIC_PLAY_STORE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-9 items-center transition-opacity hover:opacity-90"
+                aria-label="Get Playtomic on Google Play"
+              >
+                <img
+                  src={`${import.meta.env.BASE_URL}store-badge-google-play.png`}
+                  alt=""
+                  className="h-9 w-auto object-contain"
+                  width={155}
+                  height={40}
+                />
+              </a>
             </div>
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 font-body text-xs text-muted-foreground">
-              <span className="uppercase tracking-[0.2em]">Or book in the Playtomic app</span>
-              <div className="flex items-center gap-3">
-                <a
-                  href={PLAYTOMIC_APP_STORE_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex h-9 items-center transition-opacity hover:opacity-90"
-                  aria-label="Download Playtomic on the App Store"
-                >
-                  <img
-                    src={`${import.meta.env.BASE_URL}store-badge-apple-store.svg`}
-                    alt=""
-                    className="h-9 w-auto object-contain"
-                    width={120}
-                    height={40}
-                  />
-                </a>
-                <a
-                  href={PLAYTOMIC_PLAY_STORE_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex h-9 items-center transition-opacity hover:opacity-90"
-                  aria-label="Get Playtomic on Google Play"
-                >
-                  <img
-                    src={`${import.meta.env.BASE_URL}store-badge-google-play.png`}
-                    alt=""
-                    className="h-9 w-auto object-contain"
-                    width={155}
-                    height={40}
-                  />
-                </a>
-              </div>
-            </div>
-          </motion.div>
+          </div>
         </div>
       </section>
 
@@ -244,21 +237,14 @@ const Book = () => {
           <div className="section-divider mb-16" />
           <div className="grid gap-16 lg:grid-cols-2 lg:gap-12">
             {/* Learn the basics */}
-            <motion.div
-              id="clinics"
-              className="min-w-0 scroll-mt-28"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
-            >
+            <Reveal id="clinics" className="min-w-0 scroll-mt-28">
               <SectionHeading
                 title="LEARN THE BASICS"
                 sub="Never played? Book a coach-led clinic: small groups, all levels welcome, and you'll be rallying by the end of the first session."
               />
               {isLoading ? (
                 <ListStatus>
-                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  <BallLoader label="Loading clinics" />
                 </ListStatus>
               ) : isError ? (
                 <ListStatus>
@@ -285,26 +271,19 @@ const Book = () => {
                 to="/schedule"
                 className="mt-5 inline-flex items-center gap-2 font-display text-xs tracking-[0.2em] text-muted-foreground transition-colors hover:text-primary"
               >
-                VIEW FULL SCHEDULE <ArrowRight className="h-3.5 w-3.5" />
+                VIEW FULL SCHEDULE <ArrowRight className="nudge h-3.5 w-3.5" />
               </Link>
-            </motion.div>
+            </Reveal>
 
             {/* Open matches */}
-            <motion.div
-              id="matches"
-              className="min-w-0 scroll-mt-28"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8, delay: 0.1 }}
-            >
+            <Reveal id="matches" delay={1} className="min-w-0 scroll-mt-28">
               <SectionHeading
                 title="OPEN MATCHES"
                 sub="Hop into a match without bringing a group. Join solo and Playtomic matches you with players at your level."
               />
               {isLoading ? (
                 <ListStatus>
-                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  <BallLoader label="Loading open matches" />
                 </ListStatus>
               ) : isError ? (
                 <ListStatus>
@@ -353,7 +332,7 @@ const Book = () => {
                   )}
                 </>
               )}
-            </motion.div>
+            </Reveal>
           </div>
 
           {/* Nothing on the list worth joining? The answer is to post your own, and

@@ -2,6 +2,7 @@ import type { FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Seo from "@/components/Seo";
+import CheckDraw from "@/components/motion/CheckDraw";
 import { announcedDays } from "@/constants/juniorClinic";
 import {
   LEAVE_ALONE_LABEL,
@@ -205,6 +206,7 @@ function WaiverForm({ defaultSessionDates, today }: { defaultSessionDates: strin
     return (
       <section className="px-6 pb-24">
         <div className="mx-auto max-w-3xl border border-primary bg-secondary p-10 text-center">
+          <CheckDraw className="mx-auto mb-6 h-14 w-14 text-foreground" />
           <p className="font-display text-3xl text-foreground sm:text-4xl">SIGNED AND ON FILE</p>
           <p className="mt-4 font-body text-base leading-relaxed text-secondary-foreground">
             The waiver for {who} is filed. A copy is on its way to {parent.email.trim()}. At the clinic,
@@ -373,7 +375,7 @@ function WaiverForm({ defaultSessionDates, today }: { defaultSessionDates: strin
           </div>
           <div className="hidden" aria-hidden="true"><input tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} /></div>
 
-          {error && <p className="mt-6 font-body text-sm text-primary">{error}</p>}
+          {error && <p role="alert" className="mt-6 font-body text-sm text-primary">{error}</p>}
           <button type="submit" disabled={submitting} className="mt-6 w-full bg-primary px-8 py-4 font-display text-lg tracking-widest text-primary-foreground transition-all hover:brightness-110 disabled:opacity-60">
             {submitting ? "FILING THE WAIVER" : "SIGN AND SUBMIT"}
           </button>

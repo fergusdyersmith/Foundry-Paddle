@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Head } from "vite-react-ssg";
 import { Check, ExternalLink, MapPin, Phone, Radio } from "lucide-react";
 import Photo from "@/components/Photo";
 import Seo from "@/components/Seo";
+import Reveal from "@/components/motion/Reveal";
 import { GALLERY_IMAGE_DIR } from "@/data/gallery";
 import { GOOGLE_MAPS_URL } from "@/constants/location";
 import { PLAYTOMIC_APP_STORE_URL, PLAYTOMIC_PLAY_STORE_URL } from "@/constants/booking";
@@ -166,7 +166,7 @@ const Open = () => {
           <div className="hero-gradient absolute inset-0" />
         </div>
         <div className="relative z-10 mx-auto max-w-3xl px-6 pt-24 text-center">
-          <div data-enter style={{ "--enter-y": "30px" } as CSSProperties}>
+          <div data-enter>
             <span className="font-body text-sm tracking-[0.2em] uppercase text-primary">Two days · three levels · {OPEN_PRIZE_POOL ? `${OPEN_PRIZE_POOL} in prizes` : "prizes in every level"}</span>
             <h1 className="mt-4 font-display text-6xl sm:text-8xl leading-none text-foreground">{OPEN_NAME.toUpperCase()}</h1>
             <p className="mt-6 font-display text-2xl sm:text-3xl tracking-wide text-foreground">{OPEN_DATES_LABEL.toUpperCase()}</p>
@@ -230,6 +230,7 @@ const Open = () => {
             </div>
           ) : done ? (
             <div className="mt-12 border border-primary bg-secondary p-10 text-center">
+              {/* No success tick here on purpose: this is the step BEFORE they are in. */}
               <p className="font-display text-3xl text-foreground">ONE MORE STEP</p>
               <p className="mt-4 font-body text-base text-secondary-foreground">
                 You are not in until you pay on Playtomic. Your entry is <span className="text-foreground">${done.pay}</span>
@@ -257,7 +258,7 @@ const Open = () => {
                 <legend className={label}>Level you want to play</legend>
                 <div className="grid gap-3 sm:grid-cols-3">
                   {OPEN_LEVELS.map((l) => (
-                    <label key={l.key} className={`cursor-pointer border p-4 transition-colors ${form.level === l.key ? "border-primary bg-secondary" : "border-border hover:border-primary/60"}`}>
+                    <label key={l.key} className={`cursor-pointer border p-4 transition-colors focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-primary ${form.level === l.key ? "border-primary bg-secondary" : "border-border hover:border-primary/60"}`}>
                       <input type="radio" name="level" value={l.key} checked={form.level === l.key} onChange={set("level")} className="sr-only" />
                       <span className="block font-display text-xl text-foreground">{l.label.toUpperCase()}</span>
                       <span className="block font-body text-xs tracking-[0.15em] uppercase text-primary">Rating {l.rating}</span>
@@ -295,7 +296,7 @@ const Open = () => {
               {/* Honeypot: hidden from people, filled by bots. */}
               <div className="hidden" aria-hidden="true"><input tabIndex={-1} autoComplete="off" value={form.website} onChange={set("website")} /></div>
 
-              {error && <p className="font-body text-sm text-primary">{error}</p>}
+              {error && <p role="alert" className="font-body text-sm text-primary">{error}</p>}
               <button type="submit" disabled={submitting} className="w-full bg-primary px-8 py-4 font-display text-lg tracking-widest text-primary-foreground transition-all hover:brightness-110 disabled:opacity-60">
                 {submitting ? "SAVING" : isEarly ? `LOCK IN $${price} · CONTINUE TO PAYMENT` : `CONTINUE TO PAYMENT · $${price}`}
               </button>
@@ -351,15 +352,15 @@ const Open = () => {
       <section className="px-6 py-20">
         <div className="mx-auto max-w-5xl">
           <h2 className={`${sectionHeading} text-center`}>THREE LEVELS</h2>
-          <div className="mt-10 grid gap-6 md:grid-cols-3">
+          <Reveal variant="stagger" className="mt-10 grid gap-6 md:grid-cols-3">
             {OPEN_LEVELS.map((l) => (
-              <motion.div key={l.key} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }} transition={{ duration: 0.6 }} className="border border-border bg-secondary p-8">
+              <div key={l.key} className="border border-border bg-secondary p-8">
                 <span className="font-body text-xs tracking-[0.2em] uppercase text-primary">Rating {l.rating}</span>
                 <p className="mt-2 font-display text-3xl text-foreground">{l.label.toUpperCase()}</p>
                 <p className="mt-3 font-body text-sm leading-relaxed text-secondary-foreground">{l.blurb}</p>
-              </motion.div>
+              </div>
             ))}
-          </div>
+          </Reveal>
         </div>
       </section>
 

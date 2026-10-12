@@ -1,5 +1,5 @@
-import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import Reveal from "@/components/motion/Reveal";
 import { PHOTO_BASE, PHOTOS } from "@/data/gallery";
 
 // Four frames, one per gallery category, picked to show the range: the room,
@@ -22,49 +22,42 @@ const GalleryTeaser = () => (
   <section className="py-20 px-6">
     <div className="mx-auto max-w-5xl">
       <div className="section-divider mb-16" />
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.8 }}
-      >
-        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <span className="font-body text-xs tracking-[0.2em] uppercase text-primary">Shot on court</span>
-            <h2 className="font-display text-4xl sm:text-5xl text-foreground mt-2">INSIDE THE CLUB</h2>
-          </div>
-          <Link
-            to="/gallery"
-            className="font-body text-xs tracking-[0.2em] uppercase text-secondary-foreground transition-colors hover:text-primary"
-          >
-            See all {PHOTOS.length} photos →
-          </Link>
+      <Reveal className="mb-8 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <span className="font-body text-xs tracking-[0.2em] uppercase text-primary">Shot on court</span>
+          <h2 className="font-display text-4xl sm:text-5xl text-foreground mt-2">INSIDE THE CLUB</h2>
         </div>
+        <Link
+          to="/gallery"
+          className="group font-body text-xs tracking-[0.2em] uppercase text-secondary-foreground transition-colors hover:text-primary"
+        >
+          See all {PHOTOS.length} photos <span aria-hidden="true" className="nudge">→</span>
+        </Link>
+      </Reveal>
 
-        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4" role="list">
-          {teaserPhotos.map((p) => (
-            <li key={p.file}>
-              <Link
-                to="/gallery"
-                className="group block aspect-square overflow-hidden border border-border bg-secondary"
-              >
-                <picture>
-                  <source type="image/webp" srcSet={`${PHOTO_BASE}/thumb/${p.file}.webp`} />
-                  <img
-                    src={`${PHOTO_BASE}/thumb/${p.file}.jpg`}
-                    alt={p.alt}
-                    width={p.w}
-                    height={p.h}
-                    loading="lazy"
-                    decoding="async"
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                </picture>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </motion.div>
+      <Reveal as="ul" variant="stagger" className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4" role="list">
+        {teaserPhotos.map((p) => (
+          <li key={p.file}>
+            <Link
+              to="/gallery"
+              className="group block aspect-square overflow-hidden border border-border bg-secondary"
+            >
+              <picture>
+                <source type="image/webp" srcSet={`${PHOTO_BASE}/thumb/${p.file}.webp`} />
+                <img
+                  src={`${PHOTO_BASE}/thumb/${p.file}.jpg`}
+                  alt={p.alt}
+                  width={p.w}
+                  height={p.h}
+                  loading="lazy"
+                  decoding="async"
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+              </picture>
+            </Link>
+          </li>
+        ))}
+      </Reveal>
     </div>
   </section>
 );

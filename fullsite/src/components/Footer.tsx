@@ -7,7 +7,7 @@ import { APP_URL } from "@/constants/app";
 import WhatsAppJoinLink from "@/components/WhatsAppJoinLink";
 
 const TikTokIcon = ({ size = 20 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
   </svg>
 );
@@ -112,9 +112,9 @@ const Footer = () => {
                 Join our WhatsApp community
               </WhatsAppJoinLink>
               <div className="flex items-center gap-5 mt-4">
-                <a href="https://instagram.com/foundrypadelpdx" target="_blank" rel="noopener noreferrer" className="text-muted-foreground transition-colors hover:text-primary"><Instagram size={18} /></a>
-                <a href="https://www.facebook.com/share/1Cerw2CTec/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer" className="text-muted-foreground transition-colors hover:text-primary"><Facebook size={18} /></a>
-                <a href="https://tiktok.com/@foundry.padel" target="_blank" rel="noopener noreferrer" className="text-muted-foreground transition-colors hover:text-primary"><TikTokIcon size={18} /></a>
+                <a href="https://instagram.com/foundrypadelpdx" target="_blank" rel="noopener noreferrer" aria-label="Foundry Padel on Instagram" className="text-muted-foreground transition-colors hover:text-primary"><Instagram size={18} aria-hidden="true" /></a>
+                <a href="https://www.facebook.com/share/1Cerw2CTec/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer" aria-label="Foundry Padel on Facebook" className="text-muted-foreground transition-colors hover:text-primary"><Facebook size={18} aria-hidden="true" /></a>
+                <a href="https://tiktok.com/@foundry.padel" target="_blank" rel="noopener noreferrer" aria-label="Foundry Padel on TikTok" className="text-muted-foreground transition-colors hover:text-primary"><TikTokIcon size={18} /></a>
                 <WhatsAppJoinLink ariaLabel="Join our WhatsApp community" iconSize={18} className="text-muted-foreground transition-colors hover:text-primary" />
               </div>
             </div>
@@ -146,7 +146,10 @@ const Footer = () => {
 
         <div className="section-divider mt-12 mb-8" />
         <p className="font-body text-xs text-muted-foreground text-center">
-          © {new Date().getFullYear()} Foundry Padel Inc. All rights reserved.
+          {/* The prerender bakes in the build's year; from 1 January until the next
+              deploy the browser disagrees, and an unsuppressed text mismatch makes React
+              throw away the server HTML and re-render the whole page. */}
+          © <span suppressHydrationWarning>{new Date().getFullYear()}</span> Foundry Padel Inc. All rights reserved.
         </p>
       </div>
     </footer>

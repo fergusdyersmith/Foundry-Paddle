@@ -41,6 +41,11 @@ function RichText({ text }: { text: string }) {
   return (
     <>
       {parts.map((part, i) => {
+        // split() with a capturing group alternates text and matches, so only the ODD
+        // entries are links. Testing every entry for a leading "/" made the text after a
+        // match a link too: "/book//evil.example" rendered href="//evil.example", which
+        // a browser treats as another site.
+        if (i % 2 === 0) return <span key={i}>{part}</span>;
         if (/^https?:\/\//i.test(part)) {
           return (
             <a
@@ -54,14 +59,11 @@ function RichText({ text }: { text: string }) {
             </a>
           );
         }
-        if (part?.startsWith("/")) {
-          return (
-            <a key={i} href={part} className="underline underline-offset-2">
-              {part}
-            </a>
-          );
-        }
-        return <span key={i}>{part}</span>;
+        return (
+          <a key={i} href={part} className="underline underline-offset-2">
+            {part}
+          </a>
+        );
       })}
     </>
   );
@@ -219,9 +221,21 @@ const ChatWidget = () => {
               </div>
             ))}
             {busy && (
-              <p className="font-body text-xs uppercase tracking-[0.15em] text-muted-foreground">
-                Thinking…
-              </p>
+              // Three dots bouncing in turn. Each 5px dot sits at the foot of a taller
+              // span that does the bouncing, because animate-bounce lifts by a quarter of
+              // the element's own height: on the bare dot that is barely a pixel.
+              <div role="status" className="flex h-6 items-end gap-1 px-1">
+                <span className="sr-only">Thinking</span>
+                <span aria-hidden="true" className="flex h-4 items-end animate-bounce motion-reduce:animate-none">
+                  <span className="h-[5px] w-[5px] rounded-full bg-muted-foreground" />
+                </span>
+                <span aria-hidden="true" className="flex h-4 items-end animate-bounce [animation-delay:150ms] motion-reduce:animate-none">
+                  <span className="h-[5px] w-[5px] rounded-full bg-muted-foreground" />
+                </span>
+                <span aria-hidden="true" className="flex h-4 items-end animate-bounce [animation-delay:300ms] motion-reduce:animate-none">
+                  <span className="h-[5px] w-[5px] rounded-full bg-muted-foreground" />
+                </span>
+              </div>
             )}
             {error && (
               <p className="font-body text-sm text-destructive" role="status">

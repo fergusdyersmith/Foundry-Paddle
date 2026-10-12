@@ -1,5 +1,4 @@
 import type { CSSProperties } from "react";
-import { motion } from "framer-motion";
 import { formatUsd, ratesOn } from "@shared/rates";
 import { Link } from "react-router-dom";
 import BookCTA from "@/components/BookCTA";
@@ -10,15 +9,55 @@ import GalleryTeaser from "@/components/GalleryTeaser";
 import Photo from "@/components/Photo";
 import Seo from "@/components/Seo";
 import OpenPromo from "@/components/OpenPromo";
+import Reveal from "@/components/motion/Reveal";
+import CountUp from "@/components/motion/CountUp";
+import BallFlight from "@/components/motion/BallFlight";
+import AnimatedMonogram from "@/components/motion/AnimatedMonogram";
 import { BOOK_PAGE_PATH } from "@/constants/booking";
 import { HOURS_SENTENCE } from "@/constants/hours";
 import { GOOGLE_MAPS_URL } from "@/constants/location";
 
 const features = [
-  { label: "4", desc: "Indoor Courts" },
-  { label: "1", desc: "Social Bar" },
-  { label: "∞", desc: "Good Times" },
+  { count: 4, desc: "Indoor Courts" },
+  { count: 1, desc: "Social Bar" },
+  { count: null, desc: "Good Times" },
 ];
+
+// The "∞" stat, drawn as a figure of eight a ball keeps looping: a lemniscate of
+// Gerono, which is 2:1 like the typeset glyph it replaces. Built once at module load
+// (pure arithmetic, so the prerender and the browser agree to the decimal).
+const INFINITY_PATH = (() => {
+  const steps = 96;
+  const pts = Array.from({ length: steps + 1 }, (_, i) => {
+    const t = (i / steps) * 2 * Math.PI;
+    return `${(32 + 27 * Math.cos(t)).toFixed(2)} ${(18 + 13.5 * Math.sin(2 * t)).toFixed(2)}`;
+  });
+  return `M${pts.join("L")}Z`;
+})();
+
+const InfinityLoop = () => (
+  <BallFlight
+    viewBox="0 0 64 36"
+    path={INFINITY_PATH}
+    rest={[59, 18]}
+    radius={3}
+    ballFill="hsl(var(--foreground))"
+    trail={3}
+    periodMs={3600}
+    label="Infinite"
+    className="mx-auto h-[3.75rem] w-auto overflow-visible"
+    svgProps={{ "data-reveal": "draw" }}
+  >
+    <path
+      className="draw"
+      pathLength={1}
+      d={INFINITY_PATH}
+      stroke="hsl(var(--primary))"
+      strokeWidth={3.6}
+      strokeLinejoin="round"
+    />
+  </BallFlight>
+);
 
 // Dated in shared/rates.js, the same source /book and the schedule read, so these two
 // lines step up on 1 September on their own. They were hardcoded "$15 / $60", which is
@@ -69,21 +108,18 @@ const Index = () => {
                 wordmark files so the gap between them is ours to tune (the
                 delivered stacked file has a much larger built-in gap). */}
             <h1 className="sr-only">Foundry Padel</h1>
-            <img
-              src="/rebrand/FP_icon_light.svg"
-              alt=""
-              className="mx-auto w-[clamp(12rem,20vw,20rem)]"
-            />
+            {/* Inline so its string holes can ripple out once the lockup lands. */}
+            <AnimatedMonogram className="mx-auto w-[clamp(12rem,20vw,20rem)]" />
             <img
               src="/rebrand/FP_text_light.svg"
-              alt="Foundry Padel"
+              alt=""
               className="mx-auto mt-[clamp(1.75rem,3vw,3rem)] w-[clamp(16rem,28vw,28rem)]"
             />
           </div>
           <div data-enter style={{ "--enter-y": "20px", "--enter-duration": "0.8s", "--enter-delay": "0.6s" } as CSSProperties} className="mt-[clamp(2rem,5vh,3.5rem)] flex flex-col items-center gap-4 sm:flex-row">
             <Link
               to={BOOK_PAGE_PATH}
-              className="bg-primary px-7 py-3 font-display text-sm tracking-widest text-primary-foreground shadow-[0_0_30px_-10px_hsl(var(--primary)/0.6)] transition-all hover:brightness-110"
+              className="bg-primary px-7 py-3 font-display text-sm tracking-widest text-primary-foreground shadow-[0_0_30px_-10px_hsl(var(--primary)/0.6)] transition-all hover:brightness-110 active:scale-[0.98]"
             >
               BOOK YOUR FIRST PLAY — {formatUsd(rates.perPlayer90)}
             </Link>
@@ -106,15 +142,19 @@ const Index = () => {
       <section className="py-28 px-6">
         <div className="mx-auto max-w-4xl">
           <div className="section-divider mb-20" />
-          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.8 }} className="grid md:grid-cols-3 gap-12 mb-20">
+          <Reveal variant="stagger" className="grid md:grid-cols-3 gap-12 mb-20">
             {features.map((f) => (
               <div key={f.desc} className="text-center">
-                <span className="font-display text-6xl text-primary">{f.label}</span>
+                {f.count === null ? (
+                  <InfinityLoop />
+                ) : (
+                  <CountUp value={f.count} className="font-display text-6xl text-primary" />
+                )}
                 <p className="mt-2 font-body text-sm tracking-[0.15em] uppercase text-muted-foreground">{f.desc}</p>
               </div>
             ))}
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.8, delay: 0.2 }} className="max-w-2xl mx-auto text-center">
+          </Reveal>
+          <Reveal delay={2} className="max-w-2xl mx-auto text-center">
             <h2 className="font-display text-4xl sm:text-5xl text-foreground mb-6">EASY TO START. HARD TO PUT DOWN.</h2>
             <p className="font-body text-base leading-relaxed text-secondary-foreground">
               Padel is the fastest-growing racquet sport in the world: enclosed glass courts,
@@ -123,21 +163,15 @@ const Index = () => {
               it to Portland with four indoor courts, a curated social space, bar, and retail,
               all next to Cathedral Park.
             </p>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-            className="mt-16 max-w-2xl mx-auto text-center"
-          >
+          </Reveal>
+          <Reveal variant="fade" delay={3} className="mt-16 max-w-2xl mx-auto text-center">
             <p className="font-body text-sm leading-relaxed text-muted-foreground">
               Serious but approachable. Competitive but community-driven.
               This is a home for players who want more than a casual hit:
               coaching, tournaments, pro workshops, and a space designed to
               elevate the game and the culture around it.
             </p>
-          </motion.div>
+          </Reveal>
           <div className="section-divider mt-20" />
         </div>
       </section>
@@ -145,13 +179,7 @@ const Index = () => {
       {/* Plan your first visit — plain, crawlable answers for a first-time local */}
       <section className="px-6 pb-8">
         <div className="mx-auto max-w-4xl">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.8 }}
-            className="border border-border p-8 sm:p-12"
-          >
+          <Reveal className="border border-border p-8 sm:p-12">
             <h2 className="font-display text-3xl sm:text-4xl text-foreground mb-2 text-center">
               CAN I JUST SHOW UP AND TRY IT?
             </h2>
@@ -200,19 +228,19 @@ const Index = () => {
                 BOOK YOUR FIRST PLAY — {formatUsd(rates.perPlayer90)}
               </Link>
             </div>
-          </motion.div>
+          </Reveal>
         </div>
       </section>
 
       {/* Quick links */}
       <section className="py-20 px-6">
-        <div className="mx-auto max-w-5xl grid md:grid-cols-3 gap-6">
+        <Reveal variant="stagger" className="mx-auto max-w-5xl grid md:grid-cols-3 gap-6">
           {[
             { title: "THE SPORT", desc: "New to padel? Learn the basics and why it's taking the world by storm.", link: "/the-sport", photo: "card-the-sport", alt: "A player stretches wide for a forehand on court at Foundry Padel" },
             { title: "THE CLUB", desc: "Four courts, a social bar, and a space designed for the culture.", link: "/the-club", photo: "card-the-club", alt: "Players on adjacent courts inside Foundry Padel's converted warehouse" },
             { title: "MEMBERSHIPS", desc: "From drop-in to unlimited, find the tier that fits your game.", link: "/memberships", photo: "card-memberships", alt: "Two members in Foundry Padel gear fist-bump between courts" },
           ].map((item) => (
-            <motion.div key={item.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
+            <div key={item.title}>
               <Link to={item.link} className="block border border-border transition-all hover:border-primary group">
                 <div className="aspect-[3/2] overflow-hidden bg-secondary">
                   <Photo name={item.photo} alt={item.alt} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
@@ -220,12 +248,12 @@ const Index = () => {
                 <div className="p-8">
                 <h3 className="font-display text-2xl text-foreground group-hover:text-primary transition-colors mb-3">{item.title}</h3>
                 <p className="font-body text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
-                <span className="inline-block mt-4 font-body text-xs tracking-[0.2em] uppercase text-primary">Explore →</span>
+                <span className="inline-block mt-4 font-body text-xs tracking-[0.2em] uppercase text-primary">Explore <span aria-hidden="true" className="nudge">→</span></span>
                 </div>
               </Link>
-            </motion.div>
+            </div>
           ))}
-        </div>
+        </Reveal>
       </section>
 
       <GalleryTeaser />
@@ -234,7 +262,7 @@ const Index = () => {
       <section id="partners" className="py-20 px-6">
         <div className="mx-auto max-w-4xl">
           <div className="section-divider mb-16" />
-          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="text-center mb-12">
+          <Reveal className="text-center mb-12">
             <h2 className="font-display text-4xl sm:text-5xl text-foreground mb-8">PARTNERS</h2>
             <div className="max-w-2xl mx-auto space-y-6">
               <p className="font-body text-base leading-relaxed text-secondary-foreground">
@@ -244,16 +272,10 @@ const Index = () => {
                 Beyond the court, we're partnering exclusively with Portland-based small businesses and makers. From the local brews at our bar to the artisans crafting our spaces, Foundry is built by and for the Portland community.
               </p>
             </div>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="-mx-6 md:-mx-10"
-          >
+          </Reveal>
+          <Reveal variant="fade" delay={2} className="-mx-6 md:-mx-10">
             <PartnerLogoBand />
-          </motion.div>
+          </Reveal>
           <div className="section-divider mt-16" />
         </div>
       </section>

@@ -1,4 +1,3 @@
-import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -11,12 +10,7 @@ import {
   startOfMonth,
   subMonths,
 } from "date-fns";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Loader2,
-  RefreshCw,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { TYPE_DOT_COLORS, TYPE_LABELS } from "@/constants/events";
 import { groupEventsByDate, sortTypesByOrder } from "@/lib/events";
@@ -26,6 +20,9 @@ import MonthGrid from "@/components/schedule/MonthGrid";
 import AgendaList from "@/components/schedule/AgendaList";
 import EventCard from "@/components/schedule/EventCard";
 import Seo from "@/components/Seo";
+import PageHeader from "@/components/PageHeader";
+import Reveal from "@/components/motion/Reveal";
+import BallLoader from "@/components/motion/BallLoader";
 
 const today = startOfDay(new Date());
 const thisMonth = startOfMonth(today);
@@ -89,22 +86,11 @@ const Schedule = () => {
       />
       <section className="px-6 py-16">
         <div className="mx-auto max-w-6xl">
-          {/* Header */}
-          <div
-            data-enter style={{ "--enter-y": "30px", "--enter-duration": "0.8s" } as CSSProperties}
-            className="mb-12 text-center"
-          >
-            <h1 className="mb-4 font-display text-6xl text-foreground sm:text-8xl">
-              SCHEDULE
-            </h1>
-            <div className="flex items-center justify-center gap-4">
-              <div className="h-px w-16 bg-primary" />
-              <span className="font-body text-sm uppercase tracking-[0.2em] text-primary">
-                Clinics · Open Play · Lessons · Tournaments
-              </span>
-              <div className="h-px w-16 bg-primary" />
-            </div>
-          </div>
+          <PageHeader
+            title="SCHEDULE"
+            kicker="Clinics · Open Play · Lessons · Tournaments"
+            className="mb-12"
+          />
 
           {/* Month nav + live indicator */}
           <div className="mb-6 flex items-center justify-between">
@@ -132,8 +118,11 @@ const Schedule = () => {
 
             {isLive ? (
               <span className="hidden items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] text-muted-foreground sm:flex">
-                <RefreshCw
-                  className={`h-3 w-3 ${isFetching ? "animate-spin text-primary" : ""}`}
+                {/* A steady clay dot while the page is live; it pulses only while a
+                    refetch is in flight. */}
+                <span
+                  aria-hidden="true"
+                  className={`h-1.5 w-1.5 bg-primary ${isFetching ? "motion-safe:animate-pulse" : ""}`}
                 />
                 Live
               </span>
@@ -172,7 +161,7 @@ const Schedule = () => {
           {/* Content */}
           {isLoading ? (
             <div className="flex items-center justify-center py-24">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <BallLoader label="Loading the schedule" />
             </div>
           ) : isError ? (
             <div className="flex flex-col items-center gap-4 py-24">
@@ -187,7 +176,9 @@ const Schedule = () => {
               </button>
             </div>
           ) : (
-            <>
+            // One fade for the whole calendar as the data lands, never on its cells or
+            // rows: the list refetches every minute and React can remount them.
+            <Reveal variant="fade">
               <div className="hidden lg:block">
                 <MonthGrid
                   monthStart={monthStart}
@@ -198,7 +189,7 @@ const Schedule = () => {
               <div className="lg:hidden">
                 <AgendaList eventsByDate={eventsByDate} />
               </div>
-            </>
+            </Reveal>
           )}
         </div>
       </section>

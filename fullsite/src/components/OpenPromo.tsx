@@ -26,6 +26,12 @@ function todayInPortland(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(new Date());
 }
 
+// Before the browser knows the day, decide by the build's day (vite.config.ts), as the
+// junior clinic card already does. Treating "unknown" as "still on" kept the 10 October
+// preview evening in the prerendered home page after it had happened, and the grid then
+// jumped from three cards to two as the page hydrated.
+const BUILD_DAY: string | null = typeof __BUILD_DAY__ === "string" ? __BUILD_DAY__ : null;
+
 type Card = {
   key: string;
   to: string;
@@ -40,6 +46,7 @@ const OpenPromo = () => {
   useEffect(() => setToday(todayInPortland()), []);
 
   const cards: Card[] = [];
+  const day = today ?? BUILD_DAY;
 
   // The junior clinic: the next ANNOUNCED day, until it has happened. Soonest of the
   // three, so it leads. With nothing announced the card drops out rather than pointing
@@ -62,7 +69,7 @@ const OpenPromo = () => {
   }
 
   // The preview evening, until the day after it happens.
-  if (today == null || today <= PREVIEW_DATE) {
+  if (day == null || day <= PREVIEW_DATE) {
     cards.push({
       key: "preview",
       to: "/preview",
@@ -79,8 +86,8 @@ const OpenPromo = () => {
   }
 
   // The Open, until registration closes.
-  if (today == null || today < OPEN_CLOSES) {
-    const early = today == null || today < OPEN_TIERS[1].from;
+  if (day == null || day < OPEN_CLOSES) {
+    const early = day == null || day < OPEN_TIERS[1].from;
     const price = early ? OPEN_TIERS[0].price : OPEN_TIERS[1].price;
     const daysLeft = today
       ? Math.max(0, Math.round((Date.parse(OPEN_TIERS[1].from) - Date.parse(today)) / 86400000))
@@ -119,9 +126,9 @@ const OpenPromo = () => {
               <div className="mt-6 flex flex-1 items-end">
                 <Link
                   to={c.to}
-                  className="inline-flex items-center gap-2 whitespace-nowrap bg-primary px-6 py-4 font-display text-sm tracking-widest text-primary-foreground shadow-[0_0_30px_-10px_hsl(var(--primary)/0.6)] transition-all hover:brightness-110 sm:px-8 sm:text-base"
+                  className="group inline-flex items-center gap-2 whitespace-nowrap bg-primary px-6 py-4 font-display text-sm tracking-widest text-primary-foreground shadow-[0_0_30px_-10px_hsl(var(--primary)/0.6)] transition-all hover:brightness-110 sm:px-8 sm:text-base"
                 >
-                  {c.cta} <ArrowRight size={18} />
+                  {c.cta} <ArrowRight size={18} aria-hidden="true" className="nudge" />
                 </Link>
               </div>
             </div>

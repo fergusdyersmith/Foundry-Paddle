@@ -1,5 +1,3 @@
-import type { CSSProperties } from "react";
-import { motion } from "framer-motion";
 import { formatUsd, ratesOn } from "@shared/rates";
 import { Link } from "react-router-dom";
 import { ArrowRight, Footprints, CalendarCheck, Handshake, Timer } from "lucide-react";
@@ -7,6 +5,7 @@ import { BOOK_PAGE_PATH } from "@/constants/booking";
 import { HOURS_SHORT } from "@/constants/hours";
 import Photo from "@/components/Photo";
 import Seo from "@/components/Seo";
+import Reveal from "@/components/motion/Reveal";
 
 /** Conversion landing page for the two paid-acquisition segments: total
  *  beginners and pickleball players. This is the destination for flyers, QR
@@ -85,7 +84,7 @@ const NewToPadel = () => {
           <div className="hero-gradient absolute inset-0" />
         </div>
         <div className="relative z-10 mx-auto max-w-3xl px-6 pt-24 text-center">
-          <div data-enter style={{ "--enter-y": "30px", "--enter-duration": "0.8s" } as CSSProperties}>
+          <div data-enter>
             <span className="font-body text-sm tracking-[0.2em] uppercase text-primary">
               First play {formatUsd(rates.perPlayer90)} · No experience needed
             </span>
@@ -112,13 +111,7 @@ const NewToPadel = () => {
       {/* Pickleball crossover */}
       <section className="px-6 py-24">
         <div className="mx-auto max-w-5xl">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.8 }}
-            className="mb-14 text-center"
-          >
+          <Reveal className="mb-14 text-center">
             <h2 className="font-display text-4xl sm:text-5xl text-foreground mb-4">
               PLAY PICKLEBALL? YOU'LL LOVE PADEL.
             </h2>
@@ -126,22 +119,15 @@ const NewToPadel = () => {
               Padel is the fastest-growing racquet sport in the world, and pickleball
               players pick it up faster than anyone.
             </p>
-          </motion.div>
-          <div className="grid gap-8 sm:grid-cols-3">
-            {pickleballPoints.map((p, i) => (
-              <motion.div
-                key={p.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-                className="border border-border p-8"
-              >
+          </Reveal>
+          <Reveal variant="stagger" className="grid gap-8 sm:grid-cols-3">
+            {pickleballPoints.map((p) => (
+              <div key={p.title} className="border border-border p-8">
                 <h3 className="font-display text-xl text-foreground mb-3">{p.title}</h3>
                 <p className="font-body text-sm leading-relaxed text-muted-foreground">{p.desc}</p>
-              </motion.div>
+              </div>
             ))}
-          </div>
+          </Reveal>
         </div>
       </section>
 
@@ -149,50 +135,31 @@ const NewToPadel = () => {
       <section className="px-6 py-12">
         <div className="mx-auto max-w-5xl">
           <div className="section-divider mb-20" />
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.8 }}
-            className="mb-14 text-center"
-          >
+          <Reveal className="mb-14 text-center">
             <h2 className="font-display text-4xl sm:text-5xl text-foreground mb-4">YOUR FIRST VISIT</h2>
             <p className="font-body text-sm text-muted-foreground">
               No gear, no partner, no experience. Here's how easy it is.
             </p>
-          </motion.div>
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          </Reveal>
+          <Reveal variant="stagger" className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {firstVisitSteps.map((step, i) => (
-              <motion.div
-                key={step.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-                className="text-center"
-              >
+              <div key={step.title} className="text-center">
                 <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center border border-primary">
                   <step.icon size={22} className="text-primary" />
                 </div>
                 <span className="font-body text-xs tracking-[0.2em] text-muted-foreground">STEP {i + 1}</span>
                 <h3 className="mt-1 font-display text-xl text-foreground mb-2">{step.title}</h3>
                 <p className="font-body text-sm leading-relaxed text-muted-foreground">{step.desc}</p>
-              </motion.div>
+              </div>
             ))}
-          </div>
+          </Reveal>
         </div>
       </section>
 
       {/* Quick facts */}
       <section className="px-6 py-24">
         <div className="mx-auto max-w-4xl">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.8 }}
-            className="grid grid-cols-2 gap-10 border border-border p-10 text-center sm:grid-cols-4"
-          >
+          <Reveal className="grid grid-cols-2 gap-10 border border-border p-10 text-center sm:grid-cols-4">
             {quickFacts.map((f) => (
               <div key={f.label}>
                 <span className="font-display text-4xl text-primary">{f.stat}</span>
@@ -201,54 +168,51 @@ const NewToPadel = () => {
                 </p>
               </div>
             ))}
-          </motion.div>
+          </Reveal>
         </div>
       </section>
 
       {/* Final CTA */}
       <section className="px-6 pb-28">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="mx-auto max-w-2xl text-center"
-        >
+        <div className="mx-auto max-w-2xl text-center">
+          {/* The dividers draw themselves, so they stay outside the Reveal. */}
           <div className="section-divider mb-12" />
-          <h2 className="font-display text-5xl sm:text-6xl text-foreground mb-4">READY TO RALLY?</h2>
-          <p className="mb-10 font-body text-sm tracking-[0.15em] uppercase text-muted-foreground">
-            Indoor courts in St. Johns, next to Cathedral Park
-          </p>
-          <Link
-            to={BOOK_PAGE_PATH}
-            className="inline-block bg-primary px-12 py-4 font-display text-xl tracking-widest text-primary-foreground transition-all hover:brightness-110"
-          >
-            BOOK YOUR FIRST PLAY
-          </Link>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
+          <Reveal>
+            <h2 className="font-display text-5xl sm:text-6xl text-foreground mb-4">READY TO RALLY?</h2>
+            <p className="mb-10 font-body text-sm tracking-[0.15em] uppercase text-muted-foreground">
+              Indoor courts in St. Johns, next to Cathedral Park
+            </p>
             <Link
               to={BOOK_PAGE_PATH}
-              className="inline-flex items-center gap-2 font-display text-xs tracking-[0.2em] text-muted-foreground transition-colors hover:text-primary"
+              className="inline-block bg-primary px-12 py-4 font-display text-xl tracking-widest text-primary-foreground transition-all hover:brightness-110"
             >
-              SEE BEGINNER CLINICS <ArrowRight className="h-3.5 w-3.5" />
+              BOOK YOUR FIRST PLAY
             </Link>
-            <Link
-              to="/the-sport"
-              className="inline-flex items-center gap-2 font-display text-xs tracking-[0.2em] text-muted-foreground transition-colors hover:text-primary"
-            >
-              WHAT IS PADEL? <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-            {/* The first question after "how do I start" is "who do I play with",
-                and a beginner has nobody yet. This is the answer. */}
-            <Link
-              to="/find-players"
-              className="inline-flex items-center gap-2 font-display text-xs tracking-[0.2em] text-muted-foreground transition-colors hover:text-primary"
-            >
-              NOBODY TO PLAY WITH? <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
+              <Link
+                to={BOOK_PAGE_PATH}
+                className="group inline-flex items-center gap-2 font-display text-xs tracking-[0.2em] text-muted-foreground transition-colors hover:text-primary"
+              >
+                SEE BEGINNER CLINICS <ArrowRight aria-hidden="true" className="nudge h-3.5 w-3.5" />
+              </Link>
+              <Link
+                to="/the-sport"
+                className="group inline-flex items-center gap-2 font-display text-xs tracking-[0.2em] text-muted-foreground transition-colors hover:text-primary"
+              >
+                WHAT IS PADEL? <ArrowRight aria-hidden="true" className="nudge h-3.5 w-3.5" />
+              </Link>
+              {/* The first question after "how do I start" is "who do I play with",
+                  and a beginner has nobody yet. This is the answer. */}
+              <Link
+                to="/find-players"
+                className="group inline-flex items-center gap-2 font-display text-xs tracking-[0.2em] text-muted-foreground transition-colors hover:text-primary"
+              >
+                NOBODY TO PLAY WITH? <ArrowRight aria-hidden="true" className="nudge h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </Reveal>
           <div className="section-divider mt-12" />
-        </motion.div>
+        </div>
       </section>
     </main>
   );

@@ -1,5 +1,3 @@
-import type { CSSProperties } from "react";
-import { motion } from "framer-motion";
 import { Instagram, Facebook, Mail, MapPin, Clock, Car } from "lucide-react";
 import { GOOGLE_MAPS_EMBED_SRC, GOOGLE_MAPS_URL } from "@/constants/location";
 import StayInTouchForm from "@/components/StayInTouchForm";
@@ -8,9 +6,11 @@ import WhatsAppIcon from "@/components/WhatsAppIcon";
 import Photo from "@/components/Photo";
 import { HOURS_LINE } from "@/constants/hours";
 import Seo from "@/components/Seo";
+import PageHeader from "@/components/PageHeader";
+import Reveal from "@/components/motion/Reveal";
 
 const TikTokIcon = ({ size = 20 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
   </svg>
 );
@@ -25,14 +25,7 @@ const Contact = () => {
       />
       <section className="py-20 px-6">
         <div className="mx-auto max-w-4xl text-center">
-          <div data-enter style={{ "--enter-y": "30px", "--enter-duration": "0.8s" } as CSSProperties}>
-            <h1 className="font-display text-6xl sm:text-8xl text-foreground mb-4">CONTACT</h1>
-            <div className="flex items-center justify-center gap-4 mb-6">
-              <div className="h-px w-16 bg-primary" />
-              <span className="font-body text-sm tracking-[0.2em] uppercase text-primary">Get In Touch</span>
-              <div className="h-px w-16 bg-primary" />
-            </div>
-          </div>
+          <PageHeader title="CONTACT" kicker="Get In Touch" />
         </div>
       </section>
 
@@ -41,7 +34,7 @@ const Contact = () => {
           <div className="section-divider mb-16" />
           <div className="grid md:grid-cols-2 gap-16">
             {/* Info */}
-            <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}>
+            <Reveal>
               <h2 className="font-display text-3xl text-foreground mb-6">FIND US</h2>
               <div className="mb-8 aspect-[3/2] overflow-hidden border border-border bg-secondary">
                 <Photo
@@ -103,9 +96,9 @@ const Contact = () => {
               <div className="mt-10">
                 <span className="font-body text-xs uppercase tracking-[0.2em] text-muted-foreground">Follow Us</span>
                 <div className="flex items-center gap-5 mt-3">
-                  <a href="https://instagram.com/foundrypadelpdx" target="_blank" rel="noopener noreferrer" className="text-muted-foreground transition-colors hover:text-primary"><Instagram size={20} /></a>
-                  <a href="https://www.facebook.com/share/1Cerw2CTec/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer" className="text-muted-foreground transition-colors hover:text-primary"><Facebook size={20} /></a>
-                  <a href="https://tiktok.com/@foundry.padel" target="_blank" rel="noopener noreferrer" className="text-muted-foreground transition-colors hover:text-primary"><TikTokIcon size={20} /></a>
+                  <a href="https://instagram.com/foundrypadelpdx" target="_blank" rel="noopener noreferrer" aria-label="Foundry Padel on Instagram" className="text-muted-foreground transition-colors hover:text-primary"><Instagram size={20} aria-hidden="true" /></a>
+                  <a href="https://www.facebook.com/share/1Cerw2CTec/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer" aria-label="Foundry Padel on Facebook" className="text-muted-foreground transition-colors hover:text-primary"><Facebook size={20} aria-hidden="true" /></a>
+                  <a href="https://tiktok.com/@foundry.padel" target="_blank" rel="noopener noreferrer" aria-label="Foundry Padel on TikTok" className="text-muted-foreground transition-colors hover:text-primary"><TikTokIcon size={20} /></a>
                   <WhatsAppJoinLink ariaLabel="Join our WhatsApp community" iconSize={20} className="text-muted-foreground transition-colors hover:text-primary" />
                 </div>
               </div>
@@ -129,15 +122,17 @@ const Contact = () => {
                   />
                 </a>
               </div>
-            </motion.div>
+            </Reveal>
 
-            <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 0.1 }}>
+            {/* Not wrapped in a Reveal: StayInTouchForm reveals its own heading and keeps
+                its inputs still, so a Reveal here would nest and move the form. */}
+            <div>
               <StayInTouchForm
                 source="contact"
                 headingClassName="font-display text-3xl text-foreground mb-3"
                 subtitleClassName="font-body text-sm tracking-[0.15em] uppercase text-muted-foreground mb-8"
               />
-            </motion.div>
+            </div>
           </div>
         </div>
       </section>

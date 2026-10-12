@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
+import { publicSearch } from "@/lib/analytics";
 
 /**
  * GA4 page views for a client-side router.
@@ -33,7 +34,7 @@ export default function Analytics() {
   const last = useRef<string | null>(null);
 
   useEffect(() => {
-    const page = pathname + search;
+    const page = pathname + publicSearch(search);
     if (last.current === page) return;
     last.current = page;
 
@@ -46,7 +47,7 @@ export default function Analytics() {
       if (typeof window.gtag !== "function") return;
       window.gtag("event", "page_view", {
         page_path: page,
-        page_location: window.location.href,
+        page_location: window.location.origin + page,
         page_title: document.title,
       });
     }, 0);

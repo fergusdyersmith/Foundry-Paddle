@@ -1,12 +1,11 @@
-import type { CSSProperties } from "react";
 import { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
 import { Head } from "vite-react-ssg";
 import { Link } from "react-router-dom";
 import { ArrowRight, Check, MapPin, Phone } from "lucide-react";
 import Photo from "@/components/Photo";
 import Seo from "@/components/Seo";
 import StayInTouchForm from "@/components/StayInTouchForm";
+import Reveal from "@/components/motion/Reveal";
 import { GALLERY_IMAGE_DIR } from "@/data/gallery";
 import { GOOGLE_MAPS_URL } from "@/constants/location";
 import { PLAYTOMIC_APP_STORE_URL, PLAYTOMIC_PLAY_STORE_URL } from "@/constants/booking";
@@ -166,7 +165,7 @@ const Preview = () => {
           <div className="hero-gradient absolute inset-0" />
         </div>
         <div className="relative z-10 mx-auto max-w-3xl px-6 pt-24 text-center">
-          <div data-enter style={{ "--enter-y": "30px", "--enter-duration": "0.8s" } as CSSProperties}>
+          <div data-enter>
             <span className="font-body text-sm tracking-[0.2em] uppercase text-primary">
               Neighborhood preview evening
             </span>
@@ -215,20 +214,13 @@ const Preview = () => {
                 to="/new-to-padel"
                 className="mt-8 inline-flex items-center gap-2 bg-primary px-8 py-3 font-display tracking-widest text-primary-foreground transition-all hover:brightness-110"
               >
-                NEW TO PADEL <ArrowRight size={18} />
+                NEW TO PADEL <ArrowRight size={18} className="nudge" />
               </Link>
             </div>
           ) : (
-            <div className="mt-12 grid gap-6 md:grid-cols-3">
+            <Reveal variant="stagger" className="mt-12 grid gap-6 md:grid-cols-3">
               {sessions.map((s, i) => (
-                <motion.div
-                  key={s.start}
-                  initial={{ opacity: 0, y: 24 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-60px" }}
-                  transition={{ duration: 0.6, delay: i * 0.08 }}
-                  className="flex flex-col border border-border bg-secondary p-8 text-center"
-                >
+                <div key={s.start} className="flex flex-col border border-border bg-secondary p-8 text-center">
                   <span className="font-body text-xs tracking-[0.2em] uppercase text-muted-foreground">
                     Session {i + 1}
                   </span>
@@ -279,9 +271,9 @@ const Preview = () => {
                       </span>
                     )}
                   </div>
-                </motion.div>
+                </div>
               ))}
-            </div>
+            </Reveal>
           )}
 
           {!isOver && (
@@ -321,13 +313,7 @@ const Preview = () => {
       <section className="px-6 pb-8">
         <div className="mx-auto max-w-5xl">
           <div className="section-divider mb-16" />
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.8 }}
-            className="grid gap-12 md:grid-cols-2 md:items-center"
-          >
+          <Reveal className="grid gap-12 md:grid-cols-2 md:items-center">
             <div>
               <h2 className={sectionHeading}>
                 <span className="text-primary">{PREVIEW_PRICE}</span> AND YOU'RE SET
@@ -377,7 +363,7 @@ const Preview = () => {
                 className="h-full w-full object-cover"
               />
             </div>
-          </motion.div>
+          </Reveal>
         </div>
       </section>
 

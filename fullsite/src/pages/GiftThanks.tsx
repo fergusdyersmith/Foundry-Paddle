@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Head } from "vite-react-ssg";
-import { Loader2 } from "lucide-react";
+import BallLoader from "@/components/motion/BallLoader";
+import CheckDraw from "@/components/motion/CheckDraw";
 
 /**
  * Where Square sends the buyer after paying.
@@ -41,12 +42,38 @@ interface OrderStatus {
 const POLL_MS = 3000;
 const GIVE_UP_AFTER_MS = 120_000;
 
+const ORDER_KEY = "fp:gift-order";
+
+/**
+ * The order reference and its unlock token, read once and then taken out of the address
+ * bar. The token unlocks the gift codes and the certificate, and in the URL it was in
+ * every analytics event, the history, and any screenshot of the page. It is kept in this
+ * tab's sessionStorage instead, so a refresh still finds the order.
+ *
+ * Read after hydration, never during render: the prerendered page cannot know the query,
+ * and reading it in render made the first client render disagree with the HTML.
+ */
+function takeOrderParams(): { reference: string; token: string } {
+  const q = new URLSearchParams(window.location.search);
+  let found = { reference: q.get("ref") ?? "", token: q.get("t") ?? "" };
+  try {
+    if (found.reference) sessionStorage.setItem(ORDER_KEY, JSON.stringify(found));
+    else found = { reference: "", token: "", ...JSON.parse(sessionStorage.getItem(ORDER_KEY) || "{}") };
+  } catch {
+    /* storage disabled: the query is all there is */
+  }
+  if (q.has("ref") || q.has("t")) {
+    window.history.replaceState(window.history.state, "", window.location.pathname);
+  }
+  return found;
+}
+
 export default function GiftThanks() {
-  const { reference, token } = useMemo(() => {
-    if (typeof window === "undefined") return { reference: "", token: "" };
-    const q = new URLSearchParams(window.location.search);
-    return { reference: q.get("ref") ?? "", token: q.get("t") ?? "" };
-  }, []);
+  // null until read on the client; the prerendered page shows the waiting state.
+  const [params, setParams] = useState<{ reference: string; token: string } | null>(null);
+  useEffect(() => setParams(takeOrderParams()), []);
+  const reference = params?.reference ?? "";
+  const token = params?.token ?? "";
 
   const [order, setOrder] = useState<OrderStatus | null>(null);
   const [gaveUp, setGaveUp] = useState(false);
@@ -54,6 +81,7 @@ export default function GiftThanks() {
   useEffect(() => {
     if (!reference) return;
     let stop = false;
+    let timer: number | undefined;
     const started = Date.now();
 
     async function poll() {
@@ -79,12 +107,13 @@ export default function GiftThanks() {
         setGaveUp(true);
         return;
       }
-      setTimeout(poll, POLL_MS);
+      timer = window.setTimeout(poll, POLL_MS);
     }
 
     poll();
     return () => {
       stop = true;
+      window.clearTimeout(timer);
     };
   }, [reference, token]);
 
@@ -108,16 +137,16 @@ export default function GiftThanks() {
           </h1>
           <div className="mt-5 h-px w-16 bg-primary" />
 
-          {!reference && (
+          {params && !reference && (
             <p className="mt-8 font-body text-secondary-foreground">
               This link is missing its order reference. If you have just paid, check your
               email: the codes are on their way there regardless.
             </p>
           )}
 
-          {reference && !done && !gaveUp && (
+          {(!params || reference) && !done && !gaveUp && (
             <div className="mt-8 flex items-center gap-3 font-body text-secondary-foreground">
-              <Loader2 className="h-5 w-5 animate-spin shrink-0" />
+              <BallLoader label="Confirming your payment" className="shrink-0" />
               <span>
                 Confirming your payment with Square. This usually takes a few seconds.
               </span>
@@ -140,7 +169,9 @@ export default function GiftThanks() {
 
           {done && (
             <>
-              <p className="mt-8 font-body text-secondary-foreground">
+              {/* Drawn where the loader was rallying, the moment the codes arrive. */}
+              <CheckDraw className="mt-8 h-14 w-14 text-foreground" />
+              <p className="mt-6 font-body text-secondary-foreground">
                 Your payment went through. {gifts.length === 1 ? "This code is" : "These codes are"}{" "}
                 also on the way to{" "}
                 <strong className="text-foreground">{order?.buyer_email}</strong>, with a

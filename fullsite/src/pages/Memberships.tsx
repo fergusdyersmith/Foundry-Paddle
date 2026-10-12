@@ -1,5 +1,3 @@
-import type { CSSProperties } from "react";
-import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Check, Star } from "lucide-react";
 import BookCTA from "@/components/BookCTA";
@@ -9,6 +7,9 @@ import { OFF_PEAK_LABELS, PEAK_LABELS } from "@/constants/memberPricing";
 import { formatUsd, ratesOn, RATE_CHANGE_DATE } from "@shared/rates";
 import StayInTouchForm from "@/components/StayInTouchForm";
 import Seo from "@/components/Seo";
+import PageHeader from "@/components/PageHeader";
+import Reveal from "@/components/motion/Reveal";
+import CourtSlots from "@/components/motion/CourtSlots";
 
 // The t-shirt lives here rather than in each tier's list: it was the same line repeated
 // three times, which is what this section is for.
@@ -209,18 +210,16 @@ const Memberships = () => {
       />
       {/* Hero */}
       <section className="py-20 px-6">
-        <div className="mx-auto max-w-4xl text-center">
-          <div data-enter style={{ "--enter-y": "30px", "--enter-duration": "0.8s" } as CSSProperties}>
-            {/* MEMBERSHIPS is the longest single-word heading on the site and has no
-                space to wrap at, so a fixed text-6xl overflows narrow phones. Every
-                other hero either wraps (BOOK A COURT, SKILL SURVEY) or is short
-                enough (FAQ, CONTACT), which is why this one page differs. */}
-            <h1 className="font-display text-[clamp(2.25rem,11vw,3.75rem)] leading-none sm:text-8xl text-foreground mb-4">MEMBERSHIPS</h1>
-            <div className="flex items-center justify-center gap-4 mb-6">
-              <div className="h-px w-16 bg-primary" />
-              <span className="font-body text-sm tracking-[0.2em] uppercase text-primary">Find Your Level</span>
-              <div className="h-px w-16 bg-primary" />
-            </div>
+        <div className="mx-auto max-w-4xl">
+          {/* MEMBERSHIPS is the longest single-word heading on the site and has no
+              space to wrap at, so a fixed text-6xl overflows narrow phones. Every
+              other hero either wraps (BOOK A COURT, SKILL SURVEY) or is short
+              enough (FAQ, CONTACT), which is why this one page differs. */}
+          <PageHeader
+            title="MEMBERSHIPS"
+            kicker="Find Your Level"
+            titleClassName="text-[clamp(2.25rem,11vw,3.75rem)] leading-none sm:text-8xl"
+          >
             <p className="font-body text-base text-secondary-foreground max-w-xl mx-auto">
               From casual play to unlimited access, find the membership that fits your game.
             </p>
@@ -231,49 +230,48 @@ const Memberships = () => {
                 the live count from the club's own roster, so the scarcity is checkable
                 and goes stale on its own if sales stop. */}
             <FoundingMemberBar />
-          </div>
+          </PageHeader>
         </div>
       </section>
 
       {/* All Members Receive */}
       <section className="py-12 px-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="mx-auto max-w-5xl text-center"
-        >
-          <div className="flex items-center justify-center gap-4 mb-8">
+        <div className="mx-auto max-w-5xl text-center">
+          <Reveal className="flex items-center justify-center gap-4 mb-8">
             <div className="h-px w-12 bg-primary" />
             <h2 className="font-display text-2xl sm:text-3xl text-foreground">ALL MEMBERS RECEIVE</h2>
             <div className="h-px w-12 bg-primary" />
-          </div>
+          </Reveal>
           {/* Two columns, not three: at this count three columns leave an orphan on its
               own row. Left-aligned inside the cells (the section itself is centred)
               because centred items of different lengths have no common edge to read
               down. */}
-          <div className="grid sm:grid-cols-2 gap-x-10 gap-y-4 max-w-2xl mx-auto text-left">
+          <Reveal
+            variant="stagger"
+            delay={1}
+            className="grid sm:grid-cols-2 gap-x-10 gap-y-4 max-w-2xl mx-auto text-left"
+          >
             {sharedBenefits.map((benefit) => (
               <div key={benefit} className="flex items-start gap-2">
                 <Star size={12} className="text-primary shrink-0 fill-primary mt-1.5" />
                 <span className="font-body text-sm text-secondary-foreground">{benefit}</span>
               </div>
             ))}
-          </div>
-        </motion.div>
+          </Reveal>
+        </div>
       </section>
 
       {/* How membership play works. Stated before the tiers because "free court
           time" is the single most likely thing to be misread on this page. */}
       <section className="pt-4 pb-8 px-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="mx-auto max-w-3xl border border-primary/40 p-6 sm:p-8 text-center"
-        >
+        <Reveal className="mx-auto max-w-3xl border border-primary/40 p-6 sm:p-8 text-center">
+          {/* The misreading this block exists to head off, drawn: one place taken on a
+              doubles court, three still open. A membership is that one place. */}
+          <CourtSlots
+            filled={1}
+            label="One place on a doubles court"
+            className="mx-auto mb-4 block h-10 w-20"
+          />
           <h3 className="font-body text-xs tracking-[0.2em] uppercase text-primary mb-3">
             How membership play works
           </h3>
@@ -290,19 +288,15 @@ const Memberships = () => {
             peak, Regular and Padelhead members get a percentage off tournaments, and Student
             members pay the standard price. Each card below shows the discount for that tier.
           </p>
-        </motion.div>
+        </Reveal>
       </section>
 
       {/* Tiers */}
       <section className="pt-4 pb-12 px-6">
-        <div className="mx-auto max-w-5xl grid md:grid-cols-3 gap-6">
-          {tiers.map((tier, i) => (
-            <motion.div
+        <Reveal variant="stagger" className="mx-auto max-w-5xl grid md:grid-cols-3 gap-6">
+          {tiers.map((tier) => (
+            <div
               key={tier.name}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: i * 0.1 }}
               className={`border p-8 flex flex-col ${
                 tier.highlight ? "border-primary bg-secondary" : "border-border"
               }`}
@@ -360,20 +354,14 @@ const Memberships = () => {
               >
                 JOIN
               </a>
-            </motion.div>
+            </div>
           ))}
-        </div>
+        </Reveal>
 
         {/* Notes that qualify every tier above. The year-1 line is here rather
             than buried in the terms because it is the one benefit with an end
             date on it, and nobody should discover that at renewal. */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="mx-auto max-w-3xl mt-10 space-y-3 text-center"
-        >
+        <Reveal variant="fade" className="mx-auto max-w-3xl mt-10 space-y-3 text-center">
           <p className="font-body text-xs leading-relaxed text-muted-foreground">
             Value is what you get back in a month at the $22.50 per-player rate taking
             effect on <span className="text-foreground font-semibold">1 September 2026</span>,
@@ -414,19 +402,13 @@ const Memberships = () => {
             Memberships are personal and non-transferable. Companies and partners
             looking for transferable or multi-seat access, see below.
           </p>
-        </motion.div>
+        </Reveal>
       </section>
 
       {/* Peak / off-peak windows. Every tier is priced against these, so they
           belong on the page rather than only inside the booking system. */}
       <section className="py-12 px-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="mx-auto max-w-3xl"
-        >
+        <Reveal className="mx-auto max-w-3xl">
           <div className="flex items-center justify-center gap-4 mb-8">
             <div className="h-px w-12 bg-primary" />
             <h2 className="font-display text-2xl sm:text-3xl text-foreground text-center">
@@ -460,19 +442,13 @@ const Memberships = () => {
             The club is open 6am to midnight every day. Drop-in and guest pricing is the same at any
             hour; peak and off-peak apply to member play only.
           </p>
-        </motion.div>
+        </Reveal>
       </section>
 
       {/* Pay-as-you-go rate card — the reference every "Value" figure above is
           derived from, and what guests and non-members pay. */}
       <section className="py-12 px-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="mx-auto max-w-3xl"
-        >
+        <Reveal className="mx-auto max-w-3xl">
           <div className="flex items-center justify-center gap-4 mb-8">
             <div className="h-px w-12 bg-primary" />
             <h2 className="font-display text-2xl sm:text-3xl text-foreground text-center">
@@ -514,19 +490,13 @@ const Memberships = () => {
             . Court time is charged in addition to the coach's rate. The member tournament discount
             applies to tournaments and leagues, not to clinics or one-to-one coaching.
           </p>
-        </motion.div>
+        </Reveal>
       </section>
 
       {/* Corporate & partner memberships. Deliberately unpriced: these are
           arranged directly. Exists so the category is visibly standing policy. */}
       <section className="py-12 px-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="mx-auto max-w-3xl border border-border bg-secondary p-8 sm:p-10"
-        >
+        <Reveal className="mx-auto max-w-3xl border border-border bg-secondary p-8 sm:p-10">
           <span className="font-body text-xs tracking-[0.2em] uppercase text-primary">
             By Arrangement
           </span>
@@ -556,18 +526,12 @@ const Memberships = () => {
           >
             GET IN TOUCH
           </Link>
-        </motion.div>
+        </Reveal>
       </section>
 
       {/* Initiation Fee Note */}
       <section className="py-16 px-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="mx-auto max-w-3xl text-center"
-        >
+        <Reveal className="mx-auto max-w-3xl text-center">
           <h2 className="font-display text-3xl sm:text-4xl text-foreground mb-4">FOUNDING MEMBERSHIPS</h2>
           <p className="font-body text-base text-secondary-foreground max-w-lg mx-auto mb-4">
             We are opening <span className="text-foreground font-semibold">100 memberships</span>{" "}
@@ -586,7 +550,7 @@ const Memberships = () => {
           <p className="font-body text-xs text-muted-foreground max-w-lg mx-auto mt-6">
             Corporate and partner memberships are arranged separately and sit outside the 100.
           </p>
-        </motion.div>
+        </Reveal>
       </section>
 
       <BookCTA />

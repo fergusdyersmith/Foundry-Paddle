@@ -1,9 +1,10 @@
-import type { CSSProperties } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { AlertTriangle, ArrowRight, Clock, Users } from "lucide-react";
 import Seo from "@/components/Seo";
+import PageHeader from "@/components/PageHeader";
+import Reveal from "@/components/motion/Reveal";
+import BallLoader from "@/components/motion/BallLoader";
 import { PLAYTOMIC_TENANT_URL } from "@/constants/booking";
 import {
   DAY_NAMES,
@@ -57,7 +58,18 @@ function useMatchSlots() {
   });
 }
 
-function SlotRow({ slot, baseline, all }: { slot: MatchSlot; baseline: number | null; all: MatchSlot[] }) {
+function SlotRow({
+  slot,
+  baseline,
+  all,
+  index,
+}: {
+  slot: MatchSlot;
+  baseline: number | null;
+  all: MatchSlot[];
+  /** Position in its list: each bar fills one stagger step after the one above. */
+  index: number;
+}) {
   const pct = percent(slot.fill_rate);
   return (
     <div className="flex items-center gap-4 border-b border-border/60 py-3 last:border-b-0">
@@ -65,7 +77,9 @@ function SlotRow({ slot, baseline, all }: { slot: MatchSlot; baseline: number | 
         {slotLabel(slot)}
       </div>
       <div className="h-2 flex-1 bg-muted">
-        <div
+        <Reveal
+          variant="bar"
+          delay={index}
           className="h-full bg-primary"
           style={{ width: `${Math.max(4, 10 + intensity(slot.fill_rate, all) * 90)}%` }}
         />
@@ -167,33 +181,23 @@ const FindPlayers = () => {
 
       {/* Hero */}
       <section className="px-6 py-20">
-        <div className="mx-auto max-w-4xl text-center">
-          <div
-            data-enter style={{ "--enter-y": "30px", "--enter-duration": "0.8s" } as CSSProperties}
-          >
-            <h1 className="mb-4 font-display text-6xl text-foreground sm:text-8xl">FIND PLAYERS</h1>
-            <div className="mb-6 flex items-center justify-center gap-4">
-              <div className="h-px w-16 bg-primary" />
-              <span className="font-body text-sm uppercase tracking-[0.2em] text-primary">
-                Free · Never Play Alone
-              </span>
-              <div className="h-px w-16 bg-primary" />
-            </div>
+        <div className="mx-auto max-w-4xl">
+          <PageHeader title="FIND PLAYERS" kicker="Free · Never Play Alone">
             <p className="mx-auto max-w-xl font-body text-base text-secondary-foreground">
               Tell us your level and when you play. We will message you open matches that
               fit, so you stop refreshing the app hoping something turns up.
             </p>
             <a
               href={JOIN_PATH}
-              className="mt-10 inline-flex items-center gap-3 bg-primary px-10 py-4 font-display text-lg tracking-widest text-primary-foreground transition-all hover:brightness-110"
+              className="group mt-10 inline-flex items-center gap-3 bg-primary px-10 py-4 font-display text-lg tracking-widest text-primary-foreground transition-all hover:brightness-110"
             >
               GET MATCHES SENT TO ME
-              <ArrowRight size={20} />
+              <ArrowRight size={20} aria-hidden="true" className="nudge" />
             </a>
             <p className="mt-4 font-body text-xs text-muted-foreground">
               Takes about a minute. Free, and you can stop them any time.
             </p>
-          </div>
+          </PageHeader>
         </div>
       </section>
 
@@ -211,9 +215,7 @@ const FindPlayers = () => {
               {data?.window_days ?? 120} days, not guessed.
             </p>
 
-            {isLoading && (
-              <p className="font-body text-sm text-muted-foreground">Loading match history…</p>
-            )}
+            {isLoading && <BallLoader label="Loading match history…" showLabel className="py-10" />}
 
             {!isLoading && ranked.length > 0 && (
               <>
@@ -234,12 +236,13 @@ const FindPlayers = () => {
                       </span>
                     )}
                   </div>
-                  {ranked.slice(0, 8).map((slot) => (
+                  {ranked.slice(0, 8).map((slot, i) => (
                     <SlotRow
                       key={`${slot.weekday}-${slot.hour}`}
                       slot={slot}
                       baseline={baseline}
                       all={slots}
+                      index={i}
                     />
                   ))}
                 </div>
@@ -263,15 +266,19 @@ const FindPlayers = () => {
                       </Link>{" "}
                       automatically.
                     </p>
+                    {/* Never one already listed above: with nine to eleven ranked
+                        slots, the last four overlapped the top eight, and the same hour
+                        read as both MOST LIKELY and HARDEST TO FILL. */}
                     {ranked
-                      .slice(-4)
+                      .slice(Math.max(8, ranked.length - 4))
                       .reverse()
-                      .map((slot) => (
+                      .map((slot, i) => (
                         <SlotRow
                           key={`${slot.weekday}-${slot.hour}`}
                           slot={slot}
                           baseline={baseline}
                           all={slots}
+                          index={i}
                         />
                       ))}
                   </div>
@@ -279,12 +286,12 @@ const FindPlayers = () => {
 
                 {/* The grid is context, the ranking above is the product. Phones get
                     the ranking only — a 7-by-16 table at 400px is unreadable. */}
-                <div className="hidden border border-border bg-card p-6 sm:block sm:p-8">
+                <Reveal variant="fade" className="hidden border border-border bg-card p-6 sm:block sm:p-8">
                   <h3 className="mb-5 font-display text-2xl tracking-wide text-foreground">
                     THE WHOLE WEEK
                   </h3>
                   <Heatmap slots={slots} baseline={baseline} />
-                </div>
+                </Reveal>
 
                 <p className="mt-6 font-body text-[11px] leading-relaxed text-muted-foreground">
                   Based on {data?.sample_matches ?? 0} open matches at Foundry over the
@@ -321,7 +328,7 @@ const FindPlayers = () => {
               source row is club_knowledge #15 (verified). If the app changes, fix that
               row first: it feeds the chatbot and the phone agent too, and this page
               should follow it rather than drift into a third version. */}
-          <ol className="space-y-6">
+          <Reveal as="ol" variant="stagger" className="space-y-6">
             {[
               {
                 t: "Set your Playtomic level first",
@@ -374,7 +381,7 @@ const FindPlayers = () => {
                 </div>
               </li>
             ))}
-          </ol>
+          </Reveal>
 
           <div className="mt-10 border border-border bg-card p-6">
             <h3 className="mb-2 font-display text-lg tracking-wide text-foreground">
@@ -414,13 +421,7 @@ const FindPlayers = () => {
 
       {/* Closing CTA */}
       <section className="px-6 pb-24">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="mx-auto max-w-3xl border border-primary/40 p-8 text-center sm:p-12"
-        >
+        <Reveal className="mx-auto max-w-3xl border border-primary/40 p-8 text-center sm:p-12">
           <Users size={28} className="mx-auto mb-4 text-primary" />
           <h2 className="mb-4 font-display text-3xl text-foreground sm:text-4xl">
             OR LET THE MATCHES COME TO YOU
@@ -435,7 +436,7 @@ const FindPlayers = () => {
           >
             SIGN ME UP
           </a>
-        </motion.div>
+        </Reveal>
       </section>
     </main>
   );
