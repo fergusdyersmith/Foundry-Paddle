@@ -21,6 +21,10 @@ import { sanitize, normalizePhone } from "./notify.js";
 import { linkSpeech, TEMPLATES, deepLinkFromEvent } from "./smslink.js";
 
 const VOICE_TOOL_SECRET = process.env.VOICE_TOOL_SECRET;
+// The post-call webhook's own secret. Bland can only authenticate that callback with a
+// token in its URL, and URLs land in request logs (Bland's and Railway's), so the token
+// there should not be the one that also unlocks the tools. See matchesWebhookToken.
+const VOICE_WEBHOOK_SECRET = process.env.VOICE_WEBHOOK_SECRET;
 
 const LIMITS = {
   // Bland is the only legitimate caller and a busy club takes a handful of
@@ -47,13 +51,36 @@ function overLimit(key, max = LIMITS.perMinute, windowMs = LIMITS.windowMs) {
 const sweeper = setInterval(() => hits.clear(), 10 * 60 * 1000);
 sweeper.unref();
 
-/** Constant-time comparison with the shared secret. Fails closed: an unset secret
- *  means the endpoint is unconfigured, not open. */
-function matchesSecret(presented) {
-  if (!VOICE_TOOL_SECRET) return false;
+/** Constant-time comparison with a secret. Fails closed: an unset secret means the
+ *  endpoint is unconfigured, not open. */
+function safeEqual(presented, secret) {
+  if (!secret) return false;
   const a = Buffer.from(String(presented ?? ""));
-  const b = Buffer.from(VOICE_TOOL_SECRET);
+  const b = Buffer.from(secret);
   return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+function matchesSecret(presented) {
+  return safeEqual(presented, VOICE_TOOL_SECRET);
+}
+
+/** The post-call webhook's URL token: VOICE_WEBHOOK_SECRET.
+ *
+ *  The tool secret is still taken here so that moving over has no gap: set
+ *  VOICE_WEBHOOK_SECRET on Railway, re-run scripts/deploy-bland-agent.mjs (which then
+ *  puts the new one in Bland's webhook URL), and only then is the old URL dead weight.
+ *  Each use of the old token is logged, so the logs say when it is safe to stop
+ *  accepting it. Then delete the fallback below and rotate VOICE_TOOL_SECRET, since the
+ *  old URL has already been through those logs. */
+function matchesWebhookToken(presented) {
+  if (safeEqual(presented, VOICE_WEBHOOK_SECRET)) return true;
+  if (!matchesSecret(presented)) return false;
+  console.warn(
+    VOICE_WEBHOOK_SECRET
+      ? "[voice] webhook called with the TOOL secret in its URL; re-run deploy-bland-agent so Bland uses VOICE_WEBHOOK_SECRET"
+      : "[voice] webhook authenticated with the tool secret; set VOICE_WEBHOOK_SECRET to give it its own",
+  );
+  return true;
 }
 
 function authorized(req) {
@@ -1029,7 +1056,7 @@ export function createVoiceRouter({
   // because the signature secret is only obtainable by hand from their
   // dashboard and this needs no extra setup step to be safe.
   router.post("/api/voice/webhook", async (req, res) => {
-    if (!matchesSecret(req.query?.token)) {
+    if (!matchesWebhookToken(req.query?.token)) {
       return res.status(401).json({ error: "Unauthorized." });
     }
     // Always 200 quickly. A webhook that errors gets retried, and a duplicate

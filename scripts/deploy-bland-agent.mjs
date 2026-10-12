@@ -8,7 +8,7 @@
 // diff, rather than clicked into a dashboard where nobody can see what moved.
 //
 // Run:
-//   BLAND_API_KEY=… VOICE_TOOL_SECRET=… node scripts/deploy-bland-agent.mjs
+//   BLAND_API_KEY=… VOICE_TOOL_SECRET=… VOICE_WEBHOOK_SECRET=… node scripts/deploy-bland-agent.mjs
 //
 // Re-run after every knowledge sync: the knowledge base id changes each time,
 // because Bland has no way to update a base's content in place.
@@ -22,6 +22,9 @@ const CONFIG_PATH = path.join(__dirname, "..", "bland", "config.json");
 
 const BLAND_API_KEY = process.env.BLAND_API_KEY;
 const VOICE_TOOL_SECRET = process.env.VOICE_TOOL_SECRET;
+// Goes in the post-call webhook's URL instead of the tool secret (server/voice.js,
+// matchesWebhookToken). Optional so the script still runs before it exists.
+const VOICE_WEBHOOK_SECRET = process.env.VOICE_WEBHOOK_SECRET;
 const ENCRYPTED_KEY = process.env.BLAND_ENCRYPTED_KEY; // BYOT: our own Twilio number
 // The number BLAND answers, which is not the number the club publishes.
 //
@@ -462,6 +465,9 @@ const writeConfig = (next) => writeFileSync(CONFIG_PATH, `${JSON.stringify(next,
 async function main() {
   if (!BLAND_API_KEY) throw new Error("BLAND_API_KEY is required");
   if (!VOICE_TOOL_SECRET) throw new Error("VOICE_TOOL_SECRET is required (it goes in the tool headers)");
+  if (!VOICE_WEBHOOK_SECRET) {
+    console.warn("VOICE_WEBHOOK_SECRET is not set: the post-call webhook URL will carry the tool secret.");
+  }
 
   const config = readConfig();
   if (!config.knowledge_base_id) {
@@ -613,8 +619,9 @@ async function main() {
       // the custom tools, which have never executed on this account, so it is
       // the only thing that reliably puts a call in front of a human.
       // Token in the URL: the webhook signing secret can only be obtained by
-      // hand from Bland's dashboard, and this needs no extra setup to be safe.
-      webhook: `${SITE}/api/voice/webhook?token=${encodeURIComponent(VOICE_TOOL_SECRET)}`,
+      // hand from Bland's dashboard. Its own secret, because a URL ends up in
+      // request logs and the tool secret should not.
+      webhook: `${SITE}/api/voice/webhook?token=${encodeURIComponent(VOICE_WEBHOOK_SECRET || VOICE_TOOL_SECRET)}`,
       max_duration: 15,
       // Same latency settings as the persona. Which of the two the live call
       // actually reads is not documented, so both carry them.

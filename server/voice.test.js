@@ -758,6 +758,35 @@ describe("the post-call webhook, which does not need tools", () => {
     expect(res.status).toBe(401);
   });
 
+  it("takes its own webhook secret, and the tool secret only while Bland is moved over", async () => {
+    process.env.VOICE_WEBHOOK_SECRET = "webhook-only-secret";
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      ctx = await boot();
+      const hit = (token) =>
+        fetch(`${ctx.base}/api/voice/webhook?token=${token}`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ call_id: "x" }),
+        }).then((r) => r.status);
+      expect(await hit("webhook-only-secret")).toBe(200);
+      expect(warn).not.toHaveBeenCalled();
+      expect(await hit(SECRET)).toBe(200);
+      expect(warn.mock.calls[0][0]).toContain("re-run deploy-bland-agent");
+      expect(await hit("something-else")).toBe(401);
+      // The webhook's secret opens nothing else: the tools still want theirs.
+      const tool = await fetch(`${ctx.base}/api/voice/availability`, {
+        method: "POST",
+        headers: { authorization: "Bearer webhook-only-secret", "content-type": "application/json" },
+        body: "{}",
+      });
+      expect(tool.status).toBe(401);
+    } finally {
+      delete process.env.VOICE_WEBHOOK_SECRET;
+      warn.mockRestore();
+    }
+  });
+
   it("posts a finished call to Slack with the summary and transcript", async () => {
     // Bland's custom tools have never executed here, so take_message never
     // fires. Without this, a caller asks to be rung back and nobody ever knows.
