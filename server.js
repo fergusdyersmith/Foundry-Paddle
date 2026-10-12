@@ -15,6 +15,7 @@ import { createJuniorsRouter } from "./server/juniors.js";
 import { formatUsd, ratesOn } from "./shared/rates.js";
 import { rateLimit } from "./server/abuse.js";
 import { CSP_REPORT_ONLY, cspReportHandler, wantsCsp } from "./server/csp.js";
+import { upsertProfile } from "./server/klaviyoProfile.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // SITE_DIST exists so the routing tests can point at a fixture tree instead of
@@ -150,6 +151,7 @@ async function klaviyo(method, apiPath, body) {
 /**
  * Upsert the profile (so source/level/consent properties stick — segments key
  * off them) and subscribe it to the interest list with email marketing consent.
+ * Consent and source are only written to a NEW profile (server/klaviyoProfile.js).
  */
 async function subscribeToKlaviyo({ email, mobile, source, interests, sms_consent }) {
   const properties = {};
@@ -162,21 +164,9 @@ async function subscribeToKlaviyo({ email, mobile, source, interests, sms_consen
   const attrs = { email, properties };
   if (mobile) attrs.phone_number = mobile;
 
-  const create = await klaviyo("POST", "/profiles", {
-    data: { type: "profile", attributes: attrs },
-  });
-  if (create.status === 409) {
-    const id = create.json?.errors?.[0]?.meta?.duplicate_profile_id;
-    if (id && Object.keys(properties).length) {
-      await klaviyo("PATCH", `/profiles/${id}`, {
-        data: { type: "profile", id, attributes: { properties } },
-      });
-    }
-  } else if (create.status !== 201) {
-    throw new Error(
-      `profile upsert ${create.status}: ${JSON.stringify(create.json).slice(0, 200)}`,
-    );
-  }
+  // An existing profile keeps its consent and source, and gains interests rather than
+  // having them replaced: see server/klaviyoProfile.js.
+  await upsertProfile(klaviyo, attrs, { union: ["interests"] });
 
   const sub = await klaviyo("POST", "/profile-subscription-bulk-create-jobs", {
     data: {

@@ -12,6 +12,7 @@ import express from "express";
 import { z } from "zod";
 import { escapeSlack, normalizePhone, sanitize } from "./notify.js";
 import { clientIp, rateLimit, sheetCell, sheetSafe } from "./abuse.js";
+import { upsertProfile } from "./klaviyoProfile.js";
 import {
   ageOn, buildWaiverHtml, buildWaiverSlackText, cleanWaiver, waiverFilename, waiverSchema,
 } from "./juniors-waiver.js";
@@ -229,13 +230,7 @@ export function createJuniorsRouter({
     if (phone && r.smsConsent) properties.sms_consent = true;
     const attrs = { email: r.email, properties: { ...properties, signup_source: "juniors" }, first_name: r.name.split(" ")[0] };
     if (phone) attrs.phone_number = phone;
-    const create = await klaviyo("POST", "/profiles", { data: { type: "profile", attributes: attrs } });
-    if (create.status === 409) {
-      const id = create.json?.errors?.[0]?.meta?.duplicate_profile_id;
-      if (id) await klaviyo("PATCH", `/profiles/${id}`, { data: { type: "profile", id, attributes: { properties } } });
-    } else if (create.status !== 201) {
-      throw new Error(`klaviyo profile ${create.status}`);
-    }
+    await upsertProfile(klaviyo, attrs);
     return true;
   }
 
@@ -343,14 +338,7 @@ export function createJuniorsRouter({
     if (phone && s.smsConsent) properties.sms_consent = true;
     const attrs = { email: s.email, properties: { ...properties, signup_source: "juniors" }, first_name: s.name.split(" ")[0] };
     if (phone) attrs.phone_number = phone;
-    const create = await klaviyo("POST", "/profiles", { data: { type: "profile", attributes: attrs } });
-    if (create.status === 409) {
-      // An existing profile keeps the signup_source it came in with.
-      const id = create.json?.errors?.[0]?.meta?.duplicate_profile_id;
-      if (id) await klaviyo("PATCH", `/profiles/${id}`, { data: { type: "profile", id, attributes: { properties } } });
-    } else if (create.status !== 201) {
-      throw new Error(`klaviyo profile ${create.status}`);
-    }
+    await upsertProfile(klaviyo, attrs);
     if (listId) {
       await klaviyo("POST", "/profile-subscription-bulk-create-jobs", {
         data: {

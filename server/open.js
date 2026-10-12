@@ -20,6 +20,7 @@ import express from "express";
 import { z } from "zod";
 import { escapeSlack, normalizePhone, sanitize } from "./notify.js";
 import { rateLimit, sheetCell } from "./abuse.js";
+import { upsertProfile } from "./klaviyoProfile.js";
 
 export const LEVELS = ["beginner", "intermediate", "advanced"];
 export const SHIRT_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
@@ -149,13 +150,7 @@ export function createOpenRouter({
     if (r.name) attrs.first_name = r.name.split(" ")[0];
     const phone = r.phone ? normalizePhone(r.phone) : null;
     if (phone) attrs.phone_number = phone;
-    const create = await klaviyo("POST", "/profiles", { data: { type: "profile", attributes: attrs } });
-    if (create.status === 409) {
-      const id = create.json?.errors?.[0]?.meta?.duplicate_profile_id;
-      if (id) await klaviyo("PATCH", `/profiles/${id}`, { data: { type: "profile", id, attributes: { properties } } });
-    } else if (create.status !== 201) {
-      throw new Error(`klaviyo profile ${create.status}`);
-    }
+    await upsertProfile(klaviyo, attrs);
     if (listId) {
       await klaviyo("POST", "/profile-subscription-bulk-create-jobs", {
         data: {
