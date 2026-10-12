@@ -16,6 +16,7 @@ import { formatUsd, ratesOn } from "./shared/rates.js";
 import { rateLimit } from "./server/abuse.js";
 import { CSP_REPORT_ONLY, cspReportHandler, wantsCsp } from "./server/csp.js";
 import { upsertProfile } from "./server/klaviyoProfile.js";
+import { TURNSTILE_PATHS, turnstileCheck } from "./server/turnstile.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // SITE_DIST exists so the routing tests can point at a fixture tree instead of
@@ -196,6 +197,11 @@ async function subscribeToKlaviyo({ email, mobile, source, interests, sms_consen
     );
   }
 }
+
+// The bot check on every public form that subscribes or emails someone. A no-op until
+// both Turnstile keys are set on Railway (server/turnstile.js). Mounted before the routes
+// it guards, here and in the junior and open routers below.
+app.post(TURNSTILE_PATHS, turnstileCheck());
 
 // Every signup lands in Klaviyo with marketing consent, so a script could otherwise
 // subscribe any address it likes, as fast as it likes.
@@ -1872,10 +1878,14 @@ app.use((req, res, next) => {
 
 // Serves fullsite assets at / (e.g. /assets/...). Everything under /assets/ carries a
 // content hash in its name, so it can be cached for good; a deploy renames what changes.
-// Dot-directories (Vite's /.vite/manifest.json) are not for the public.
+// Dot-directories (Vite's /.vite/manifest.json) are not for the public. No trailing-slash
+// redirect: /juniors is both a page (juniors.html) and a folder (juniors/waiver.html),
+// and the default sent the URL printed on the clinic ad through a 301 to /juniors/
+// before the page handler below ever saw it.
 app.use(
   express.static(dist, {
     index: false,
+    redirect: false,
     dotfiles: "ignore",
     setHeaders: (res, filePath) => {
       if (filePath.startsWith(path.join(dist, "assets") + path.sep)) {

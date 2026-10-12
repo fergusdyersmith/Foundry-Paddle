@@ -26,6 +26,10 @@ function buildFixture() {
   for (const route of ["index", "book", "memberships", "community", "tv", "404"]) {
     writeFileSync(path.join(dir, `${route}.html`), page(route));
   }
+  // A page that shares its name with a folder, as /juniors does with juniors/waiver.html.
+  writeFileSync(path.join(dir, "juniors.html"), page("juniors"));
+  mkdirSync(path.join(dir, "juniors"));
+  writeFileSync(path.join(dir, "juniors", "waiver.html"), page("waiver"));
   mkdirSync(path.join(dir, "assets"));
   writeFileSync(path.join(dir, "assets", "app-abc123.js"), "console.log(1)");
   writeFileSync(path.join(dir, "robots.txt"), "User-agent: *\nAllow: /\n");
@@ -137,6 +141,15 @@ describe("real pages", () => {
 });
 
 // --- redirects that Search Console reports, and that we intend ---------------------------
+
+describe("a page that is also a folder", () => {
+  it("serves /juniors itself, not a 301 to /juniors/ (the URL on the printed ad)", async () => {
+    ctx = await boot();
+    expect(await status(ctx.base, "/juniors")).toBe(200);
+    expect(await status(ctx.base, "/juniors/waiver")).toBe(200);
+    expect(await status(ctx.base, "/juniors/")).toBe(200);
+  });
+});
 
 describe("redirects", () => {
   it("sends the apex to www with the path intact", async () => {
