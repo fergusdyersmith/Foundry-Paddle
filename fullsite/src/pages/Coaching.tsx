@@ -119,21 +119,31 @@ const Coaching = () => {
           <div className="section-divider mb-12" />
           <Reveal variant="stagger" className="grid grid-cols-2 gap-4 lg:grid-cols-3 lg:gap-6">
             {team.map((coach) => (
-              <button
+              // The card is one big click target, but the button is only the name inside
+              // the heading (its ::after stretches over the card). A button wrapping the
+              // whole card read the photo, name, specialties and level as one long label,
+              // and hid every coach's heading inside it.
+              <div
                 key={coach.id}
-                onClick={() => setSelected(coach)}
-                className="group border border-border bg-card text-left transition-colors hover:border-primary"
+                className="group relative border border-border bg-card text-left transition-colors hover:border-primary focus-within:border-primary"
               >
                 <img
                   src={coach.photo}
-                  alt={coach.name}
+                  alt=""
                   onError={onPhotoError}
                   loading="lazy"
                   className="aspect-square w-full object-cover"
                 />
                 <div className="p-4">
                   <h3 className="font-display text-lg leading-tight tracking-wide text-foreground">
-                    {coach.name}
+                    <button
+                      type="button"
+                      onClick={() => setSelected(coach)}
+                      aria-haspopup="dialog"
+                      className="text-left after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-primary"
+                    >
+                      {coach.name}
+                    </button>
                   </h3>
                   <p className="mt-1 line-clamp-2 font-body text-xs text-muted-foreground">
                     {coach.specialties}
@@ -144,7 +154,7 @@ const Coaching = () => {
                     </p>
                   )}
                 </div>
-              </button>
+              </div>
             ))}
           </Reveal>
         </div>

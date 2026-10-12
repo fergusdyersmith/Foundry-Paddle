@@ -78,9 +78,9 @@ export default function EventCard({
       </div>
 
       <div className="min-w-0 flex-1">
-        <h4 className={`font-display text-lg tracking-wide text-foreground ${stacked ? "" : "truncate"}`}>
+        <h3 className={`font-display text-lg tracking-wide text-foreground ${stacked ? "" : "truncate"}`}>
           {event.title}
-        </h4>
+        </h3>
         <div className="mt-1 flex flex-wrap items-center gap-2">
           {event.court && (
             <span className="text-xs text-muted-foreground">{event.court}</span>

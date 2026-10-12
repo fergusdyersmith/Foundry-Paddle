@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import { Pause, Play } from "lucide-react";
 import Photo from "@/components/Photo";
+import { useMotionAllowed } from "@/components/motion/hooks";
 
 export type CycleFrame = {
   /** Basename, without directory or extension. */
@@ -50,7 +52,8 @@ const fillsSlot = (frame: CycleFrame, ratio: number) =>
  *   the first is due within one hold, so it is fetched now rather than on an
  *   intersection that has already happened.
  * - It does not move for anyone who asked the OS to reduce motion; they get the
- *   first frame, held.
+ *   first frame, held. Everyone else gets a pause button (WCAG 2.2.2: anything
+ *   that moves on its own for more than five seconds must be stoppable).
  *
  * The first frame renders as normal markup, so it is present in the prerendered
  * HTML and carries the alt text before any JavaScript runs.
@@ -60,11 +63,14 @@ const PhotoCycle = ({ frames, holdMs = 4000, ratio = 3 / 2, className }: PhotoCy
   // High-water mark: how far the cycle has advanced. Frames past this + 1 are
   // not in the DOM yet, so their files are never requested.
   const [reached, setReached] = useState(0);
+  const [paused, setPaused] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
+  // False on the server and the first render, so the button never mismatches hydration.
+  const motionAllowed = useMotionAllowed();
+  const cycles = frames.length > 1 && motionAllowed;
 
   useEffect(() => {
-    if (frames.length < 2) return;
-    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    if (!cycles || paused) return;
 
     const box = boxRef.current;
     if (!box) return;
@@ -106,7 +112,7 @@ const PhotoCycle = ({ frames, holdMs = 4000, ratio = 3 / 2, className }: PhotoCy
       observer.disconnect();
       document.removeEventListener("visibilitychange", sync);
     };
-  }, [frames.length, holdMs]);
+  }, [cycles, paused, frames.length, holdMs]);
 
   return (
     <div ref={boxRef} className={`relative ${className ?? ""}`}>
@@ -151,6 +157,16 @@ const PhotoCycle = ({ frames, holdMs = 4000, ratio = 3 / 2, className }: PhotoCy
           </div>
         );
       })}
+      {cycles && (
+        <button
+          type="button"
+          onClick={() => setPaused((p) => !p)}
+          aria-label={paused ? "Play the photos" : "Pause the photos"}
+          className="absolute bottom-3 right-3 z-10 flex h-9 w-9 items-center justify-center bg-background/70 text-foreground opacity-70 backdrop-blur-sm transition-opacity hover:opacity-100 focus-visible:opacity-100"
+        >
+          {paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+        </button>
+      )}
     </div>
   );
 };

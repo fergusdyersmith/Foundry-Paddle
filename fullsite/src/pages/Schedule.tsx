@@ -104,6 +104,7 @@ const Schedule = () => {
           <div className="mb-6 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <button
+                type="button"
                 onClick={() => canPrev && setMonthStart((m) => subMonths(m, 1))}
                 disabled={!canPrev}
                 aria-label="Previous month"
@@ -111,10 +112,14 @@ const Schedule = () => {
               >
                 <ChevronLeft className="h-5 w-5" />
               </button>
-              <span className="min-w-[10rem] text-center font-display text-2xl tracking-widest text-foreground">
+              <span
+                aria-live="polite"
+                className="min-w-[10rem] text-center font-display text-2xl tracking-widest text-foreground"
+              >
                 {format(monthStart, "MMMM yyyy")}
               </span>
               <button
+                type="button"
                 onClick={() => canNext && setMonthStart((m) => addMonths(m, 1))}
                 disabled={!canNext}
                 aria-label="Next month"
@@ -143,13 +148,15 @@ const Schedule = () => {
 
           {/* Type filters (double as a color legend) */}
           {availableTypes.length > 1 && (
-            <div className="mb-6 flex flex-wrap items-center gap-2">
+            <div className="mb-6 flex flex-wrap items-center gap-2" role="group" aria-label="Show only">
               {availableTypes.map((type) => {
                 const isActive = activeType === type;
                 return (
                   <button
                     key={type}
+                    type="button"
                     onClick={() => setActiveType(isActive ? null : type)}
+                    aria-pressed={isActive}
                     className={`inline-flex items-center gap-2 border px-3 py-1.5 font-display text-[10px] uppercase tracking-[0.15em] transition-all ${
                       isActive
                         ? "border-primary bg-primary text-primary-foreground"
@@ -157,6 +164,7 @@ const Schedule = () => {
                     }`}
                   >
                     <span
+                      aria-hidden="true"
                       className={`h-1.5 w-1.5 ${TYPE_DOT_COLORS[type] || "bg-muted-foreground"}`}
                     />
                     {TYPE_LABELS[type] || type}

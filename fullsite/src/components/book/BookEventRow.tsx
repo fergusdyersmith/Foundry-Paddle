@@ -61,7 +61,7 @@ export default function BookEventRow({ event }: { event: PadelEvent }) {
       {isMatch && <CourtSlots filled={event.signed_up} className="hidden sm:block" />}
       {isMatch ? (
         spotsLeft === 1 ? (
-          <span className="shrink-0 rounded bg-primary px-2 py-0.5 font-display text-[10px] tracking-wider text-primary-foreground">
+          <span className="shrink-0 bg-primary px-2 py-0.5 font-display text-[10px] tracking-wider text-primary-foreground">
             ALMOST FULL<span className="hidden sm:inline"> · 1 SPOT LEFT</span>
           </span>
         ) : (

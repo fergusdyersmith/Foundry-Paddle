@@ -80,6 +80,8 @@ const ChatWidget = () => {
   const convId = useRef<string>("");
   const scroller = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const bubbleRef = useRef<HTMLButtonElement>(null);
+  const wasOpen = useRef(false);
 
   // Ask the server whether the bot is configured (and still inside its daily budget). If it
   // is not, the bubble never appears, rather than appearing and then failing at the visitor.
@@ -126,9 +128,17 @@ const ChatWidget = () => {
       // Optional call: scrollTo is missing in jsdom and in a few older mobile browsers, and
       // failing to auto-scroll should not take the panel down.
       scroller.current?.scrollTo?.({ top: scroller.current.scrollHeight });
-      inputRef.current?.focus();
     }
   }, [open, turns, busy]);
+
+  // Focus moves into the panel when it opens and back to the bubble when it closes. Only
+  // then: refocusing the input after every reply reopened a phone's keyboard over the
+  // answer the visitor was trying to read.
+  useEffect(() => {
+    if (open) inputRef.current?.focus();
+    else if (wasOpen.current) bubbleRef.current?.focus();
+    wasOpen.current = open;
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -172,6 +182,7 @@ const ChatWidget = () => {
     <>
       {!open && (
         <button
+          ref={bubbleRef}
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Ask a question about Foundry Padel"
@@ -204,7 +215,13 @@ const ChatWidget = () => {
             </button>
           </div>
 
-          <div ref={scroller} className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
+          {/* A log, so a screen reader reads each reply as it arrives. */}
+          <div
+            ref={scroller}
+            role="log"
+            aria-label="Conversation"
+            className="flex-1 space-y-3 overflow-y-auto px-4 py-4"
+          >
             <div className="max-w-[85%] bg-muted px-3 py-2 font-body text-sm text-foreground">
               {GREETING}
             </div>

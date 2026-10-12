@@ -133,10 +133,13 @@ const SkillSurvey = () => {
             return (
               <div key={cat.id} className="border border-border">
                 <button
+                  type="button"
                   onClick={() => setOpen(isOpen ? null : cat.id)}
+                  aria-expanded={isOpen}
+                  aria-controls={`skills-${cat.id}`}
                   className="flex w-full items-center gap-3 p-4 text-left"
                 >
-                  <span className="text-xl">{cat.icon}</span>
+                  <span className="text-xl" aria-hidden="true">{cat.icon}</span>
                   <span className="flex-1 font-display text-lg tracking-wide text-foreground">
                     {cat.label}
                   </span>
@@ -157,7 +160,7 @@ const SkillSurvey = () => {
                 </div>
 
                 {isOpen && (
-                  <div className="border-t border-border p-4">
+                  <div id={`skills-${cat.id}`} className="border-t border-border p-4">
                     {/* Rubric ladder — the club's Skill Levels reference */}
                     <div className="mb-5 border border-border bg-muted/30 p-4">
                       {cat.rubric.map((r, i) => (
@@ -187,13 +190,15 @@ const SkillSurvey = () => {
                               {c != null ? COMFORT_LABELS[c] : "Tap to rate"}
                             </span>
                           </div>
-                          <div className="flex gap-1.5">
+                          <div className="flex gap-1.5" role="group" aria-label={sk.label}>
                             {[0, 1, 2, 3, 4].map((i) => (
                               <button
                                 key={i}
+                                type="button"
                                 onClick={() => rate(sk.id, i)}
                                 title={COMFORT_LABELS[i]}
-                                aria-label={`${sk.label}: ${COMFORT_LABELS[i]}`}
+                                aria-label={COMFORT_LABELS[i]}
+                                aria-pressed={c === i}
                                 className={`h-6 flex-1 border transition-colors ${
                                   c != null && i <= c
                                     ? "border-primary bg-primary"
@@ -212,6 +217,7 @@ const SkillSurvey = () => {
           })}
 
           <button
+            type="button"
             onClick={reset}
             className="mt-2 inline-flex items-center gap-2 self-start font-display text-xs tracking-[0.2em] text-muted-foreground transition-colors hover:text-primary"
           >
@@ -259,7 +265,7 @@ const SkillSurvey = () => {
 
               <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
                 <Link
-                  to="/book"
+                  to="/book#clinics"
                   className="bg-primary px-8 py-3 font-display text-sm tracking-widest text-primary-foreground transition-all hover:brightness-110"
                 >
                   BOOK A CLINIC OR MATCH

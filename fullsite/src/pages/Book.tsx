@@ -161,13 +161,16 @@ const Book = () => {
             {WAYS_TO_PLAY.map((w) => (
               <button
                 key={w.id}
+                type="button"
                 onClick={() => scrollToSection(w.id)}
                 data-enter
                 style={{ "--enter-delay": w.enter } as CSSProperties}
                 className="group border border-border p-6 text-left transition-colors hover:border-primary"
               >
                 <w.icon size={22} className="text-primary mb-3" />
-                <h2 className="font-display text-lg text-foreground mb-1">{w.title}</h2>
+                {/* Not a heading: a heading inside a button is read as the button's whole
+                    name, and each section below has its own h2 with this same title. */}
+                <span className="mb-1 block font-display text-lg text-foreground">{w.title}</span>
                 <p className="font-body text-xs text-muted-foreground">{w.desc}</p>
                 <span className="mt-3 inline-flex items-center gap-1 font-display text-[10px] tracking-[0.2em] text-primary opacity-70 transition-opacity group-hover:opacity-100">
                   JUMP TO <ArrowRight className="nudge h-3 w-3" />
@@ -190,7 +193,7 @@ const Book = () => {
               sub={`Have your four? Choose a time and court below. Open daily ${HOURS_META} · 90-minute sessions · 4 WPT-spec glass courts.`}
             />
           </Reveal>
-          <div className="overflow-hidden rounded-sm border border-border bg-muted/30">
+          <div className="overflow-hidden border border-border bg-muted/30">
             <iframe
               src={PLAYTOMIC_BOOKING_URL}
               title="Book a court — Playtomic"
@@ -317,7 +320,9 @@ const Book = () => {
                   {collapsedMatches.length > 0 && (
                     <div className="mt-5">
                       <button
+                        type="button"
                         onClick={() => setShowAllMatches((s) => !s)}
+                        aria-expanded={showAllMatches}
                         className="inline-flex items-center gap-2 font-display text-xs tracking-[0.2em] text-muted-foreground transition-colors hover:text-primary"
                       >
                         {showAllMatches ? "SHOW FEWER" : `VIEW MORE (${collapsedMatches.length})`}

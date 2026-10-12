@@ -9,7 +9,8 @@ function DayGroup({ dayKey, events, isToday }: { dayKey: string; events: PadelEv
   const date = parseISO(dayKey);
   return (
     <div>
-      <div className="sticky top-20 z-10 -mx-1 mb-3 flex items-baseline gap-3 bg-background/90 px-1 py-2 backdrop-blur-sm">
+      {/* The day is the heading its event cards (h3) sit under; the page title is h1. */}
+      <h2 className="sticky top-20 z-10 -mx-1 mb-3 flex items-baseline gap-3 bg-background/90 px-1 py-2 font-normal backdrop-blur-sm">
         <span className="font-display text-2xl tracking-wide text-foreground">
           {format(date, "EEE d")}
         </span>
@@ -21,7 +22,7 @@ function DayGroup({ dayKey, events, isToday }: { dayKey: string; events: PadelEv
             Today
           </span>
         )}
-      </div>
+      </h2>
       <div className="flex flex-col gap-3">
         {events.map((e) => (
           <EventCard key={e.id} event={e} />

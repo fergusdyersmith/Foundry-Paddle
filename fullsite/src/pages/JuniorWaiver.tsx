@@ -299,9 +299,11 @@ function WaiverForm({ defaultSessionDates, today }: { defaultSessionDates: strin
                     </label>
                   )}
 
-                  <h3 className="mt-8 font-body text-xs tracking-[0.2em] uppercase text-foreground">Image, video and media consent</h3>
-                  <p className={`mt-3 ${legal}`}>{WAIVER_SECTIONS.find((s) => s.n === 11)?.paras[0]}</p>
-                  <div className="mt-3 space-y-3">
+                  <h3 id={`w-media-h-${i}`} className="mt-8 font-body text-xs tracking-[0.2em] uppercase text-foreground">Image, video and media consent</h3>
+                  <p id={`w-media-d-${i}`} className={`mt-3 ${legal}`}>{WAIVER_SECTIONS.find((s) => s.n === 11)?.paras[0]}</p>
+                  {/* Named by the heading above, so a screen reader announces what the two
+                      choices are a choice about, not just "radio, 1 of 2". */}
+                  <div role="radiogroup" aria-labelledby={`w-media-h-${i}`} aria-describedby={`w-media-d-${i}`} aria-required="true" className="mt-3 space-y-3">
                     {MEDIA_CHOICES.map((m) => (
                       <label key={m.value} className={`flex cursor-pointer items-start gap-3 border p-4 transition-colors ${c.media === m.value ? "border-primary bg-secondary" : "border-border hover:border-primary/60"}`}>
                         <input type="radio" name={`w-media-${i}`} value={m.value} checked={c.media === m.value} onChange={() => setChild(i, { media: m.value as "yes" | "no" })} className="mt-0.5 h-4 w-4 shrink-0 accent-primary" />
