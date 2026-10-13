@@ -88,7 +88,7 @@ const Schedule = () => {
   return (
     <main className="min-h-screen bg-background pt-24">
       <Seo
-        title="Schedule — Clinics, Open Play & Tournaments | Foundry Padel"
+        title="Schedule: Clinics, Open Play & Tournaments | Foundry Padel"
         description="See what's on at Foundry Padel in Portland: beginner clinics, open play, coaching and tournaments. Book your spot on Playtomic."
         path="/schedule"
       />

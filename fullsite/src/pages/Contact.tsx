@@ -20,8 +20,8 @@ const Contact = () => {
   return (
     <main className="bg-background min-h-screen pt-24">
       <Seo
-        title="Contact & Location — 8613 N Crawford St | Foundry Padel Portland"
-        description={`Find Foundry Padel at 8613 N Crawford St, Portland, OR 97203 — in St. Johns near Cathedral Park. Open daily ${HOURS_META}. Parking on site, plus map, directions and how to find the entrance.`}
+        title="Contact & Location: 8613 N Crawford St | Foundry Padel Portland"
+        description={`Find Foundry Padel at 8613 N Crawford St, Portland, OR 97203, in St. Johns near Cathedral Park. Open daily ${HOURS_META}. Parking on site, plus map, directions and how to find the entrance.`}
         path="/contact"
       />
       <section className="py-20 px-6">
@@ -51,7 +51,7 @@ const Contact = () => {
                     <a href={GOOGLE_MAPS_URL} target="_blank" rel="noopener noreferrer" className="font-body text-sm text-foreground hover:text-primary transition-colors">
                       8613 N Crawford St, Portland, OR 97203
                     </a>
-                    <p className="font-body text-xs text-muted-foreground">Portland — near Cathedral Park</p>
+                    <p className="font-body text-xs text-muted-foreground">Portland, near Cathedral Park</p>
                     {/* First-timers stand outside the rollup doors and cannot find
                         the way in. It is the most common question on the phone
                         after the address itself. */}

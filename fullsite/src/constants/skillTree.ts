@@ -121,7 +121,7 @@ export const SKILL_TREE: SurveyCategory[] = [
     icon: "⚡",
     rubric: [
       "Not yet.",
-      "Not yet — occasional attempts.",
+      "Not yet, just occasional attempts.",
       "Occasional, not yet controlled.",
       "Emerging víbora, controlled smash.",
       "Full repertoire: víbora, por tres, controlled smash.",

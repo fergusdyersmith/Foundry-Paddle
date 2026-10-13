@@ -25,7 +25,7 @@ import { HOURS_SENTENCE } from "@/constants/hours";
 const EVENTS_EMAIL = "portland@foundrypadel.com";
 const EVENTS_PHONE_DISPLAY = "(971) 378-7499";
 const EVENTS_PHONE_TEL = "+19713787499";
-const MAILTO = `mailto:${EVENTS_EMAIL}?subject=${encodeURIComponent("Event inquiry — Foundry Padel")}`;
+const MAILTO = `mailto:${EVENTS_EMAIL}?subject=${encodeURIComponent("Event inquiry: Foundry Padel")}`;
 
 // Numbers, not strings, so each one can count up; CountUp formats them back to exactly
 // "18,600", "250", "43 ft" and "4", which is also what the prerendered HTML carries.
@@ -59,9 +59,9 @@ const TOTAL_SQFT = "18,600";
 const capacities = [
   { config: "Full facility buyout", reception: "250", seated: "100", playing: "16 at once" },
   { config: "Court floor only", reception: "150", seated: "Not suited", playing: "16 at once" },
-  { config: "Ground floor lounge", reception: "50", seated: "50", playing: "—" },
-  { config: "Mezzanine", reception: "50", seated: "50", playing: "—" },
-  { config: "Single court block", reception: "—", seated: "—", playing: "4 at once" },
+  { config: "Ground floor lounge", reception: "50", seated: "50", playing: "No courts" },
+  { config: "Mezzanine", reception: "50", seated: "50", playing: "No courts" },
+  { config: "Single court block", reception: "Not suited", seated: "Not suited", playing: "4 at once" },
 ];
 
 const formats = [
@@ -84,7 +84,7 @@ const specs: { group: string; rows: [string, string][] }[] = [
       ["Ceiling height", "43 ft clear"],
       ["Flooring", "Court turf / polished concrete"],
       ["Lighting", "LED throughout"],
-      ["Climate", "Indoor, heated — playable year round"],
+      ["Climate", "Indoor and heated, playable year round"],
     ],
   },
   {
@@ -108,8 +108,8 @@ const Events = () => {
   return (
     <main className="bg-background min-h-screen">
       <Seo
-        title="Private Events & Venue Buyouts — 18,600 sq ft, 250 Guests | Foundry Padel"
-        description="Host your event at Portland's first indoor padel club. 18,600 sq ft in St. Johns with 43 ft ceilings, four glass courts, a lounge and a mezzanine — up to 250 for a reception, 100 seated."
+        title="Private Events & Venue Buyouts: 18,600 sq ft, 250 Guests | Foundry Padel"
+        description="Host your event at Portland's first indoor padel club. 18,600 sq ft in St. Johns with 43 ft ceilings, four glass courts, a lounge and a mezzanine, for up to 250 at a reception or 100 seated."
         path="/events"
       />
       {/* Venue structured data. The club's LocalBusiness record lives in
@@ -319,7 +319,7 @@ const Events = () => {
             },
             {
               title: "ROLLING EVENT FORMAT",
-              body: "Courts rotate on 10 to 15 minute blocks. Over a four hour event that is roughly 220 player slots across the four courts — enough for 100 guests to play about 30 minutes each, or for every guest at a 200 person event to get court time. Non-playing guests gather in the lounge and on the mezzanine, so the group stays together and nobody waits.",
+              body: "Courts rotate on 10 to 15 minute blocks. Over a four hour event that is roughly 220 player slots across the four courts, enough for 100 guests to play about 30 minutes each, or for every guest at a 200 person event to get court time. Non-playing guests gather in the lounge and on the mezzanine, so the group stays together and nobody waits.",
             },
           ].map((c) => (
             <div key={c.title} className="border-l-2 border-primary bg-secondary/40 p-8">

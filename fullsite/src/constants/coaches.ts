@@ -150,7 +150,7 @@ export const COACHES: CoachProfile[] = [
     firstName: "Juan",
     photo: "/coaches/juan.jpg",
     aliases: ["juan gomez humphrey", "juan"],
-    bio: "Passionate lifelong padel and tennis player. Coached tennis for 5 years and now RPP-certified coaching padel too. Started playing padel as a teenager in Mexico in the 90s and fell in love with the sport — now eager to pass on his experience and love of the game.",
+    bio: "Passionate lifelong padel and tennis player. Coached tennis for 5 years and now RPP-certified coaching padel too. Started playing padel as a teenager in Mexico in the 90s and fell in love with the sport. Now eager to pass on his experience and love of the game.",
     specialties:
       "All levels; strategy and on-court tactics; extra experience with young and junior players (also coaches tennis at Cleveland High School)",
     certifications: "RPP Level 2 Padel Certified",

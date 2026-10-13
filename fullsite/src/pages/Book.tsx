@@ -133,8 +133,8 @@ const Book = () => {
       {/* The rates are in the title and the description too, where they go stale just as
           quietly as in the copy — Google shows this text long after a price changes. */}
       <Seo
-        title={`Book a Padel Court in Portland — ${formatUsd(rates.court90)} / 90 min | Foundry Padel`}
-        description={`Book an indoor padel court at Foundry in Portland — ${formatUsd(rates.court90)} per court for 90 minutes (${formatUsd(rates.perPlayer90)} per player). Join a beginner clinic or an open match, racket rentals from $5. Open daily ${HOURS_META}.`}
+        title={`Book a Padel Court in Portland: ${formatUsd(rates.court90)} / 90 min | Foundry Padel`}
+        description={`Book an indoor padel court at Foundry in Portland: ${formatUsd(rates.court90)} per court for 90 minutes (${formatUsd(rates.perPlayer90)} per player). Join a beginner clinic or an open match, racket rentals from $5. Open daily ${HOURS_META}.`}
         path="/book"
       />
 
@@ -196,7 +196,7 @@ const Book = () => {
           <div className="overflow-hidden border border-border bg-muted/30">
             <iframe
               src={PLAYTOMIC_BOOKING_URL}
-              title="Book a court — Playtomic"
+              title="Book a court on Playtomic"
               className="block h-[min(45vh,450px)] w-full min-h-[320px]"
               loading="lazy"
               allow="payment *; fullscreen"

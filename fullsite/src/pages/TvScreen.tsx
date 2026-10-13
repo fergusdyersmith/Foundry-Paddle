@@ -96,11 +96,11 @@ const RIGHT_PANELS = [
     key: "tournaments",
     title: "TOURNAMENTS & EVENTS",
     types: new Set(["TOURNAMENT", "OPEN_PLAY"]),
-    empty: "No tournaments on the calendar yet — watch this space.",
+    empty: "No tournaments on the calendar yet. Watch this space.",
   },
   {
     key: "matches",
-    title: "OPEN MATCHES — JUMP IN",
+    title: "OPEN MATCHES: JUMP IN",
     types: new Set(["OPEN_MATCH"]),
     empty: "",
   },
@@ -308,7 +308,7 @@ const TvScreen = () => {
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-[#313E39]">
       <Head>
-        <title>Foundry Padel — This Week</title>
+        <title>Foundry Padel: This Week</title>
         <meta name="robots" content="noindex, nofollow" />
       </Head>
       <style>{`@keyframes tvring { from { stroke-dashoffset: 0 } to { stroke-dashoffset: ${(2 * Math.PI * 9).toFixed(2)} } }`}</style>
@@ -389,7 +389,7 @@ const TvScreen = () => {
           <div
             className="flex flex-[1.3] cursor-pointer items-center gap-3 rounded-lg bg-[#F4F5EC] p-3"
             onClick={() =>
-              setZoomed({ value: KUMI_JOIN_URL, label: "Ask Kumi — foundrypadel.com/join", logo: KUMI_MARK })
+              setZoomed({ value: KUMI_JOIN_URL, label: "Ask Kumi: foundrypadel.com/join", logo: KUMI_MARK })
             }
           >
             <div className="shrink-0 rounded bg-white p-1.5">

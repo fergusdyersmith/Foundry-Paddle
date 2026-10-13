@@ -10,7 +10,7 @@ import Reveal from "@/components/motion/Reveal";
 import RuleDiagram, { type RuleKind } from "@/components/motion/RuleDiagram";
 
 const comparisons = [
-  { sport: "Tennis", padel: "Enclosed glass walls — balls stay in play", other: "Open court — balls go out" },
+  { sport: "Tennis", padel: "Enclosed glass walls, so balls stay in play", other: "Open court, so balls go out" },
   { sport: "Squash", padel: "Outdoor feel, doubles format, social game", other: "Indoor, typically singles, intense" },
   { sport: "Pickleball", padel: "Full racquet sport with wall strategy", other: "Paddle sport, no walls, smaller court" },
 ];
@@ -119,7 +119,7 @@ const rules = [
   {
     title: "SCORING",
     diagram: "scoring" as RuleKind,
-    desc: "Same scoring as tennis — 15, 30, 40, deuce, advantage. Best of 3 sets wins the match.",
+    desc: "Same scoring as tennis: 15, 30, 40, deuce, advantage. Best of 3 sets wins the match.",
     photo: "sport-rule-scoring",
     alt: "A padel ball resting against the net on Foundry Padel's blue court",
   },
@@ -130,7 +130,7 @@ const TheSport = () => {
     <main className="bg-background min-h-screen pt-24">
       <Seo
         title="What Is Padel? The Sport Explained | Foundry Padel Portland"
-        description="New to padel? Learn the rules, how it differs from tennis, squash and pickleball, and why it's the world's fastest-growing racquet sport — then play in Portland at Foundry."
+        description="New to padel? Learn the rules, how it differs from tennis, squash and pickleball, and why it's the world's fastest-growing racquet sport. Then play in Portland at Foundry."
         path="/the-sport"
       />
       {/* Hero */}
@@ -162,7 +162,7 @@ const TheSport = () => {
                 Padel is a racquet sport that combines elements of tennis and squash. Played on an enclosed court about one-third the size of a tennis court, it's always played in doubles and uses solid, stringless racquets.
               </p>
               <p className="font-body text-base leading-relaxed text-secondary-foreground mb-4">
-                Born in Mexico in 1969, padel has exploded across Spain, Argentina, and everywhere in the world but the US. Over 25 million people play worldwide — and it's finally arriving in Portland. For now, we're bringing the sport to the Pacific Northwest.
+                Born in Mexico in 1969, padel has exploded across Spain, Argentina, and everywhere in the world but the US. Over 25 million people play worldwide, and it's finally arriving in Portland. For now, we're bringing the sport to the Pacific Northwest.
               </p>
               <p className="font-body text-sm text-muted-foreground">
                 The glass walls keep the ball in play, creating longer rallies, more strategy, and way more fun than you'd expect.

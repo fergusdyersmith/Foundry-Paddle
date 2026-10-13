@@ -70,8 +70,8 @@ const Index = () => {
   return (
     <main className="bg-background min-h-screen">
       <Seo
-        title="Foundry Padel — Portland's First Indoor Padel Club | St. Johns"
-        description={`Play padel in Portland at Foundry — 4 indoor glass courts in St. Johns, next to Cathedral Park. ${formatUsd(rates.perPlayer90)} per player, ${formatUsd(rates.court90)} per 90-min court. Racket rentals from $5, no partner needed. Open daily ${HOURS_META}.`}
+        title="Foundry Padel: Portland's First Indoor Padel Club | St. Johns"
+        description={`Play padel in Portland at Foundry: 4 indoor glass courts in St. Johns, next to Cathedral Park. ${formatUsd(rates.perPlayer90)} per player, ${formatUsd(rates.court90)} per 90-min court. Racket rentals from $5, no partner needed. Open daily ${HOURS_META}.`}
         path="/"
       />
       {/* Hero */}
@@ -122,7 +122,7 @@ const Index = () => {
               to={BOOK_PAGE_PATH}
               className="bg-primary px-7 py-3 font-display text-sm tracking-widest text-primary-foreground shadow-[0_0_30px_-10px_hsl(var(--primary)/0.6)] transition-all hover:brightness-110 active:scale-[0.98]"
             >
-              BOOK YOUR FIRST PLAY — {formatUsd(rates.perPlayer90)}
+              BOOK YOUR FIRST PLAY · {formatUsd(rates.perPlayer90)}
             </Link>
             {/* Sits on a photograph, so it carries its own ground rather than
                 relying on the hero gradient: muted-foreground on the background
@@ -216,8 +216,8 @@ const Index = () => {
                     className="transition-colors hover:text-primary"
                   >
                     8613 N Crawford St, Portland, OR 97203
-                  </a>{" "}
-                  — in St. Johns, next to Cathedral Park.
+                  </a>
+                  , in St. Johns, next to Cathedral Park.
                 </p>
               </div>
             </div>
@@ -226,7 +226,7 @@ const Index = () => {
                 to={BOOK_PAGE_PATH}
                 className="inline-block bg-primary px-10 py-4 font-display text-lg tracking-widest text-primary-foreground transition-all hover:brightness-110"
               >
-                BOOK YOUR FIRST PLAY — {formatUsd(rates.perPlayer90)}
+                BOOK YOUR FIRST PLAY · {formatUsd(rates.perPlayer90)}
               </Link>
             </div>
           </Reveal>
@@ -267,7 +267,7 @@ const Index = () => {
             <h2 className="font-display text-4xl sm:text-5xl text-foreground mb-8">PARTNERS</h2>
             <div className="max-w-2xl mx-auto space-y-6">
               <p className="font-body text-base leading-relaxed text-secondary-foreground">
-                We're proud to work with partners who champion padel at every level — from the professional circuit to clubs like ours opening new courts.
+                We're proud to work with partners who champion padel at every level, from the professional circuit to clubs like ours opening new courts.
               </p>
               <p className="font-body text-base leading-relaxed text-secondary-foreground">
                 Beyond the court, we're partnering exclusively with Portland-based small businesses and makers. From the local brews at our bar to the artisans crafting our spaces, Foundry is built by and for the Portland community.

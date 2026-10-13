@@ -34,7 +34,7 @@ const faqs: Faq[] = [
   },
   {
     q: "How many people do I need to play?",
-    a: "Padel is always played in doubles — so you need 4 players. Don't have a full group? Join our open play sessions or use our player matching feature to find partners.",
+    a: "Padel is always played in doubles, so you need 4 players. Don't have a full group? Join our open play sessions or use our player matching feature to find partners.",
   },
   {
     q: "How long is a typical session?",
@@ -42,7 +42,7 @@ const faqs: Faq[] = [
   },
   {
     q: "Do you offer coaching?",
-    a: "Yes. Our certified padel coaches offer private lessons, group clinics, and structured programmes for all levels — from first-timers to competitive players. Meet the team and see each coach's upcoming sessions on the Coaching page.",
+    a: "Yes. Our certified padel coaches offer private lessons, group clinics, and structured programmes for all levels, from first-timers to competitive players. Meet the team and see each coach's upcoming sessions on the Coaching page.",
     cta: "coaching",
   },
   {
@@ -55,12 +55,12 @@ const faqs: Faq[] = [
   },
   {
     q: "Is there a community I can join?",
-    a: "Yes — we run an active WhatsApp community where members and players organise games, find partners, and hear about open play, clinics, and events first. Everyone's welcome, whatever your level.",
+    a: "Yes. We run an active WhatsApp community where members and players organise games, find partners, and hear about open play, clinics, and events first. Everyone's welcome, whatever your level.",
     cta: "whatsapp",
   },
   {
     q: "Where exactly is Foundry Padel?",
-    a: "We're in St. Johns, Portland — right next to Cathedral Park at 8613 N Crawford St, Portland, OR 97203. Directions and map links are on our Contact page.",
+    a: "We're in St. Johns, Portland, right next to Cathedral Park at 8613 N Crawford St, Portland, OR 97203. Directions and map links are on our Contact page.",
   },
   {
     q: "What are your hours?",
@@ -76,7 +76,7 @@ const FAQ = () => {
   return (
     <main className="bg-background min-h-screen pt-24">
       <Seo
-        title="Padel FAQ — Beginners, Gear, Hours & Location | Foundry Padel"
+        title="Padel FAQ: Beginners, Gear, Hours & Location | Foundry Padel"
         description={`Never played padel? A first-timer's guide: no partner needed, racket rentals from $5, hours (${HOURS_META} daily), pricing, and how to find us in St. Johns, Portland.`}
         path="/faq"
       />

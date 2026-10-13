@@ -126,7 +126,7 @@ const Gallery = () => {
   return (
     <main className="bg-background min-h-screen pt-24">
       <Seo
-        title="Gallery — Photos From Inside the Club | Foundry Padel Portland"
+        title="Gallery: Photos From Inside the Club | Foundry Padel Portland"
         description="Real photos from tournament nights at Foundry Padel in St. Johns, Portland: the four glass courts, the rallies, and the members who fill the place."
         path="/gallery"
       />
@@ -136,7 +136,7 @@ const Gallery = () => {
         <div className="mx-auto max-w-4xl text-center">
           <PageHeader title="GALLERY" kicker="Shot on court">
             <p className="font-body text-base text-secondary-foreground max-w-xl mx-auto">
-              Tournament nights at 8613 N Crawford — the courts, the rallies, and the people who fill the place. Every photo here was taken inside the club.
+              Tournament nights at 8613 N Crawford: the courts, the rallies, and the people who fill the place. Every photo here was taken inside the club.
             </p>
           </PageHeader>
         </div>

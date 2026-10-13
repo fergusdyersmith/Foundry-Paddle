@@ -17,7 +17,7 @@ const spaces = [
   },
   {
     title: "THE BAR",
-    desc: "Post-match beer or a glass of wine. The bar is the club's gathering point — a place to debrief, strategize, or just hang.",
+    desc: "Post-match beer or a glass of wine. The bar is the club's gathering point: a place to debrief, strategize, or just hang.",
     detail: "Local beer · Wine · Air conditioned",
     image: "club-bar",
     imageAlt: "Padel shoes tucked under a lounge table between matches at Foundry Padel",
@@ -31,7 +31,7 @@ const spaces = [
   },
   {
     title: "PRO SHOP",
-    desc: "Curated gear from the brands shaping padel. Racquets, grips, shoes, and apparel — tested by our coaching team and stocked for every level.",
+    desc: "Curated gear from the brands shaping padel. Racquets, grips, shoes, and apparel, tested by our coaching team and stocked for every level.",
     detail: "Racquets · Apparel · Accessories",
     image: "club-proshop",
     imageAlt: "Padel racquets laid out on the pro shop counter at Foundry Padel",
@@ -42,8 +42,8 @@ const TheClub = () => {
   return (
     <main className="bg-background min-h-screen pt-24">
       <Seo
-        title="The Club — 4 Indoor Courts, Bar & Pro Shop | Foundry Padel"
-        description="Four WPT-spec panoramic glass courts, a bar, social spaces and a pro shop in St. Johns, Portland — steps from Cathedral Park. Tour Foundry Padel."
+        title="The Club: 4 Indoor Courts, Bar & Pro Shop | Foundry Padel"
+        description="Four WPT-spec panoramic glass courts, a bar, social spaces and a pro shop in St. Johns, Portland, steps from Cathedral Park. Tour Foundry Padel."
         path="/the-club"
       />
       {/* Hero */}
@@ -51,7 +51,7 @@ const TheClub = () => {
         <div className="mx-auto max-w-4xl text-center">
           <PageHeader title="THE CLUB" kicker="Portland">
             <p className="font-body text-base text-secondary-foreground max-w-xl mx-auto">
-              More than a venue — a home for the sport. Four courts, a bar, social spaces, and a pro shop, all steps from Cathedral Park in Portland.
+              More than a venue, a home for the sport. Four courts, a bar, social spaces, and a pro shop, all steps from Cathedral Park in Portland.
             </p>
           </PageHeader>
         </div>
@@ -95,7 +95,7 @@ const TheClub = () => {
           <Reveal>
             <h2 className="font-display text-5xl text-foreground mb-8">THE VIBE</h2>
             <p className="font-body text-base leading-relaxed text-secondary-foreground mb-6">
-              Industrial warmth meets athletic precision. Exposed concrete, steel framing, and amber light — 
+              Industrial warmth meets athletic precision. Exposed concrete, steel framing, and amber light.
               Foundry's design is rooted in Portland's maker culture. It's a space that feels alive before 
               the first ball is struck.
             </p>
@@ -118,7 +118,7 @@ const TheClub = () => {
             to="/gallery"
             className="group mt-8 inline-block border border-border px-7 py-3 font-body text-xs tracking-[0.2em] uppercase text-secondary-foreground transition-colors hover:border-primary hover:text-primary"
           >
-            See the gallery — {PHOTOS.length} photos <span aria-hidden="true" className="nudge">→</span>
+            See all {PHOTOS.length} photos in the gallery <span aria-hidden="true" className="nudge">→</span>
           </Link>
           <div className="section-divider mt-16" />
         </div>
