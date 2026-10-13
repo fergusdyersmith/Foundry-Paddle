@@ -3,11 +3,12 @@
 // deployment since a date. The question it answers: is it safe to change the header in
 // server.js from Content-Security-Policy-Report-Only to Content-Security-Policy?
 //
-//   node scripts/csp-week-report.mjs [--since 2026-10-12]     (default: 7 days ago)
+//   node scripts/csp-week-report.mjs [--since 2026-10-12] [--service foundry-court-welcome]
 //
-// Needs the Railway CLI, logged in and linked to the website service. Each distinct
-// violation is logged once per running deployment (server/csp.js dedupes in memory), so
-// the counts are "deployments it showed up in", not page views. Prints plain text.
+// --since defaults to 7 days ago. Needs the Railway CLI logged in to the foundry-padel
+// project; it runs from any directory. Each distinct violation is logged once per running
+// deployment (server/csp.js dedupes in memory), so the counts are "deployments it showed
+// up in", not page views. Prints plain text.
 
 import { execFileSync } from "node:child_process";
 
@@ -16,6 +17,13 @@ const arg = (name) => {
   return i > 0 ? process.argv[i + 1] : undefined;
 };
 const since = arg("--since") || new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
+// The foundry-padel project and its production website service, named rather than taken
+// from the directory link, which `railway add` and friends quietly change.
+const target = [
+  "--project", "2bc04856-bbe8-411a-b033-ee7fe7f3605d",
+  "--service", arg("--service") || "foundry-court-welcome",
+  "--environment", "production",
+];
 
 const railway = (args) =>
   execFileSync("railway", args, { encoding: "utf8", timeout: 120_000, maxBuffer: 64 << 20 });
@@ -29,7 +37,7 @@ const KNOWN = [
 
 // Every deployment that served traffic since the date: those created after it, plus the
 // one that was already live when it began.
-const all = JSON.parse(railway(["deployment", "list", "--json", "--limit", "200"]))
+const all = JSON.parse(railway(["deployment", "list", "--json", "--limit", "200", ...target]))
   .filter((d) => d.meta?.buildOnly !== true)
   .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 const firstAfter = all.findIndex((d) => d.createdAt >= since);
@@ -40,7 +48,7 @@ let unreadable = 0;
 for (const d of deploys) {
   let out;
   try {
-    out = railway(["logs", d.id, "--json", "-n", "5000", "-f", "csp"]);
+    out = railway(["logs", d.id, "--json", "-n", "5000", "-f", "csp", ...target]);
   } catch {
     unreadable++;
     continue;
