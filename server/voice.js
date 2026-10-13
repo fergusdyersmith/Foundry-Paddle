@@ -64,23 +64,11 @@ function matchesSecret(presented) {
   return safeEqual(presented, VOICE_TOOL_SECRET);
 }
 
-/** The post-call webhook's URL token: VOICE_WEBHOOK_SECRET.
- *
- *  The tool secret is still taken here so that moving over has no gap: set
- *  VOICE_WEBHOOK_SECRET on Railway, re-run scripts/deploy-bland-agent.mjs (which then
- *  puts the new one in Bland's webhook URL), and only then is the old URL dead weight.
- *  Each use of the old token is logged, so the logs say when it is safe to stop
- *  accepting it. Then delete the fallback below and rotate VOICE_TOOL_SECRET, since the
- *  old URL has already been through those logs. */
+/** The post-call webhook's URL token: VOICE_WEBHOOK_SECRET, and only that. The tool
+ *  secret used to sit in this URL; it was rotated on 2026-10-13 when the webhook got its
+ *  own. Fails closed like the tools: unset means the webhook is off, not open. */
 function matchesWebhookToken(presented) {
-  if (safeEqual(presented, VOICE_WEBHOOK_SECRET)) return true;
-  if (!matchesSecret(presented)) return false;
-  console.warn(
-    VOICE_WEBHOOK_SECRET
-      ? "[voice] webhook called with the TOOL secret in its URL; re-run deploy-bland-agent so Bland uses VOICE_WEBHOOK_SECRET"
-      : "[voice] webhook authenticated with the tool secret; set VOICE_WEBHOOK_SECRET to give it its own",
-  );
-  return true;
+  return safeEqual(presented, VOICE_WEBHOOK_SECRET);
 }
 
 function authorized(req) {

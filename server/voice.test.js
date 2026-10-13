@@ -4,6 +4,7 @@ import express from "express";
 
 const TZ = "America/Los_Angeles";
 const SECRET = "voice-secret-value";
+const WEBHOOK_SECRET = "webhook-only-secret";
 
 // One court booked solid, one court wide open, so every assertion below can
 // distinguish "free somewhere" from "free everywhere".
@@ -28,6 +29,7 @@ async function boot({
   bookings = [],
   events = [],
   secret = SECRET,
+  webhookSecret = WEBHOOK_SECRET,
   ageMs = 0,
   notifier = undefined,
   linkSender = undefined,
@@ -36,6 +38,8 @@ async function boot({
   vi.resetModules();
   if (secret === null) delete process.env.VOICE_TOOL_SECRET;
   else process.env.VOICE_TOOL_SECRET = secret;
+  if (webhookSecret === null) delete process.env.VOICE_WEBHOOK_SECRET;
+  else process.env.VOICE_WEBHOOK_SECRET = webhookSecret;
 
   const voice = await import("./voice.js");
   const server = await import("../server.js");
@@ -758,33 +762,34 @@ describe("the post-call webhook, which does not need tools", () => {
     expect(res.status).toBe(401);
   });
 
-  it("takes its own webhook secret, and the tool secret only while Bland is moved over", async () => {
-    process.env.VOICE_WEBHOOK_SECRET = "webhook-only-secret";
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    try {
-      ctx = await boot();
-      const hit = (token) =>
-        fetch(`${ctx.base}/api/voice/webhook?token=${token}`, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ call_id: "x" }),
-        }).then((r) => r.status);
-      expect(await hit("webhook-only-secret")).toBe(200);
-      expect(warn).not.toHaveBeenCalled();
-      expect(await hit(SECRET)).toBe(200);
-      expect(warn.mock.calls[0][0]).toContain("re-run deploy-bland-agent");
-      expect(await hit("something-else")).toBe(401);
-      // The webhook's secret opens nothing else: the tools still want theirs.
-      const tool = await fetch(`${ctx.base}/api/voice/availability`, {
+  it("takes its own webhook secret and nothing else, the tool secret included", async () => {
+    ctx = await boot();
+    const hit = (token) =>
+      fetch(`${ctx.base}/api/voice/webhook?token=${token}`, {
         method: "POST",
-        headers: { authorization: "Bearer webhook-only-secret", "content-type": "application/json" },
-        body: "{}",
-      });
-      expect(tool.status).toBe(401);
-    } finally {
-      delete process.env.VOICE_WEBHOOK_SECRET;
-      warn.mockRestore();
-    }
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ call_id: "x" }),
+      }).then((r) => r.status);
+    expect(await hit(WEBHOOK_SECRET)).toBe(200);
+    expect(await hit(SECRET)).toBe(401);
+    expect(await hit("something-else")).toBe(401);
+    // The webhook's secret opens nothing else: the tools still want theirs.
+    const tool = await fetch(`${ctx.base}/api/voice/availability`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${WEBHOOK_SECRET}`, "content-type": "application/json" },
+      body: "{}",
+    });
+    expect(tool.status).toBe(401);
+  });
+
+  it("is off, not open, when its secret is unset", async () => {
+    ctx = await boot({ webhookSecret: null });
+    const res = await fetch(`${ctx.base}/api/voice/webhook?token=`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ call_id: "x" }),
+    });
+    expect(res.status).toBe(401);
   });
 
   it("posts a finished call to Slack with the summary and transcript", async () => {
@@ -793,7 +798,7 @@ describe("the post-call webhook, which does not need tools", () => {
     const notifyMessage = vi.fn(async () => ({ delivered: true, channel: "slack" }));
     ctx = await boot({ notifier: { configured: () => true, notifyMessage } });
 
-    const res = await fetch(`${ctx.base}/api/voice/webhook?token=${SECRET}`, {
+    const res = await fetch(`${ctx.base}/api/voice/webhook?token=${WEBHOOK_SECRET}`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -831,7 +836,7 @@ describe("the post-call webhook, which does not need tools", () => {
         },
       },
     });
-    const res = await fetch(`${ctx.base}/api/voice/webhook?token=${SECRET}`, {
+    const res = await fetch(`${ctx.base}/api/voice/webhook?token=${WEBHOOK_SECRET}`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ call_id: "x", summary: "s" }),
@@ -881,7 +886,7 @@ describe("the post-call text, since Bland's tools never execute", () => {
       notifier: { configured: () => true, notifyMessage },
     });
 
-    await fetch(`${ctx.base}/api/voice/webhook?token=${SECRET}`, {
+    await fetch(`${ctx.base}/api/voice/webhook?token=${WEBHOOK_SECRET}`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -911,7 +916,7 @@ describe("the post-call text, since Bland's tools never execute", () => {
       linkSender: { configured: () => true, sendLink: async () => ({ sent: false, reason: "cooldown" }) },
       notifier: { configured: () => true, notifyMessage },
     });
-    await fetch(`${ctx.base}/api/voice/webhook?token=${SECRET}`, {
+    await fetch(`${ctx.base}/api/voice/webhook?token=${WEBHOOK_SECRET}`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -931,7 +936,7 @@ describe("the post-call text, since Bland's tools never execute", () => {
       linkSender: { configured: () => true, sendLink },
       notifier: { configured: () => true, notifyMessage: async () => ({ delivered: true }) },
     });
-    await fetch(`${ctx.base}/api/voice/webhook?token=${SECRET}`, {
+    await fetch(`${ctx.base}/api/voice/webhook?token=${WEBHOOK_SECRET}`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({

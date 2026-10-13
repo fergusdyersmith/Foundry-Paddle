@@ -22,8 +22,8 @@ const CONFIG_PATH = path.join(__dirname, "..", "bland", "config.json");
 
 const BLAND_API_KEY = process.env.BLAND_API_KEY;
 const VOICE_TOOL_SECRET = process.env.VOICE_TOOL_SECRET;
-// Goes in the post-call webhook's URL instead of the tool secret (server/voice.js,
-// matchesWebhookToken). Optional so the script still runs before it exists.
+// Goes in the post-call webhook's URL, never the tool secret: a URL ends up in request
+// logs. server/voice.js (matchesWebhookToken) accepts nothing else there.
 const VOICE_WEBHOOK_SECRET = process.env.VOICE_WEBHOOK_SECRET;
 const ENCRYPTED_KEY = process.env.BLAND_ENCRYPTED_KEY; // BYOT: our own Twilio number
 // The number BLAND answers, which is not the number the club publishes.
@@ -465,9 +465,7 @@ const writeConfig = (next) => writeFileSync(CONFIG_PATH, `${JSON.stringify(next,
 async function main() {
   if (!BLAND_API_KEY) throw new Error("BLAND_API_KEY is required");
   if (!VOICE_TOOL_SECRET) throw new Error("VOICE_TOOL_SECRET is required (it goes in the tool headers)");
-  if (!VOICE_WEBHOOK_SECRET) {
-    console.warn("VOICE_WEBHOOK_SECRET is not set: the post-call webhook URL will carry the tool secret.");
-  }
+  if (!VOICE_WEBHOOK_SECRET) throw new Error("VOICE_WEBHOOK_SECRET is required (it goes in the post-call webhook URL)");
 
   const config = readConfig();
   if (!config.knowledge_base_id) {
@@ -621,7 +619,7 @@ async function main() {
       // Token in the URL: the webhook signing secret can only be obtained by
       // hand from Bland's dashboard. Its own secret, because a URL ends up in
       // request logs and the tool secret should not.
-      webhook: `${SITE}/api/voice/webhook?token=${encodeURIComponent(VOICE_WEBHOOK_SECRET || VOICE_TOOL_SECRET)}`,
+      webhook: `${SITE}/api/voice/webhook?token=${encodeURIComponent(VOICE_WEBHOOK_SECRET)}`,
       max_duration: 15,
       // Same latency settings as the persona. Which of the two the live call
       // actually reads is not documented, so both carry them.
