@@ -85,6 +85,47 @@ export function buildSlackText(r, tier) {
   return bits.join("\n");
 }
 
+// Registering twice is normal: someone reloads the page, or comes back to it after the
+// Playtomic payment step and fills it in again. The club reads the channel as its roster,
+// so a second full post reads as a second person (Clint McGowen: two full posts, three
+// minutes apart). A repeat within the hour from the same email, Playtomic email or phone
+// becomes one line saying what changed, if anything. Klaviyo and the sheet still get it:
+// Klaviyo keeps the latest answers, and the organisers may want the corrected row.
+export const REPEAT_WINDOW_MS = 60 * 60 * 1000;
+const REPEAT_MAX_KEPT = 2000;
+const COMPARED = [
+  ["name", "name"], ["level", "level"], ["rating", "rating"], ["shirt", "shirt"], ["partner", "partner"],
+  ["email", "email"], ["playtomicEmail", "Playtomic email"], ["phone", "phone"], ["notes", "notes"],
+];
+
+/** Every handle that says "same person": either email, or the phone when it parses. */
+export function identityKeys(r) {
+  const keys = [];
+  for (const e of [r.email, r.playtomicEmail]) if (e) keys.push(`e:${e.trim().toLowerCase()}`);
+  const phone = r.phone ? normalizePhone(r.phone) : null;
+  if (phone) keys.push(`p:${phone}`);
+  return [...new Set(keys)];
+}
+
+/** What a repeat changed, as "shirt M → XL" pieces. Notes are only said to have changed. */
+export function answerChanges(before, after) {
+  const out = [];
+  for (const [field, label] of COMPARED) {
+    const a = (before[field] || "").trim(); const b = (after[field] || "").trim();
+    if (a === b) continue;
+    if (field === "notes") { out.push("notes"); continue; }
+    out.push(`${label} ${a ? escapeSlack(a) : "(blank)"} → ${b ? escapeSlack(b) : "(blank)"}`);
+  }
+  return out;
+}
+
+export function buildRepeatText(r, prior, firstAt) {
+  const who = [r.name || prior.name, r.playtomicEmail || r.email || r.phone].filter(Boolean).map(escapeSlack).join("  ·  ");
+  const at = new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", timeStyle: "short" }).format(firstAt);
+  const changes = answerChanges(prior, r);
+  return `*Registered again*  ${who} (first at ${at}): ${changes.length ? `changed ${changes.join(", ")}` : "same answers"}`;
+}
+
 /**
  * @param {object} deps
  * @param {Function} deps.klaviyo      (method, path, body) => {status, json}; null disables
@@ -118,6 +159,23 @@ export function createOpenRouter({
   const router = express.Router();
   // Registrations post to Slack and the organisers' sheet and update a Klaviyo profile.
   const registerLimit = rateLimit({ name: "open", max: 6, windowMs: 10 * 60 * 1000 });
+  // identity key -> { firstAt, lastAt, answers }; one entry object shared by all its keys.
+  // In memory: a restart forgets, and the worst that does is one extra full post.
+  const recent = new Map();
+
+  function priorRegistration(keys, at) {
+    for (const [k, v] of recent) {
+      if (at - v.lastAt <= REPEAT_WINDOW_MS) break;   // oldest first; the rest are newer
+      recent.delete(k);
+    }
+    for (const k of keys) if (recent.has(k)) return recent.get(k);
+    return null;
+  }
+
+  function remember(keys, entry) {
+    for (const k of keys) { recent.delete(k); recent.set(k, entry); }
+    while (recent.size > REPEAT_MAX_KEPT) recent.delete(recent.keys().next().value);
+  }
 
   async function postSlack(text) {
     if (!slackToken) return false;
@@ -219,7 +277,16 @@ export function createOpenRouter({
       return res.status(410).json({ error: "Registration has closed. Call the club if you think there is still a place." });
     }
 
-    const outcomes = await Promise.allSettled([postSlack(buildSlackText(r, tier)), recordKlaviyo(r, tier), appendSheetRow(r, tier)]);
+    const at = now().getTime();
+    const keys = identityKeys(r);
+    const prior = keys.length ? priorRegistration(keys, at) : null;
+    const slackText = prior ? buildRepeatText(r, prior.answers, new Date(prior.firstAt)) : buildSlackText(r, tier);
+    const outcomes = await Promise.allSettled([postSlack(slackText), recordKlaviyo(r, tier), appendSheetRow(r, tier)]);
+    // Remembered only once Slack has the full post, so a failed post is not followed by a
+    // one-liner pointing at nothing.
+    if (keys.length && outcomes[0].status === "fulfilled" && outcomes[0].value === true) {
+      remember(keys, { firstAt: prior ? prior.firstAt : at, lastAt: at, answers: { ...r } });
+    }
     const recorded = outcomes.some((o) => o.status === "fulfilled" && o.value === true);
     for (const o of outcomes) {
       if (o.status === "rejected") console.error("[open] record failed:", o.reason?.message || o.reason);

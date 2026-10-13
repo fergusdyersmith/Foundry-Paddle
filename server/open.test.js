@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import express from "express";
-import { buildSlackText, createOpenRouter, currentTier, DEFAULT_CLOSES, DEFAULT_TIERS } from "./open.js";
+import { buildSlackText, createOpenRouter, currentTier, DEFAULT_CLOSES, DEFAULT_TIERS, REPEAT_WINDOW_MS } from "./open.js";
 
 const good = {
   name: "Sam Rivera", email: "sam@example.com", phone: "(503) 555-0142", shirt: "M",
@@ -120,5 +120,97 @@ describe("POST /api/open/register", () => {
   it("answers status without a link until one is configured", async () => {
     const r = await call(app({ bookUrl: null, now: () => new Date("2026-10-01T12:00:00-07:00") }), "GET", "/api/open/status");
     expect(r.json).toMatchObject({ tier: "early", price: 75, bookable: false, closed: false, closes: DEFAULT_CLOSES });
+  });
+});
+
+describe("registering again", () => {
+  // A clock the test moves, and a Slack that can be told to fail.
+  function rig({ slackOk = () => true } = {}) {
+    let t = new Date("2026-10-10T08:53:00-07:00").getTime();
+    const slack = []; const kl = []; const sheet = [];
+    const a = app({
+      slackToken: "x", channel: "#t", bookUrl: "u", listId: null, sheetUrl: "https://sheet",
+      klaviyo: async (m, p, b) => { kl.push([m, p, b]); return { status: 201, json: {} }; },
+      fetchImpl: async (url, init) => {
+        if (url === "https://sheet") { sheet.push(JSON.parse(init.body)); return { ok: true, status: 200, json: async () => ({ ok: true }) }; }
+        slack.push(JSON.parse(init.body).text);
+        return { json: async () => (slackOk() ? { ok: true } : { ok: false, error: "ratelimited" }) };
+      },
+      now: () => new Date(t),
+    });
+    return { a, slack, kl, sheet, later: (ms) => { t += ms; } };
+  }
+
+  it("posts one line, not a second roster entry, when the same email comes back within the hour", async () => {
+    const { a, slack, kl, sheet, later } = rig();
+    await call(a, "POST", "/api/open/register", good);
+    later(3 * 60 * 1000);
+    const r = await call(a, "POST", "/api/open/register", good);
+    expect(r.json).toMatchObject({ ok: true, bookUrl: "u", recorded: true });
+    expect(slack).toHaveLength(2);
+    expect(slack[0]).toContain("New open registration");
+    expect(slack[1]).toBe("*Registered again*  Sam Rivera  ·  sam.plays@example.com (first at 8:53 AM): same answers");
+    // Klaviyo and the sheet still get the repeat.
+    expect(kl).toHaveLength(2); expect(sheet).toHaveLength(2);
+  });
+
+  it("says what changed", async () => {
+    const { a, slack, later } = rig();
+    await call(a, "POST", "/api/open/register", good);
+    later(60 * 1000);
+    await call(a, "POST", "/api/open/register", { ...good, shirt: "XL", partner: "", notes: "Actually a 3.5" });
+    expect(slack[1]).toContain("changed shirt M → XL, partner Alex Chen → (blank), notes");
+    expect(slack[1]).not.toContain("Actually a 3.5");
+  });
+
+  it("knows the person by phone or by either email", async () => {
+    const { a, slack, later } = rig();
+    await call(a, "POST", "/api/open/register", good);
+    later(60 * 1000);
+    await call(a, "POST", "/api/open/register", { level: "intermediate", phone: "503-555-0142" });
+    later(60 * 1000);
+    await call(a, "POST", "/api/open/register", { level: "intermediate", email: "SAM.PLAYS@example.com " });
+    expect(slack.slice(1).every((t) => t.startsWith("*Registered again*"))).toBe(true);
+    // Neither repeat gave a name; the note borrows the first one's.
+    expect(slack[1]).toContain("Sam Rivera");
+  });
+
+  it("posts in full again after an hour, for someone else, or with nothing to know them by", async () => {
+    const { a, slack, later } = rig();
+    await call(a, "POST", "/api/open/register", good);
+    later(REPEAT_WINDOW_MS + 1000);
+    await call(a, "POST", "/api/open/register", good);
+    await call(a, "POST", "/api/open/register", { level: "beginner", name: "Jo", email: "jo@example.com" });
+    await call(a, "POST", "/api/open/register", { level: "beginner" });
+    await call(a, "POST", "/api/open/register", { level: "beginner" });
+    expect(slack.every((t) => t.startsWith("*New open registration*"))).toBe(true);
+    expect(slack).toHaveLength(5);
+  });
+
+  it("counts the hour from the latest visit, and keeps the first time in the note", async () => {
+    const { a, slack, later } = rig();
+    await call(a, "POST", "/api/open/register", good);
+    later(50 * 60 * 1000);
+    await call(a, "POST", "/api/open/register", good);
+    later(50 * 60 * 1000);
+    await call(a, "POST", "/api/open/register", good);
+    expect(slack[2]).toContain("Registered again"); expect(slack[2]).toContain("first at 8:53 AM");
+  });
+
+  it("posts in full again if the first post never reached Slack", async () => {
+    let ok = false;
+    const { a, slack, later } = rig({ slackOk: () => ok });
+    await call(a, "POST", "/api/open/register", good);
+    ok = true; later(60 * 1000);
+    await call(a, "POST", "/api/open/register", good);
+    expect(slack[1]).toContain("New open registration");
+  });
+
+  it("keeps Slack markup out of a repeat's changes", async () => {
+    const { a, slack, later } = rig();
+    await call(a, "POST", "/api/open/register", good);
+    later(60 * 1000);
+    await call(a, "POST", "/api/open/register", { ...good, partner: "<!channel>" });
+    expect(slack[1]).not.toContain("<!channel>"); expect(slack[1]).toContain("&lt;!channel&gt;");
   });
 });
