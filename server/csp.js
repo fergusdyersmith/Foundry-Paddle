@@ -9,10 +9,11 @@
  *
  * What each source is for:
  *   googletagmanager / google-analytics   GA4 (gtag in index.html)
+ *   www.google.com                        also GA4: some hits go to www.google.com/g/collect
  *   fast.wistia.com / .net, akamaihd      the Wistia video on /the-sport
  *   fonts.googleapis / gstatic            the web fonts (index.css)
  *   playtomic.io / playtomic.com          the booking iframe on /book (.io redirects to .com)
- *   www.google.com                        the map embed (footer, /contact)
+ *   www.google.com (frame)                the map embed (footer, /contact)
  *   challenges.cloudflare.com             Turnstile, once its keys are set (server/turnstile.js)
  *
  * Left out on purpose: browser.sentry-cdn.com, which Wistia's player loads for its own
@@ -45,6 +46,7 @@ const POLICY = {
     "https://*.google-analytics.com",
     "https://*.analytics.google.com",
     "https://*.googletagmanager.com",
+    "https://www.google.com",
     "https://*.wistia.com",
     "https://*.wistia.net",
     "https://embedwistia-a.akamaihd.net",
@@ -89,7 +91,9 @@ export function summarizeCspReport(body) {
     .filter((r) => r && typeof r === "object")
     .map((r) => {
       const directive = r["effective-directive"] || r.effectiveDirective || r["violated-directive"] || "";
-      const blocked = r["blocked-uri"] || r.blockedURL || "";
+      // A blocked URL's query string is dropped: it can carry a visitor id (GA's cid=),
+      // and since it differs on every request it would defeat the once-per-source dedupe.
+      const blocked = String(r["blocked-uri"] || r.blockedURL || "").replace(/[?#].*$/, "");
       const page = r["document-uri"] || r.documentURL || "";
       const clip = (v) => String(v).slice(0, 200);
       let pagePath = "";

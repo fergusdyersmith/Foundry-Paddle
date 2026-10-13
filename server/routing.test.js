@@ -234,6 +234,16 @@ describe("response headers", () => {
       { type: "csp-violation", body: { documentURL: "https://www.foundrypadel.com/", effectiveDirective: "frame-src", blockedURL: "https://x.example/" } },
     ]);
     expect(warn.mock.calls.map((c) => c[0])).toContain("[csp] would block frame-src: https://x.example/ on /");
+    // The query string is dropped: it can carry a visitor id, and a new one on every hit
+    // would log every hit.
+    for (const cid of ["1.1", "2.2"]) {
+      await post("application/csp-report", {
+        "csp-report": { "document-uri": "https://www.foundrypadel.com/", "effective-directive": "connect-src", "blocked-uri": `https://ga.example/g/collect?v=2&cid=${cid}` },
+      });
+    }
+    expect(warn.mock.calls.map((c) => c[0]).filter((l) => String(l).includes("ga.example"))).toEqual([
+      "[csp] would block connect-src: https://ga.example/g/collect on /",
+    ]);
     warn.mockRestore();
   });
 
