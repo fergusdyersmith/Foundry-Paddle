@@ -76,8 +76,7 @@ Rules:
 
 | Component | What it is | Where |
 |---|---|---|
-| `PageHeader` | h1 + kicker between two clay rules; a court plan draws in behind | every text-led page hero |
-| `CourtPlan` | top-down 20m x 10m padel court whose lines draw in marking order | PageHeader; diagrams |
+| `PageHeader` | h1 + kicker between two clay rules | every text-led page hero |
 | `AnimatedMonogram` | FP monogram; the racket's holes ripple out from the sweet spot | home hero only |
 | `BallFlight` | JS ball following any SVG path (rAF; pauses off screen and in background tabs) | home "∞", 404, BookCTA |
 | `BallLoader` | ball rallying over a net, `role="status"` | every loading state (replaces `Loader2`) |
