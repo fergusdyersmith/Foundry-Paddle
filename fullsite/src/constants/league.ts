@@ -66,12 +66,13 @@ export const LEAGUE_LEVELS: LeagueLevel[] = [
   { key: "advanced", label: "Advanced", rating: "3.5 and up", blurb: "Competitive, consistent, and happy to play three full sets." },
 ];
 
-/** What the league leads to. Jake (13 Oct): the league is how the club picks who it
- *  sends to the National Padel League, and the fees go towards the winning team's travel.
- *  Keep this one line, and keep it honest: nothing is promised beyond a prize and a look. */
+/** What the league leads to. Jake (13 Oct) and Ryan (14 Oct): the league is how the club
+ *  picks the pairings it sends to the National Padel League regionals, on the road to
+ *  nationals in Las Vegas, and the fees go towards that trip. There is no separate prize
+ *  (Ryan, 14 Oct): the trip is the prize. Keep it honest: a place on the Foundry team. */
 export const LEAGUE_NPL_LINE =
-  "This season is also how we pick the pairings Foundry sends to the National Padel League.";
-export const LEAGUE_PRIZE_LINE = "A prize for the winning team, handed over at the club after the final week.";
+  "This season is how we pick the pairings Foundry sends to the National Padel League regionals.";
+export const LEAGUE_PRIZE_LINE = "The prize is the trip: the top pairings in each league represent Foundry at the NPL regionals, with nationals in Las Vegas beyond that.";
 
 /** Where the standings come from once the league is under way: a JSON file Ryan updates
  *  each week. The page shows a placeholder until it has content. */
