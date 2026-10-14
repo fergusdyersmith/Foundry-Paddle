@@ -52,7 +52,7 @@ const LeagueScore = () => {
       setError("All three sets are needed: games to you, then games to them.");
       return;
     }
-    if (!form.name.trim() || !form.email.trim()) { setError("Your name and an email are needed, so Ryan can check a score with you."); return; }
+    if (!form.name.trim() || !form.email.trim()) { setError("Your name and an email are needed, so we can check a score with you."); return; }
     if (!human.ready) {
       setError("One moment: we are still checking this came from a person. Try again in a second.");
       return;

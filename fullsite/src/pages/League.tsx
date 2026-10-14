@@ -144,7 +144,6 @@ const League = () => {
             },
             offers: [{ "@type": "Offer", name: "Team entry", price: LEAGUE_PRICE_TEAM, priceCurrency: "USD", url: "https://www.foundrypadel.com/league" }],
             organizer: { "@type": "Organization", name: "Foundry Padel", url: "https://www.foundrypadel.com" },
-            director: { "@type": "Person", name: LEAGUE_HOST },
           })}
         </script>
       </Head>
@@ -162,7 +161,7 @@ const League = () => {
             <h1 className="mt-4 font-display text-6xl sm:text-8xl leading-none text-foreground">{LEAGUE_NAME.toUpperCase()}</h1>
             <p className="mt-6 font-display text-2xl sm:text-3xl tracking-wide text-foreground">{LEAGUE_DATES_LABEL.toUpperCase()}</p>
             <p className="mx-auto mt-4 max-w-xl font-body text-base text-secondary-foreground">
-              Grab a partner, a men's league and a women's league. Every week {LEAGUE_HOST} tells you who you play; you and the other team pick the day and the hour. Three sets a match, every set counts, and a table that says where you stand. {LEAGUE_NPL_LINE}
+              Grab a partner, a men's league and a women's league. Every week {LEAGUE_HOST} posts who you play; you and the other team pick the day and the hour. Three sets a match, every set counts, and a table that says where you stand. {LEAGUE_NPL_LINE}
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <a href="#signup" className="bg-primary px-10 py-4 font-display text-lg tracking-widest text-primary-foreground shadow-[0_0_40px_-8px_hsl(var(--primary)/0.7)] transition-all hover:brightness-110">
@@ -339,7 +338,7 @@ const League = () => {
                 {[
                   `$${LEAGUE_PRICE_TEAM} a team for the season, court time booked by you`,
                   LEAGUE_PRIZE_LINE,
-                  `${LEAGUE_HOST} sets the fixtures and keeps the table`,
+                  `${LEAGUE_HOST} posts who you play each week and keeps the table`,
                   "Two leagues, men's and women's. Two men or two women to a team, no mixed pairs",
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-3 font-body text-base text-foreground"><Check size={20} className="mt-0.5 shrink-0 text-primary" />{item}</li>
