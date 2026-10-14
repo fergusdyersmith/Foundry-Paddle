@@ -193,7 +193,7 @@ const League = () => {
             </div>
           </div>
           <p className="mx-auto mt-6 max-w-2xl text-center font-body text-sm text-muted-foreground">
-            The fee runs the league: the fixtures, the table, and the NPL trip for the pairings who earn it. Signups close {LEAGUE_CLOSES_LABEL}; the schedule follows the week after.
+            The fee runs the league: the fixtures, the table and the winners' entry to next year's league. The NPL is a chance to go, and the travel is your own. Signups close {LEAGUE_CLOSES_LABEL}; the schedule follows the week after.
           </p>
         </div>
       </section>
