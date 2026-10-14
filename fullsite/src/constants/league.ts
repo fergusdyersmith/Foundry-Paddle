@@ -49,8 +49,16 @@ export const LEAGUE_RULES = [
   { head: "Cannot make a week?", body: "Talk to the other team and move the match into another week; you will just play twice that week. A match nobody plays is a forfeit." },
 ] as const;
 
-/** Levels, the same bands as the Open. Teams are grouped once signups close; with enough
- *  teams at a level it gets its own table, otherwise levels share one. */
+/** Two leagues, men's and women's, no mixed (Ryan, 14 Oct): the results decide the NPL
+ *  pairings, which are gendered. Both players on a team are in the same league. */
+export type LeagueGroup = { key: "mens" | "womens"; label: string; blurb: string };
+export const LEAGUE_GROUPS: LeagueGroup[] = [
+  { key: "mens", label: "Men's league", blurb: "Two men to a team." },
+  { key: "womens", label: "Women's league", blurb: "Two women to a team." },
+];
+
+/** Levels, the same bands as the Open. Divisions are set once signups are in (Ryan,
+ *  14 Oct): with enough teams at a level it gets its own table, otherwise levels share one. */
 export type LeagueLevel = { key: "beginner" | "intermediate" | "advanced"; label: string; rating: string; blurb: string };
 export const LEAGUE_LEVELS: LeagueLevel[] = [
   { key: "beginner", label: "Beginner", rating: "0 to 1.75", blurb: "New to padel, or still learning the walls. Rallies over results." },
@@ -62,7 +70,7 @@ export const LEAGUE_LEVELS: LeagueLevel[] = [
  *  sends to the National Padel League, and the fees go towards the winning team's travel.
  *  Keep this one line, and keep it honest: nothing is promised beyond a prize and a look. */
 export const LEAGUE_NPL_LINE =
-  "This first season is also how we start building the team Foundry sends to the National Padel League.";
+  "This season is also how we pick the pairings Foundry sends to the National Padel League.";
 export const LEAGUE_PRIZE_LINE = "A prize for the winning team, handed over at the club after the final week.";
 
 /** Where the standings come from once the league is under way: a JSON file Ryan updates

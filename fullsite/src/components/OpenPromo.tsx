@@ -123,7 +123,7 @@ const OpenPromo = () => {
     cards.splice(openAt < 0 ? cards.length : openAt, 0, {
       key: "league",
       to: "/league",
-      eyebrow: `${LEAGUE_DATES_LABEL} · ${LEAGUE_WEEKS}-week league · teams of two`,
+      eyebrow: `${LEAGUE_DATES_LABEL} · ${LEAGUE_WEEKS}-week league · men's and women's`,
       title: LEAGUE_NAME,
       body: (
         <>

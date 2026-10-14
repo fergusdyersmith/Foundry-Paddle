@@ -3,7 +3,7 @@ import express from "express";
 import { buildSlackText, createLeagueRouter, DEFAULT_CLOSES } from "./league.js";
 
 const good = {
-  level: "intermediate", name: "Sam Rivera", email: "sam@example.com", phone: "(503) 555-0142", smsConsent: true,
+  league: "mens", level: "intermediate", name: "Sam Rivera", email: "sam@example.com", phone: "(503) 555-0142", smsConsent: true,
   partner: "Alex Chen", partnerEmail: "alex@example.com", team: "Net Gains", rating: "2.5",
   availability: "Weeknights after 7, Sunday mornings", notes: "Away Thanksgiving week.",
 };
@@ -39,7 +39,7 @@ describe("POST /api/league/register", () => {
     expect(r.status).toBe(200);
     expect(r.json).toMatchObject({ ok: true, recorded: true, payUrl: "https://square.link/u/abc", priceTeam: 70, partner: "Alex Chen" });
     expect(slack[0].channel).toBe("#t");
-    expect(slack[0].text).toContain("Net Gains"); expect(slack[0].text).toContain("Alex Chen"); expect(slack[0].text).toContain("intermediate"); expect(slack[0].text).toContain("texts OK");
+    expect(slack[0].text).toContain("Net Gains"); expect(slack[0].text).toContain("Alex Chen"); expect(slack[0].text).toContain("Men's league"); expect(slack[0].text).toContain("intermediate"); expect(slack[0].text).toContain("texts OK");
     // Two profiles, then one subscription job for both.
     const profiles = kl.filter(([, p]) => p.startsWith("/profiles") || p.startsWith("/profile-import"));
     expect(profiles.length).toBe(2);
@@ -49,7 +49,7 @@ describe("POST /api/league/register", () => {
     expect(sub[2].data.attributes.profiles.data.map((d) => d.attributes.email)).toEqual(["sam@example.com", "alex@example.com"]);
     expect(sheet).toHaveLength(1);
     expect(sheet[0].secret).toBe("s3cret");
-    expect(sheet[0].row).toEqual(["10/15/26, 12:00 PM", "Net Gains", "Sam Rivera", "sam@example.com", "(503) 555-0142", "yes",
+    expect(sheet[0].row).toEqual(["10/15/26, 12:00 PM", "Men's", "Net Gains", "Sam Rivera", "sam@example.com", "(503) 555-0142", "yes",
       "Alex Chen", "alex@example.com", "", "intermediate", "2.5", "Weeknights after 7, Sunday mornings", "Away Thanksgiving week.", "", ""]);
   });
 
@@ -79,9 +79,11 @@ describe("POST /api/league/register", () => {
   it("needs a name, an email and a level, and no partner is fine", async () => {
     const slack = [];
     const a = app({ slackToken: "x", fetchImpl: async (u, init) => { slack.push(JSON.parse(init.body).text); return { json: async () => ({ ok: true }) }; } });
-    expect((await call(a, "POST", "/api/league/register", { level: "beginner", name: "Pat Lee", email: "pat@example.com" })).status).toBe(200);
-    expect(slack[0]).toContain("needs a partner");
-    expect((await call(a, "POST", "/api/league/register", { level: "beginner", email: "pat@example.com" })).status).toBe(400);
+    expect((await call(a, "POST", "/api/league/register", { league: "womens", level: "beginner", name: "Pat Lee", email: "pat@example.com" })).status).toBe(200);
+    expect(slack[0]).toContain("needs a partner"); expect(slack[0]).toContain("Women's league");
+    expect((await call(a, "POST", "/api/league/register", { league: "womens", level: "beginner", email: "pat@example.com" })).status).toBe(400);
+    expect((await call(a, "POST", "/api/league/register", { level: "beginner", name: "Pat Lee", email: "pat@example.com" })).status).toBe(400);
+    expect((await call(a, "POST", "/api/league/register", { ...good, league: "mixed" })).status).toBe(400);
     expect((await call(a, "POST", "/api/league/register", { level: "pro", name: "Pat Lee", email: "pat@example.com" })).status).toBe(400);
     expect((await call(a, "POST", "/api/league/register", { ...good, phone: "12" })).status).toBe(400);
     expect((await call(a, "POST", "/api/league/register", { ...good, partnerPhone: "12" })).status).toBe(400);

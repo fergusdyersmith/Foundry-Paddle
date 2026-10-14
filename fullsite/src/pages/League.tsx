@@ -16,6 +16,7 @@ import {
   LEAGUE_DATES_LABEL,
   LEAGUE_DATE_END,
   LEAGUE_DATE_START,
+  LEAGUE_GROUPS,
   LEAGUE_HOST,
   LEAGUE_LEVELS,
   LEAGUE_NAME,
@@ -61,7 +62,7 @@ const League = () => {
   const [tables, setTables] = useState<Table[] | null>(null);
 
   const [form, setForm] = useState({
-    level: "", name: "", email: "", phone: "", partner: "", partnerEmail: "", partnerPhone: "",
+    league: "", level: "", name: "", email: "", phone: "", partner: "", partnerEmail: "", partnerPhone: "",
     team: "", rating: "", availability: "", notes: "", website: "",
   });
   const [smsConsent, setSmsConsent] = useState(false);
@@ -87,6 +88,7 @@ const League = () => {
   async function submit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!form.league) { setError("Pick the men's or the women's league."); return; }
     if (!form.level) { setError("Pick the level you want to play."); return; }
     if (!form.name.trim() || !form.email.trim()) { setError("Your name and an email are needed."); return; }
     if (!human.ready) {
@@ -156,11 +158,11 @@ const League = () => {
         </div>
         <div className="relative z-10 mx-auto max-w-3xl px-6 pt-24 text-center">
           <div data-enter>
-            <span className="font-body text-sm tracking-[0.2em] uppercase text-primary">{LEAGUE_WEEKS} weeks · one match a week · teams of two</span>
+            <span className="font-body text-sm tracking-[0.2em] uppercase text-primary">{LEAGUE_WEEKS} weeks · one match a week · men's and women's leagues</span>
             <h1 className="mt-4 font-display text-6xl sm:text-8xl leading-none text-foreground">{LEAGUE_NAME.toUpperCase()}</h1>
             <p className="mt-6 font-display text-2xl sm:text-3xl tracking-wide text-foreground">{LEAGUE_DATES_LABEL.toUpperCase()}</p>
             <p className="mx-auto mt-4 max-w-xl font-body text-base text-secondary-foreground">
-              Grab a partner. Every week {LEAGUE_HOST} tells you who you play; you and the other team pick the day and the hour. Three sets a match, every set counts, and a table that says where you stand. {LEAGUE_NPL_LINE}
+              Grab a partner, a men's league and a women's league. Every week {LEAGUE_HOST} tells you who you play; you and the other team pick the day and the hour. Three sets a match, every set counts, and a table that says where you stand. {LEAGUE_NPL_LINE}
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <a href="#signup" className="bg-primary px-10 py-4 font-display text-lg tracking-widest text-primary-foreground shadow-[0_0_40px_-8px_hsl(var(--primary)/0.7)] transition-all hover:brightness-110">
@@ -203,7 +205,7 @@ const League = () => {
           <div className="section-divider mb-16" />
           <h2 className={`${sectionHeading} text-center`}>ENTER A TEAM</h2>
           <p className="mx-auto mt-5 max-w-xl text-center font-body text-base leading-relaxed text-secondary-foreground">
-            One form per team. Your details, your partner's name, and the level you want to play. No partner yet? Sign up on your own and we will pair you with someone at your level.
+            One form per team. The men's or the women's league, your details, your partner's name, and the level you want to play. No partner yet? Sign up on your own and we will pair you with someone at your level.
           </p>
 
           {isOver ? (
@@ -244,6 +246,19 @@ const League = () => {
           ) : (
             <form onSubmit={submit} className="mt-12 space-y-5" noValidate>
               <fieldset>
+                <legend className={label}>Which league</legend>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {LEAGUE_GROUPS.map((g) => (
+                    <label key={g.key} className={`cursor-pointer border p-4 transition-colors focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-primary ${form.league === g.key ? "border-primary bg-secondary" : "border-border hover:border-primary/60"}`}>
+                      <input type="radio" name="league" value={g.key} checked={form.league === g.key} onChange={set("league")} className="sr-only" />
+                      <span className="block font-display text-xl text-foreground">{g.label.toUpperCase()}</span>
+                      <span className="mt-1 block font-body text-xs leading-relaxed text-secondary-foreground">{g.blurb}</span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+
+              <fieldset>
                 <legend className={label}>Level you want to play</legend>
                 <div className="grid gap-3 sm:grid-cols-3">
                   {LEAGUE_LEVELS.map((l) => (
@@ -256,7 +271,7 @@ const League = () => {
                   ))}
                 </div>
                 <p className="mt-3 font-body text-xs leading-relaxed text-muted-foreground">
-                  A guide, not a rule. Teams are grouped once signups close: enough teams at a level and it gets its own table, otherwise levels share one.
+                  A guide, not a rule. Divisions are set once signups are in: enough teams at a level and it gets its own table, otherwise levels share one.
                 </p>
               </fieldset>
 
@@ -325,7 +340,7 @@ const League = () => {
                   `$${LEAGUE_PRICE_TEAM} a team for the season, court time booked by you`,
                   LEAGUE_PRIZE_LINE,
                   `${LEAGUE_HOST} sets the fixtures and keeps the table`,
-                  "Any pairing plays: two men, two women, or mixed",
+                  "Two leagues, men's and women's. Two men or two women to a team, no mixed pairs",
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-3 font-body text-base text-foreground"><Check size={20} className="mt-0.5 shrink-0 text-primary" />{item}</li>
                 ))}

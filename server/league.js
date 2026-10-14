@@ -23,6 +23,8 @@ import { rateLimit, sheetCell } from "./abuse.js";
 import { upsertProfile } from "./klaviyoProfile.js";
 
 export const LEVELS = ["beginner", "intermediate", "advanced"];
+/** Men's and women's, no mixed (Ryan, 14 Oct): the results decide the NPL pairings. */
+export const GROUPS = ["mens", "womens"];
 /** Per team of two. One price, no tiers. */
 export const DEFAULT_PRICE_TEAM = 70;
 /** First day signups are closed. Mirrors LEAGUE_CLOSES in fullsite/src/constants/league.ts. */
@@ -40,6 +42,7 @@ const opt = (schema) => schema.optional().or(z.literal(""));
 // are needed; the partner's name is needed (a team is two people), the partner's contact
 // details are welcome. A player without a partner can still sign up and say so.
 export const signupSchema = z.object({
+  league: z.enum(GROUPS),
   level: z.enum(LEVELS),
   name: z.string().trim().min(2).max(80),
   email: z.string().trim().email().max(255),
@@ -115,7 +118,7 @@ export function buildSlackText(r) {
   const bits = [
     `*New league signup*  ${r.team ? `*${escapeSlack(r.team)}*  ` : ""}${who}`,
     `Partner: ${partner}`,
-    `Level: *${r.level}*${r.rating ? ` (rating ${escapeSlack(r.rating)})` : ""}${r.phone ? `  ·  ${r.smsConsent ? "texts OK" : "no texts"}` : ""}`,
+    `${r.league === "womens" ? "Women's" : "Men's"} league  ·  level: *${r.level}*${r.rating ? ` (rating ${escapeSlack(r.rating)})` : ""}${r.phone ? `  ·  ${r.smsConsent ? "texts OK" : "no texts"}` : ""}`,
   ];
   if (r.availability) bits.push(`Plays: ${escapeSlack(r.availability)}`);
   if (r.notes) bits.push(`_${escapeSlack(r.notes)}_`);
@@ -183,6 +186,7 @@ export function createLeagueRouter({
     ];
     for (const p of people) {
       const properties = {
+        [`${SEASON_KEY}_league`]: r.league,
         [`${SEASON_KEY}_level`]: r.level,
         [`${SEASON_KEY}_team`]: r.team || null,
         [`${SEASON_KEY}_partner`]: p.partner,
@@ -217,7 +221,7 @@ export function createLeagueRouter({
   // because the failures this sees are Apps Script cold starts.
   function appendSheetRow(r) {
     return postRow([
-      stamp(), r.team || "", r.name, r.email, r.phone || "", r.phone ? (r.smsConsent ? "yes" : "no") : "",
+      stamp(), r.league === "womens" ? "Women's" : "Men's", r.team || "", r.name, r.email, r.phone || "", r.phone ? (r.smsConsent ? "yes" : "no") : "",
       r.partner || "", r.partnerEmail || "", r.partnerPhone || "", r.level, r.rating || "",
       r.availability || "", r.notes || "", "", "",
     ]);
@@ -265,7 +269,7 @@ export function createLeagueRouter({
   router.post("/api/league/register", async (req, res) => {
     const parsed = signupSchema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({ error: "Your name, an email and the level you want to play are needed." });
+      return res.status(400).json({ error: "The league, your name, an email and the level you want to play are needed." });
     }
     if (registerLimit(req, res)) return;
     const r = {

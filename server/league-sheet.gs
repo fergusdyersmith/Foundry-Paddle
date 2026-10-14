@@ -18,7 +18,7 @@
 // Re-deploying after an edit: Deploy > Manage deployments > edit > Version: New. The URL
 // stays the same.
 
-var HEADERS = ["Submitted", "Team", "Player 1", "Email 1", "Phone 1", "Texts OK",
+var HEADERS = ["Submitted", "League", "Team", "Player 1", "Email 1", "Phone 1", "Texts OK",
                "Player 2", "Email 2", "Phone 2", "Level", "Rating", "Can play", "Notes",
                "Paid", "Status"];
 var SCORES_TAB = "Scores";
