@@ -15,6 +15,7 @@
 // The knowledge base id is written to bland/config.json and committed, so the
 // same base is updated on every run rather than a new one piling up each time.
 
+import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -142,9 +143,10 @@ function writeConfig(next) {
   writeFileSync(CONFIG_PATH, `${JSON.stringify(next, null, 2)}\n`);
 }
 
-async function main() {
-  const push = process.argv.includes("--push");
-
+/** Everything the phone agent should know: the published rows, the staged supplement
+ *  and the caller phrasings, merged. Shared with server/blandAutoSync.js, which uses it to
+ *  tell whether the live base is already current. */
+export async function loadKnowledge() {
   const res = await fetch(KB_URL, { headers: { accept: "application/json" } });
   if (!res.ok) throw new Error(`Knowledge fetch failed (${res.status})`);
   const { entries = [], updated_at: updatedAt } = await res.json();
@@ -204,6 +206,34 @@ async function main() {
     );
   }
 
+  return { all, entries, supplement, updatedAt };
+}
+
+/** A fingerprint of what the agent would know, without the date in the header: the
+ *  document says "current on <today>", so hashing it whole would call every day a change.
+ *  Stamped into each base's description as "sha:<hash>". */
+export const HASH_TAG = "sha:";
+export function docHash(all) {
+  return createHash("sha256").update(renderDoc(all, { today: "" })).digest("hex").slice(0, 16);
+}
+
+/** The base the agent is ACTUALLY answering from: the persona's production version.
+ *  bland/config.json only knows the id of the last sync that was committed, and an
+ *  automatic sync (server/blandAutoSync.js) never commits. Falls back to config. */
+export async function livePreviousId(config) {
+  if (!config?.persona_id || !BLAND_API_KEY) return config?.knowledge_base_id || null;
+  const { status, json } = await bland(`/v1/personas/${config.persona_id}`);
+  const ids = status < 400 ? json?.data?.current_production_version?.kb_ids : null;
+  return (Array.isArray(ids) && ids[0]) || config.knowledge_base_id || null;
+}
+
+async function main() {
+  const push = process.argv.includes("--push");
+  // Keep the base the agent is on until it has been moved to the new one. The automatic
+  // sync deletes the old base itself, only after the agent deploy verified.
+  const keepPrevious = process.argv.includes("--keep-previous");
+  const { all, supplement, updatedAt } = await loadKnowledge();
+
   const today = new Date().toISOString().slice(0, 10);
   const doc = renderDoc(all, { today });
 
@@ -239,7 +269,7 @@ async function main() {
   if (!BLAND_API_KEY) throw new Error("BLAND_API_KEY is required to push");
 
   const config = readConfig();
-  const previous = config.knowledge_base_id;
+  const previous = await livePreviousId(config);
 
   // ALWAYS create. Bland's PUT /v1/knowledge/{id} updates name and description
   // only: "This endpoint does not modify the content of the knowledge base".
@@ -252,7 +282,7 @@ async function main() {
   // delete the previous one once the new id is known.
   const { status, json } = await bland("/v1/knowledge/learn", {
     method: "POST",
-    body: { type: "text", name: KB_NAME, description: `Synced ${today}`, text: doc },
+    body: { type: "text", name: KB_NAME, description: `Synced ${today} ${HASH_TAG}${docHash(all)}`, text: doc },
   });
 
   if (status >= 400) {
@@ -273,7 +303,9 @@ async function main() {
   writeConfig({ ...config, knowledge_base_id: id, knowledge_synced_at: today });
   console.log(`[kb] created ${id} (${doc.length} chars)`);
 
-  if (previous && previous !== id) {
+  if (keepPrevious) {
+    console.log(`[kb] kept the previous base ${previous || "(none)"}`);
+  } else if (previous && previous !== id) {
     const del = await bland(`/v1/knowledge/${previous}`, { method: "DELETE" });
     console.log(
       del.status < 400

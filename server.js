@@ -18,6 +18,7 @@ import { rateLimit } from "./server/abuse.js";
 import { CSP_REPORT_ONLY, cspReportHandler, wantsCsp } from "./server/csp.js";
 import { upsertProfile } from "./server/klaviyoProfile.js";
 import { TURNSTILE_PATHS, turnstileCheck } from "./server/turnstile.js";
+import { createBlandAutoSync } from "./server/blandAutoSync.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // SITE_DIST exists so the routing tests can point at a fixture tree instead of
@@ -1972,6 +1973,10 @@ if (isEntrypoint) {
   // Only when actually serving — tests import this module and must not start
   // a timer or reach out to Playtomic.
   startCacheWarmer();
+
+  // Keep the phone receptionist's knowledge in step with the facts the club has
+  // published, hourly. See server/blandAutoSync.js. BLAND_AUTO_SYNC=off stops it.
+  if (process.env.BLAND_AUTO_SYNC !== "off") createBlandAutoSync().start();
 
   // Ask Bland about finished calls, rather than waiting for a webhook that
   // never arrives. See server/callpoller.js for why.
