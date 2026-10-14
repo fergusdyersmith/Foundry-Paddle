@@ -23,6 +23,15 @@ describe("the agent is given no phone numbers at all", () => {
     expect(stripPhoneNumbers("Questions? Call us on 503-459-2854.")).toBe("Questions? Call us.");
   });
 
+  it("leaves a link alone even when it ends in ten digits", () => {
+    // The Clutch app's App Store id. It was taken for a phone number on every sync and the
+    // agent was handed half a link.
+    const text = "iPhone: https://apps.apple.com/us/app/clutch-ai-for-racket-sports/id1607986804";
+    expect(stripPhoneNumbers(text)).toBe(text);
+    expect(stripPhoneNumbers("order ref ABC-971378749912 is yours")).toBe("order ref ABC-971378749912 is yours");
+    expect(stripPhoneNumbers("see https://example.com/?ref=9713787499")).toBe("see https://example.com/?ref=9713787499");
+  });
+
   it("does not mangle prices, dates, times or hours", () => {
     const text =
       "Court is $60 for 90 minutes, open 7am to 10pm, memberships run to 1 September 2027.";

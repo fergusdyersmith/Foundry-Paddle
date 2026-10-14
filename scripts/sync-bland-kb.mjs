@@ -46,7 +46,11 @@ const KB_NAME = "Foundry Padel club facts";
 // Fixing the rows in Kumi is the real fix. This makes forgetting it harmless and
 // covers the next row someone writes with a number in it. Same shape as the
 // outbound link allowlist in server/chat.js.
-const PHONE_SRC = String.raw`(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}`;
+// It has to stand alone: not run on from a letter, a slash or a URL's punctuation, and not
+// followed by more digits. The App Store link for Clutch ends ".../id1607986804", ten digits,
+// and it was "stripped" as a phone number on every sync, so the agent got half a link
+// (2026-10-14).
+const PHONE_SRC = String.raw`(?<![\w/=?&#.+-])(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}(?!\d)`;
 const PHONE_RE = new RegExp(PHONE_SRC);
 // Swallow a preposition immediately before the number ("call us on 503…"), so
 // removing it does not strand one. Scoped to the number, NOT applied globally:
