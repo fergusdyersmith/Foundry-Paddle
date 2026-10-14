@@ -398,25 +398,24 @@ describe("input", () => {
 // --- the two hand-maintained allowlists ------------------------------------------------
 
 describe("site paths", () => {
-  it("every path the bot may mention is one the widget will linkify", () => {
-    // Two lists, in two files, that have to agree: SITE_MAP tells the model which paths it
-    // may name, LINKABLE tells the widget which ones to turn into links. They drifted within
-    // hours of each other — /community was added to the model's list so it could hand out the
-    // WhatsApp invite, and arrived in the panel as unclickable text.
-    const server = readFileSync(new URL("./chat.js", import.meta.url), "utf8");
+  it("the widget links exactly the pages the bot may offer, from one list", async () => {
+    // These were two hand-kept lists in two files, and they drifted within hours: /community
+    // was offered to the model and arrived in the panel as unclickable text. Then a third
+    // copy (the bot's own) went without /league for the whole of the League's signup
+    // (2026-10-14). All three now read shared/siteRoutes.js.
     const widget = readFileSync(
       new URL("../fullsite/src/components/ChatWidget.tsx", import.meta.url), "utf8");
+    expect(widget).toContain('from "@shared/siteRoutes"');
+    expect(widget).toMatch(/\[\.\.\.SITEMAP_ROUTES, \.\.\.UNLISTED_ROUTES\]/);
+    const sitemap = readFileSync(
+      new URL("../fullsite/scripts/generate-sitemap.mjs", import.meta.url), "utf8");
+    expect(sitemap).toContain("const ROUTES = SITEMAP_ROUTES;");
 
-    const siteMap = server.slice(server.indexOf("const SITE_MAP = ["));
-    const paths = [...siteMap.slice(0, siteMap.indexOf("].join")).matchAll(/"\/([a-z-]+)/g)]
-      .map((m) => m[1]);
-    expect(paths.length).toBeGreaterThan(5);
-
-    const linkable = widget.slice(widget.indexOf("const LINKABLE ="));
-    const allowed = linkable.slice(0, linkable.indexOf("/gi;"));
-    for (const p of paths) {
-      expect(allowed, `/${p} is offered to the model but the widget renders it as plain text`)
-        .toContain(p);
+    const { __testables } = await import("./chat.js");
+    const { UNLISTED_ROUTES } = await import("../shared/siteRoutes.js");
+    const map = __testables.buildSiteMap("/nonexistent/dist");
+    for (const r of UNLISTED_ROUTES) {
+      expect(map, `${r} is linkable but the bot has no description for it`).toContain(`${r} `);
     }
   });
 });
@@ -537,3 +536,37 @@ describe("finding players: /join and /community", () => {
   });
 });
 
+
+describe("the pages the bot may link to", () => {
+  it("come from the site's own page list, described by their own titles", async () => {
+    const { mkdtempSync, writeFileSync, mkdirSync } = await import("fs");
+    const { tmpdir } = await import("os");
+    const path = await import("path");
+    const { __testables } = await import("./chat.js");
+    const dist = mkdtempSync(path.join(tmpdir(), "fp-dist-"));
+    writeFileSync(path.join(dist, "league.html"),
+      "<html><head><title>The Foundry League: 6-week padel league | Foundry Padel</title></head></html>");
+    mkdirSync(path.join(dist, "juniors"));
+    writeFileSync(path.join(dist, "juniors", "index.html"), "<title>Junior clinics &amp; camps | Foundry Padel</title>");
+    const map = __testables.buildSiteMap(dist, ["/", "/league", "/juniors", "/book", "/privacy", "/open"]);
+    expect(map).toContain("/league The Foundry League: 6-week padel league");
+    expect(map).toContain("/open open"); // no description and no build: offered by its path
+    expect(map).toContain("/juniors Junior clinics & camps");
+    expect(map).toContain("/book book a court (Playtomic)"); // a written description wins
+    expect(map).toContain("/join sign up for Kumi"); // hidden pages still offered
+    expect(map).not.toContain("/privacy");
+  });
+
+  it("falls back to the written list when there is no build", async () => {
+    const { __testables } = await import("./chat.js");
+    const map = __testables.buildSiteMap("/nonexistent/dist");
+    expect(map).toContain("/memberships membership plans");
+    expect(map).toContain("/community");
+  });
+
+  it("reads every public fact, whole", async () => {
+    const { __testables } = await import("./chat.js");
+    expect(__testables.LIMITS.kbEntries).toBeGreaterThanOrEqual(150);
+    expect(__testables.LIMITS.kbAnswerChars).toBeGreaterThanOrEqual(1600);
+  });
+});

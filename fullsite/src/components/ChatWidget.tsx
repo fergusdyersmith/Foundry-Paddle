@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { MessageCircle, Send, X } from "lucide-react";
+import { SITEMAP_ROUTES, UNLISTED_ROUTES } from "@shared/siteRoutes";
 
 /** Routes where a floating bubble would be wrong: /tv is the big screen in the club, and the
  *  booking iframe already owns the bottom-right corner. */
@@ -26,10 +27,15 @@ function newConversationId() {
 }
 
 /** Site paths the bot is told it may mention, spelled out rather than matched by shape: a
- *  loose `/word` pattern turns "$40/hour" into a link to /hour. No lookbehind, because Safari
- *  older than 16.4 fails to parse it and would take the whole chunk down with it. */
-const LINKABLE =
-  /(https?:\/\/[^\s<>()[\]"']+|\/(?:book|schedule|coaching|memberships|contact|faq|find-players|new-to-padel|the-club|the-sport|survey|privacy|community|join)\b)/gi;
+ *  loose `/word` pattern turns "$40/hour" into a link to /hour. Read from the site's own page
+ *  list (shared/siteRoutes.js), so a new page is linkable the day it ships. No lookbehind,
+ *  because Safari older than 16.4 fails to parse it and would take the whole chunk down. */
+const SITE_PATHS = [...SITEMAP_ROUTES, ...UNLISTED_ROUTES]
+  .filter((r) => r !== "/")
+  .map((r) => r.slice(1).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+  .sort((a, b) => b.length - a.length);
+const LINKABLE = new RegExp(
+  `(https?:\\/\\/[^\\s<>()[\\]"']+|\\/(?:${SITE_PATHS.join("|")})\\b)`, "gi");
 
 /** Renders a reply as text plus links, without dangerouslySetInnerHTML.
  *

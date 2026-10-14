@@ -3,31 +3,11 @@
 // are deliberately excluded, and so is /gift/thanks, which is a transactional page
 // nobody should arrive at from a search result.
 import { writeFileSync } from "fs";
+import { SITEMAP_ROUTES } from "../../shared/siteRoutes.js";
 
 const SITE = "https://www.foundrypadel.com";
-const ROUTES = [
-  "/",
-  "/book",
-  "/new-to-padel",
-  "/find-players",
-  "/coaching",
-  "/schedule",
-  "/memberships",
-  "/the-sport",
-  "/the-club",
-  "/gallery",
-  "/faq",
-  "/contact",
-  "/events",
-  "/preview",
-  "/juniors",
-  "/open",
-  "/league",
-  "/gift-cards",
-  "/survey",
-  "/privacy",
-  "/sms-terms",
-];
+// The list lives in shared/siteRoutes.js, which the chat widget and chatbot read too.
+const ROUTES = SITEMAP_ROUTES;
 
 const today = new Date().toISOString().slice(0, 10);
 const xml =

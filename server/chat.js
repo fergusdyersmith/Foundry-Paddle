@@ -18,7 +18,11 @@
  * allowed to answer from the supplied blocks.
  */
 import express from "express";
+import { existsSync, readFileSync } from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 import { clientIp } from "./abuse.js";
+import { SITEMAP_ROUTES, UNLISTED_ROUTES } from "../shared/siteRoutes.js";
 
 // ---------------------------------------------------------------------------------------
 // Configuration. Everything that is a secret comes from the environment and never leaves
@@ -73,8 +77,13 @@ const LIMITS = {
   message: 600, // chars a visitor may send in one turn
   historyTurns: 8, // how much of their own history we replay
   historyChars: 800, // per remembered turn
-  kbEntries: 60,
-  kbAnswerChars: 700,
+  // Room for every public fact, whole. At 60 the bot kept the first 60 of 72 it was sent,
+  // and they came oldest first: the dozen newest (Book Early, the League, the prize rule)
+  // never reached it, and 13 more were cut mid-sentence at 700 characters (2026-10-14).
+  // Kumi now sends newest first; ~80 facts is about 10k input tokens, $0.002 a turn on
+  // luna, well inside the daily cap below.
+  kbEntries: 160,
+  kbAnswerChars: 1700,
   replyTokens: 700,
   perIpPer10Min: 12,
   perIpPerDay: 60,
@@ -289,33 +298,70 @@ function scheduleBlock(classes, events) {
   ].join("\n");
 }
 
-const SITE_MAP = [
-  "/ home",
-  "/book book a court (Playtomic)",
-  "/schedule what is on this week",
-  "/coaching coaches, clinics and private lessons",
-  "/memberships membership plans",
-  "/new-to-padel first timers",
-  "/the-sport what padel is",
-  "/the-club the facility",
-  "/faq frequently asked questions",
-  "/survey the skill survey",
-  // Both of these are hidden from nav and search, and the bot is exactly who should send
-  // people to them. They are DIFFERENT things and the descriptions say so, because a
-  // visitor asking "how do I find people to play with?" wants one or the other:
-  //   /community  the group chats, where players post matches themselves
-  //   /join       sign up for Kumi, which then texts matches TO you
-  // /community was already here; /join was not, so the bot could not offer the Kumi
-  // on-ramp at all and no knowledge row even mentioned it. Without a page listed the
-  // model falls back to /contact and the page gets no one.
-  "/community the WhatsApp community group chats, split by skill level, where players post matches",
-  "/join sign up for Kumi so it texts you open matches at your level (WhatsApp, or SMS)",
+// What the bot may link to. The pages come from the site's own list (shared/siteRoutes.js,
+// which the sitemap and the chat widget's links read too), so a new page such as /league
+// reaches the bot on the deploy that adds it. These are the hand-written descriptions, used
+// where they exist; a page without one is described by its own prerendered <title>. The list
+// here used to be the only source, and /league, /juniors, /open, /events and /gift-cards
+// were all missing from it (2026-10-14).
+const CURATED_PAGES = {
+  "/": "home",
+  "/book": "book a court (Playtomic)",
+  "/schedule": "what is on this week",
+  "/coaching": "coaches, clinics and private lessons",
+  "/memberships": "membership plans",
+  "/new-to-padel": "first timers",
+  "/the-sport": "what padel is",
+  "/the-club": "the facility",
+  "/faq": "frequently asked questions",
+  "/survey": "the skill survey",
   // The third route, and the only one that helps somebody who has ALREADY got a court and
   // needs three more people. It carries the measured fill rate for every weekday and hour,
   // plus how to post a match that other players can actually see.
-  "/find-players which times an open match actually fills at Foundry, and how to post one",
-  "/contact contact the club",
-].join("; ");
+  "/find-players": "which times an open match actually fills at Foundry, and how to post one",
+  "/contact": "contact the club",
+};
+// UNLISTED_ROUTES: hidden from nav and search, so never in the sitemap, and the bot is
+// exactly who should send people to them. Each needs a description here. They are DIFFERENT things and the
+// descriptions say so, because a visitor asking "how do I find people to play with?" wants
+// one or the other:
+//   /community  the group chats, where players post matches themselves
+//   /join       sign up for Kumi, which then texts matches TO you
+const HIDDEN_PAGES = {
+  "/community": "the WhatsApp community group chats, split by skill level, where players post matches",
+  "/join": "sign up for Kumi so it texts you open matches at your level (WhatsApp, or SMS)",
+};
+// Not worth offering a visitor.
+const SKIP_PAGES = new Set(["/privacy", "/sms-terms"]);
+
+const SITE_DIST = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../fullsite/dist");
+
+function pageTitle(dist, route) {
+  const name = route === "/" ? "index" : route.replace(/^\//, "");
+  for (const f of [`${name}.html`, path.join(name, "index.html")]) {
+    const file = path.join(dist, f);
+    if (!existsSync(file)) continue;
+    const m = readFileSync(file, "utf8").match(/<title[^>]*>([^<]*)<\/title>/i);
+    // "… | Foundry Padel", "… | Foundry Padel Portland", "… | Foundry Padel, St. Johns"
+    if (m) return m[1].replace(/\s*\|\s*Foundry Padel.*$/i, "").replace(/&amp;/g, "&").trim();
+  }
+  return "";
+}
+
+function buildSiteMap(dist = SITE_DIST, routes = SITEMAP_ROUTES, unlisted = UNLISTED_ROUTES) {
+  const pages = [];
+  for (const r of routes) {
+    if (SKIP_PAGES.has(r)) continue;
+    // A page with no written description and no build to read a title from (dev, tests)
+    // is still offered, by its path alone, rather than silently left out.
+    const desc = CURATED_PAGES[r] || pageTitle(dist, r) || r.slice(1).replace(/-/g, " ");
+    pages.push(`${r} ${desc}`);
+  }
+  for (const r of unlisted) if (HIDDEN_PAGES[r]) pages.push(`${r} ${HIDDEN_PAGES[r]}`);
+  return pages.join("; ");
+}
+
+const SITE_MAP = buildSiteMap();
 
 function systemPrompt({ kb, schedule, day }) {
   return `You are the assistant on foundrypadel.com, the website of Foundry Padel, an indoor padel club in Portland, Oregon. You are talking to a member of the public who may never have played padel.
@@ -602,4 +648,5 @@ export const __testables = {
   sameOriginish,
   LIMITS,
   ALLOWED_LINK_HOSTS,
+  buildSiteMap,
 };
