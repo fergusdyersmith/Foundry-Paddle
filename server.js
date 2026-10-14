@@ -12,6 +12,7 @@ import { createCallPoller } from "./server/callpoller.js";
 import { createTransferRouter } from "./server/transfer.js";
 import { createOpenRouter } from "./server/open.js";
 import { createJuniorsRouter } from "./server/juniors.js";
+import { createLeagueRouter } from "./server/league.js";
 import { formatUsd, ratesOn } from "./shared/rates.js";
 import { rateLimit } from "./server/abuse.js";
 import { CSP_REPORT_ONLY, cspReportHandler, wantsCsp } from "./server/csp.js";
@@ -1789,6 +1790,16 @@ app.use(
 // Slack and Klaviyo the same way; see server/juniors.js.
 app.use(
   createJuniorsRouter({
+    klaviyo: KLAVIYO_API_KEY ? klaviyo : null,
+    listId: KLAVIYO_INTEREST_LIST_ID,
+  }),
+);
+
+// The club league's signups. Not in Playtomic (teams book their own courts), so this form
+// is the registration: Slack, Klaviyo and the organisers' sheet; see server/league.js.
+// LEAGUE_PAY_URL is unset until the club decides how the team fee is collected.
+app.use(
+  createLeagueRouter({
     klaviyo: KLAVIYO_API_KEY ? klaviyo : null,
     listId: KLAVIYO_INTEREST_LIST_ID,
   }),

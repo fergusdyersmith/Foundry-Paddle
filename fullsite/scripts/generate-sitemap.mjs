@@ -22,6 +22,7 @@ const ROUTES = [
   "/preview",
   "/juniors",
   "/open",
+  "/league",
   "/gift-cards",
   "/survey",
   "/privacy",

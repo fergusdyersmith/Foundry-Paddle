@@ -9,6 +9,14 @@ import {
   OPEN_TIERS,
 } from "@/constants/openTournament";
 import {
+  LEAGUE_CLOSES,
+  LEAGUE_CLOSES_LABEL,
+  LEAGUE_DATES_LABEL,
+  LEAGUE_NAME,
+  LEAGUE_PRICE_TEAM,
+  LEAGUE_WEEKS,
+} from "@/constants/league";
+import {
   PREVIEW_DATE,
   PREVIEW_DATE_LABEL,
   PREVIEW_PRICE,
@@ -105,6 +113,27 @@ const OpenPromo = () => {
         </>
       ),
       cta: early ? `LOCK IN $${price}` : `REGISTER · $${price}`,
+    });
+  }
+
+  // The league, until its signups close. Starts before the Open, so it sits before it.
+  if (day == null || day < LEAGUE_CLOSES) {
+    const daysLeft = today ? Math.max(0, Math.round((Date.parse(LEAGUE_CLOSES) - Date.parse(today)) / 86400000)) : null;
+    const openAt = cards.findIndex((c) => c.key === "open");
+    cards.splice(openAt < 0 ? cards.length : openAt, 0, {
+      key: "league",
+      to: "/league",
+      eyebrow: `${LEAGUE_DATES_LABEL} · ${LEAGUE_WEEKS}-week league · teams of two`,
+      title: LEAGUE_NAME,
+      body: (
+        <>
+          One match a week, played whenever suits both teams. Three sets a match, every set counts, a table that says where you stand.{" "}
+          <span className="text-foreground">
+            ${LEAGUE_PRICE_TEAM} a team. Signups close {LEAGUE_CLOSES_LABEL}{daysLeft != null ? ` (${daysLeft} ${daysLeft === 1 ? "day" : "days"} left)` : ""}.
+          </span>
+        </>
+      ),
+      cta: `ENTER A TEAM · $${LEAGUE_PRICE_TEAM}`,
     });
   }
 
