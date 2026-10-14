@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import { Head } from "vite-react-ssg";
 import { Check, ExternalLink, MapPin, Phone } from "lucide-react";
 import Photo from "@/components/Photo";
@@ -357,6 +358,7 @@ const League = () => {
           <h2 className={sectionHeading}>THE TABLE</h2>
           <p className="mt-4 max-w-xl font-body text-base leading-relaxed text-secondary-foreground">
             One point for every set won. The table appears here once the first week is played and updates each week as scores come in.
+            Played your match? <Link to="/league/score" className="text-primary hover:underline">Report the score</Link>.
           </p>
           {tables ? (
             <div className="mt-10 grid gap-8 md:grid-cols-2">

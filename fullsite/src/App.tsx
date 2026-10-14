@@ -47,6 +47,9 @@ export const routes: RouteRecord[] = [
       { path: "open", lazy: () => import("./pages/Open").then(page) },
       // The club league. Printed on its poster as foundrypadel.com/league.
       { path: "league", lazy: () => import("./pages/League").then(page) },
+      // Score reporting for league teams. Linked from the league page and Ryan's weekly
+      // fixtures; not in the sitemap, it is a form, not a page to find.
+      { path: "league/score", lazy: () => import("./pages/LeagueScore").then(page) },
       { path: "book", lazy: () => import("./pages/Book").then(page) },
       // Gift certificates. The checkout page is prerendered like any other; the
       // thank-you page is where Square sends the buyer back to, and reads its order

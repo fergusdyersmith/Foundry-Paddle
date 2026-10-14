@@ -1,8 +1,12 @@
 // Apps Script bound to "The Foundry League · signups" (Google Sheet, owned by
 // kelly@foundrypadel.com, shared with Ryan and Monica). One caller, the site's server,
-// POSTing JSON with the shared secret: {secret, row: [...]}, one body per team. Appends the
-// row to the first sheet; writes the header row first if the sheet is empty. The last two
-// columns (Paid, Status) are for the organisers to fill in by hand.
+// POSTing JSON with the shared secret. Two jobs:
+//   1. A signup: {secret, row: [...]}, one body per team. Appends the row to the first
+//      sheet; writes the header row first if the sheet is empty. The last two columns
+//      (Paid, Status) are for the organisers to fill in by hand.
+//   2. A score: {secret, action: "score", row: [...]}, one body per match, from the
+//      /league/score form. Appends to the "Scores" tab (created with its header on first
+//      use). Ryan keeps the table from it.
 // Nothing else reads or writes the sheet.
 //
 // Install (once, about two minutes; the same as server/open-sheet.gs):
@@ -17,6 +21,20 @@
 var HEADERS = ["Submitted", "Team", "Player 1", "Email 1", "Phone 1", "Texts OK",
                "Player 2", "Email 2", "Phone 2", "Level", "Rating", "Can play", "Notes",
                "Paid", "Status"];
+var SCORES_TAB = "Scores";
+var SCORE_HEADERS = ["Submitted", "Week", "Team", "Opponent", "Set 1", "Set 2", "Set 3",
+                     "Sets won", "Sets lost", "Reported by", "Email", "Notes", "Checked"];
+
+function tab(ss, name, headers) {
+  var sheet = ss.getSheetByName(name);
+  if (!sheet) sheet = ss.insertSheet(name);
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(headers);
+    sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
 
 function doPost(e) {
   var out = ContentService.createTextOutput().setMimeType(ContentService.MimeType.JSON);
@@ -31,15 +49,20 @@ function doPost(e) {
     if (!Array.isArray(body.row) || body.row.length === 0) {
       return out.setContent(JSON.stringify({ ok: false, error: "no row" }));
     }
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    // Everything lands as text so a phone number keeps its leading + and a set score like
+    // 6-4 never turns into a date.
+    var row = body.row.map(function (v) { return v == null ? "" : String(v); });
+    if (body.action === "score") {
+      tab(ss, SCORES_TAB, SCORE_HEADERS).appendRow(row);
+      return out.setContent(JSON.stringify({ ok: true }));
+    }
+    var sheet = ss.getSheets()[0];
     if (sheet.getLastRow() === 0) {
       sheet.appendRow(HEADERS);
       sheet.getRange(1, 1, 1, HEADERS.length).setFontWeight("bold");
       sheet.setFrozenRows(1);
     }
-    // Everything lands as text so a phone number keeps its leading + and a rating never
-    // turns into a date.
-    var row = body.row.map(function (v) { return v == null ? "" : String(v); });
     sheet.appendRow(row);
     return out.setContent(JSON.stringify({ ok: true }));
   } catch (err) {

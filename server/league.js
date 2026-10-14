@@ -59,6 +59,54 @@ export const signupSchema = z.object({
   website: z.string().max(0).optional(),
 });
 
+/** The six weeks, Monday to Sunday. Mirrors LEAGUE_CALENDAR in fullsite/src/constants/league.ts. */
+export const WEEKS = [
+  { week: 1, from: "2026-11-02", to: "2026-11-08" }, { week: 2, from: "2026-11-09", to: "2026-11-15" },
+  { week: 3, from: "2026-11-16", to: "2026-11-22" }, { week: 4, from: "2026-11-23", to: "2026-11-29" },
+  { week: 5, from: "2026-11-30", to: "2026-12-06" }, { week: 6, from: "2026-12-07", to: "2026-12-13" },
+];
+
+// A set score: games to each side. A set is won at 6 with a two-game margin, or at 7
+// (7-5 or a 7-6 tiebreak), which is as far as padel sets go; anything else is a typo.
+const games = z.number().int().min(0).max(7);
+export function validSet([a, b]) {
+  const hi = Math.max(a, b), lo = Math.min(a, b);
+  if (hi === 6) return lo <= 4;
+  if (hi === 7) return lo === 5 || lo === 6;
+  return false;
+}
+
+// One match, reported by either team: the week it belonged to, the two teams as the
+// schedule names them, the three sets as "us" then "them", and who is reporting so Ryan
+// can ask about a score that does not add up.
+export const scoreSchema = z.object({
+  week: z.number().int().min(1).max(WEEKS.length),
+  team: z.string().trim().min(1).max(60),
+  opponent: z.string().trim().min(1).max(60),
+  sets: z.array(z.tuple([games, games])).length(3),
+  name: z.string().trim().min(2).max(80),
+  email: z.string().trim().email().max(255),
+  notes: opt(z.string().trim().max(300)),
+  website: z.string().max(0).optional(),
+});
+
+export function tally(sets) {
+  let won = 0, lost = 0;
+  for (const [a, b] of sets) { if (a > b) won += 1; else lost += 1; }
+  return { won, lost };
+}
+
+export function buildScoreSlackText(r) {
+  const { won, lost } = tally(r.sets);
+  const line = r.sets.map(([a, b]) => `${a}-${b}`).join(", ");
+  const bits = [
+    `*League score, week ${r.week}*  ${escapeSlack(r.team)} ${won}-${lost} ${escapeSlack(r.opponent)}  (${line})`,
+    `Reported by ${escapeSlack(r.name)}  ·  ${escapeSlack(r.email)}`,
+  ];
+  if (r.notes) bits.push(`_${escapeSlack(r.notes)}_`);
+  return bits.join("\n");
+}
+
 export function buildSlackText(r) {
   const who = [r.name, r.email, r.phone].filter(Boolean).map(escapeSlack).join("  ·  ");
   const partner = r.partner
@@ -167,20 +215,33 @@ export function createLeagueRouter({
 
   // One flat row, in the sheet's column order (HEADERS in league-sheet.gs). Retried,
   // because the failures this sees are Apps Script cold starts.
-  async function appendSheetRow(r) {
-    if (!sheetUrl) return false;
-    const row = [
+  function appendSheetRow(r) {
+    return postRow([
       stamp(), r.team || "", r.name, r.email, r.phone || "", r.phone ? (r.smsConsent ? "yes" : "no") : "",
       r.partner || "", r.partnerEmail || "", r.partnerPhone || "", r.level, r.rating || "",
       r.availability || "", r.notes || "", "", "",
-    ].map(sheetCell);
+    ]);
+  }
+
+  // SCORE_HEADERS order in league-sheet.gs; the Scores tab.
+  function appendScoreRow(r) {
+    const { won, lost } = tally(r.sets);
+    return postRow([
+      stamp(), String(r.week), r.team, r.opponent, ...r.sets.map(([a, b]) => `${a}-${b}`),
+      String(won), String(lost), r.name, r.email, r.notes || "", "",
+    ], "score");
+  }
+
+  async function postRow(cells, action) {
+    if (!sheetUrl) return false;
+    const row = cells.map(sheetCell);
     let lastError = null;
     for (let attempt = 1; attempt <= SHEET_ATTEMPTS; attempt++) {
       try {
         const res = await fetchImpl(sheetUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ secret: sheetSecret || "", row }),
+          body: JSON.stringify({ secret: sheetSecret || "", ...(action ? { action } : {}), row }),
         });
         if (!res.ok) throw new Error(`sheet ${res.status}`);
         const json = await res.json().catch(() => ({}));
@@ -239,6 +300,37 @@ export function createLeagueRouter({
       return res.status(502).json({ error: "We could not save your signup just now. Please try again in a minute, or email portland@foundrypadel.com." });
     }
     return res.json({ ok: true, recorded, payUrl, priceTeam, partner: r.partner || null });
+  });
+
+  // A match result from either team. Nothing to pay and nothing to hold: the record is
+  // the point, so like the signup it refuses rather than thank someone for a lost score.
+  const scoreLimit = rateLimit({ name: "league-score", max: 10, windowMs: 10 * 60 * 1000 });
+  router.post("/api/league/score", async (req, res) => {
+    const parsed = scoreSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: "The week, both teams, three set scores, your name and an email are needed." });
+    }
+    if (!parsed.data.sets.every(validSet)) {
+      return res.status(400).json({ error: "A set ends 6-0 to 6-4, 7-5 or 7-6. Check the scores." });
+    }
+    if (scoreLimit(req, res)) return;
+    const r = {
+      ...parsed.data,
+      team: sanitize(parsed.data.team, 60),
+      opponent: sanitize(parsed.data.opponent, 60),
+      name: sanitize(parsed.data.name, 80),
+      notes: sanitize(parsed.data.notes || "", 300),
+    };
+    const outcomes = await Promise.allSettled([postSlack(buildScoreSlackText(r)), appendScoreRow(r)]);
+    const recorded = outcomes.some((o) => o.status === "fulfilled" && o.value === true);
+    for (const o of outcomes) {
+      if (o.status === "rejected") console.error("[league] score record failed:", o.reason?.message || o.reason);
+    }
+    if (!recorded) {
+      console.error("[league] score NOT recorded anywhere", { week: r.week, team: r.team });
+      return res.status(502).json({ error: "We could not save the score just now. Please try again in a minute, or email it to portland@foundrypadel.com." });
+    }
+    return res.json({ ok: true, ...tally(r.sets) });
   });
 
   return router;

@@ -60,4 +60,5 @@ export const TURNSTILE_PATHS = [
   "/api/juniors/waiver",
   "/api/open/register",
   "/api/league/register",
+  "/api/league/score",
 ];

@@ -101,3 +101,36 @@ describe("POST /api/league/register", () => {
     expect(t).not.toContain("<!channel>"); expect(t).toContain("&lt;!channel&gt;");
   });
 });
+
+describe("POST /api/league/score", () => {
+  const score = { week: 2, team: "Net Gains", opponent: "Wall Street", sets: [[6, 4], [3, 6], [7, 6]], name: "Sam Rivera", email: "sam@example.com", notes: "" };
+
+  it("posts the result to Slack and the Scores tab, and answers with the sets won", async () => {
+    const slack = []; const sheet = [];
+    const a = app({ slackToken: "x", channel: "#t", klaviyo: null, sheetUrl: "https://sheet", sheetSecret: "s3cret",
+      fetchImpl: async (url, init) => {
+        if (url === "https://sheet") { sheet.push(JSON.parse(init.body)); return { ok: true, status: 200, json: async () => ({ ok: true }) }; }
+        slack.push(JSON.parse(init.body).text); return { json: async () => ({ ok: true }) };
+      }, now: () => new Date("2026-11-12T19:30:00-08:00") });
+    const r = await call(a, "POST", "/api/league/score", score);
+    expect(r.status).toBe(200); expect(r.json).toEqual({ ok: true, won: 2, lost: 1 });
+    expect(slack[0]).toContain("week 2"); expect(slack[0]).toContain("Net Gains 2-1 Wall Street"); expect(slack[0]).toContain("6-4, 3-6, 7-6");
+    expect(sheet[0].action).toBe("score"); expect(sheet[0].secret).toBe("s3cret");
+    expect(sheet[0].row).toEqual(["11/12/26, 7:30 PM", "2", "Net Gains", "Wall Street", "6-4", "3-6", "7-6", "2", "1", "Sam Rivera", "sam@example.com", "", ""]);
+  });
+
+  it("refuses scores a padel set cannot end on", async () => {
+    const a = app({ slackToken: "x", fetchImpl: okSlack });
+    for (const sets of [[[6, 5], [6, 4], [6, 4]], [[8, 6], [6, 4], [6, 4]], [[6, 6], [6, 4], [6, 4]], [[7, 4], [6, 4], [6, 4]], [[6, 4], [6, 4]]]) {
+      expect((await call(a, "POST", "/api/league/score", { ...score, sets })).status).toBe(400);
+    }
+    expect((await call(a, "POST", "/api/league/score", { ...score, sets: [[7, 5], [6, 0], [0, 6]] })).status).toBe(200);
+    expect((await call(a, "POST", "/api/league/score", { ...score, week: 7 })).status).toBe(400);
+    expect((await call(a, "POST", "/api/league/score", { ...score, website: "spam" })).status).toBe(400);
+  });
+
+  it("refuses rather than thank for a score nothing recorded", async () => {
+    const a = app({ slackToken: "x", fetchImpl: async () => ({ json: async () => ({ ok: false, error: "channel_not_found" }) }), sheetUrl: null });
+    expect((await call(a, "POST", "/api/league/score", score)).status).toBe(502);
+  });
+});

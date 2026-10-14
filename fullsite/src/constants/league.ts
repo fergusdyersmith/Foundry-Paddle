@@ -45,7 +45,7 @@ export const LEAGUE_RULES = [
   { head: "One match a week", body: "Ryan posts who you play each week. The two teams pick a day and a time that suits them both, inside that week, and book the court like any other game." },
   { head: "Three sets, every set counts", body: "Every match is three full sets, and a team scores one point in the table for each set it wins. A 2 to 1 loss still earns a point, so every set is worth playing for." },
   { head: "Golden point", body: "At deuce, the next point decides the game. No advantage, no long deuce battles, matches finish in a predictable time." },
-  { head: "Report the score", body: "Winners send the set scores to Ryan the same day. The table on this page updates each week." },
+  { head: "Report the score", body: "Winners send the set scores the same day, through the score form on this site. The table on this page updates each week." },
   { head: "Cannot make a week?", body: "Talk to the other team and move the match into another week; you will just play twice that week. A match nobody plays is a forfeit." },
 ] as const;
 
