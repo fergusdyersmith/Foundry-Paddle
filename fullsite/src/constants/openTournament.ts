@@ -52,7 +52,7 @@ export const OPEN_SUPPLIERS = [
 export type OpenLevel = { key: "beginner" | "intermediate" | "advanced"; label: string; rating: string; blurb: string };
 export const OPEN_LEVELS: OpenLevel[] = [
   { key: "beginner", label: "Beginner", rating: "0 to 1.75", blurb: "New to padel, or still learning the walls. Rallies over results." },
-  { key: "intermediate", label: "Intermediate", rating: "1.75 to 3.5", blurb: "You play regularly and know your way around a lob and a bandeja." },
+  { key: "intermediate", label: "Intermediate", rating: "1.5 to 3.5", blurb: "You play regularly and know your way around a lob and a bandeja." },
   { key: "advanced", label: "Advanced", rating: "3.5 and up", blurb: "Competitive, consistent, and ready for a long Sunday." },
 ];
 
