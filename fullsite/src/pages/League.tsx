@@ -336,7 +336,7 @@ const League = () => {
               </ul>
               <ul className="mt-8 space-y-4">
                 {[
-                  `$${LEAGUE_PRICE_TEAM} a team for the season, court time booked by you`,
+                  `$${LEAGUE_PRICE_TEAM} a team for all six weeks, $${LEAGUE_PRICE_TEAM / 2} a player, court time booked by you`,
                   LEAGUE_PRIZE_LINE,
                   `${LEAGUE_HOST} posts who you play each week and keeps the table`,
                   "Two leagues, men's and women's. Two men or two women to a team, no mixed pairs",
