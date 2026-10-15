@@ -81,6 +81,9 @@ const LeagueScore = () => {
         return;
       }
       setDone(json);
+      // A Turnstile token is single-use: without this, "report another" would send the
+      // spent one and stall on "still checking this came from a person" (seen 15 Oct).
+      human.reset();
     } catch {
       human.reset();
       setError("We could not reach the club. Please try again.");
@@ -113,7 +116,7 @@ const LeagueScore = () => {
                     : `We could not email ${done.confirmBy} just now, so ask them to confirm it with us. It goes into the table once they do.`
                   : "It reaches the table at the next update."}
               </p>
-              <button type="button" onClick={() => { setDone(null); setSets(EMPTY_SETS); setForm((f) => ({ ...f, opponent: "", notes: "" })); }} className="mt-8 border border-border px-8 py-3 font-display tracking-widest text-foreground transition-colors hover:border-primary">
+              <button type="button" onClick={() => { setDone(null); setSets(EMPTY_SETS); setForm((f) => ({ ...f, opponent: "", notes: "" })); human.reset(); }} className="mt-8 border border-border px-8 py-3 font-display tracking-widest text-foreground transition-colors hover:border-primary">
                 REPORT ANOTHER
               </button>
             </div>
