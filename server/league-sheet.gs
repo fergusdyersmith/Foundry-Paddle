@@ -18,6 +18,12 @@
 //   5. A confirmation: {secret, action: "score-get", ref} reads one Scores row by its Ref;
 //      {secret, action: "score-confirm", ref, status} writes the status ("confirmed 11/13"
 //      or "DISPUTED 11/13") into the Checked column unless one is already there.
+//   6. Housekeeping: {secret, action: "delete-rows", tab, col, startsWith} deletes every row
+//      of that tab (the first sheet when tab is empty) whose cell in column `col` (1-based)
+//      starts with `startsWith` (at least four characters, so "TEST" can go but "" cannot).
+//      How test rows are cleared without hand-editing the sheet.
+// Every cell is written as plain text (appendText): appendRow would read a set score
+// like 6-4 as the 4th of June, which is what happened to the first test rows on 15 Oct.
 // Nothing else reads or writes the sheet.
 //
 // Install (once, about two minutes; the same as server/open-sheet.gs):
@@ -36,6 +42,12 @@ var SCORES_TAB = "Scores";
 var SCORE_HEADERS = ["Submitted", "Week", "Team", "Opponent", "Set 1", "Set 2", "Set 3",
                      "Sets won", "Sets lost", "Reported by", "Email", "Notes", "Checked", "Ref"];
 var CHECKED = 13, REF = 14;   // 1-based columns on the Scores tab
+
+// Append one row with every cell kept as the text it was sent as.
+function appendText(sheet, row) {
+  var r = sheet.getLastRow() + 1;
+  sheet.getRange(r, 1, 1, row.length).setNumberFormat("@").setValues([row]);
+}
 
 function tab(ss, name, headers) {
   var sheet = ss.getSheetByName(name);
@@ -58,7 +70,7 @@ function doPost(e) {
     if (!secret || body.secret !== secret) {
       return out.setContent(JSON.stringify({ ok: false, error: secret ? "bad secret" : "no SECRET set" }));
     }
-    var rowless = { paid: 1, roster: 1, "score-get": 1, "score-confirm": 1 };
+    var rowless = { paid: 1, roster: 1, "score-get": 1, "score-confirm": 1, "delete-rows": 1 };
     if (!rowless[body.action] && (!Array.isArray(body.row) || body.row.length === 0)) {
       return out.setContent(JSON.stringify({ ok: false, error: "no row" }));
     }
@@ -70,8 +82,11 @@ function doPost(e) {
       var scores = tab(ss, SCORES_TAB, SCORE_HEADERS);
       // The tab was made before Ref existed: add the header once.
       if (String(scores.getRange(1, REF).getValue() || "") === "") scores.getRange(1, REF).setValue("Ref").setFontWeight("bold");
-      scores.appendRow(row);
+      appendText(scores, row);
       return out.setContent(JSON.stringify({ ok: true }));
+    }
+    if (body.action === "delete-rows") {
+      return out.setContent(JSON.stringify(deleteRows(ss, body)));
     }
     if (body.action === "paid") {
       return out.setContent(JSON.stringify(markPaid(ss, body)));
@@ -88,7 +103,7 @@ function doPost(e) {
       sheet.getRange(1, 1, 1, HEADERS.length).setFontWeight("bold");
       sheet.setFrozenRows(1);
     }
-    sheet.appendRow(row);
+    appendText(sheet, row);
     return out.setContent(JSON.stringify({ ok: true }));
   } catch (err) {
     return out.setContent(JSON.stringify({ ok: false, error: String(err) }));
@@ -173,6 +188,24 @@ function scoreByRef(ss, body) {
     return { ok: true, row: row };
   }
   return { ok: true, row: null };
+}
+
+// Delete the rows whose cell in one column starts with a marker, bottom-up so the row
+// numbers stay true while deleting. The header row is never touched.
+function deleteRows(ss, body) {
+  var prefix = String(body.startsWith || "").trim().toUpperCase();
+  var col = Number(body.col || 0);
+  if (prefix.length < 4 || !(col >= 1)) return { ok: false, error: "startsWith (4+ chars) and col are needed" };
+  var sheet = body.tab ? ss.getSheetByName(String(body.tab)) : ss.getSheets()[0];
+  if (!sheet) return { ok: false, error: "no such tab" };
+  var last = sheet.getLastRow();
+  if (last < 2) return { ok: true, deleted: 0 };
+  var vals = sheet.getRange(2, col, last - 1, 1).getValues();
+  var deleted = 0;
+  for (var i = vals.length - 1; i >= 0; i--) {
+    if (String(vals[i][0] || "").trim().toUpperCase().indexOf(prefix) === 0) { sheet.deleteRow(i + 2); deleted++; }
+  }
+  return { ok: true, deleted: deleted };
 }
 
 // A browser visit to the URL says the script is alive without touching the sheet.
