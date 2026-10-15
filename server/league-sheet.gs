@@ -110,7 +110,8 @@ function doPost(e) {
   }
 }
 
-function normEmail(v) { return String(v || "").trim().toLowerCase(); }
+// Lowercase, and without a "+tag" (ameya+playtomic@gmail.com pays as ameya@gmail.com; 15 Oct).
+function normEmail(v) { return String(v || "").trim().toLowerCase().replace(/\+[^@]*@/, "@"); }
 function normName(v) { return String(v || "").trim().toLowerCase().replace(/[^a-z0-9 ]/g, "").replace(/\s+/g, " "); }
 
 // Stamp the Paid column of the team that a Square payment belongs to. Matched by email
