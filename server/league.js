@@ -17,6 +17,7 @@
 //      here, just the script's URL and a shared secret it checks.
 // Nothing here charges anyone.
 import express from "express";
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { escapeSlack, normalizePhone, sanitize } from "./notify.js";
 import { rateLimit, sheetCell } from "./abuse.js";
@@ -84,7 +85,9 @@ export function validSet([a, b]) {
 // can ask about a score that does not add up.
 export const scoreSchema = z.object({
   week: z.number().int().min(1).max(WEEKS.length),
-  team: z.string().trim().min(1).max(60),
+  // Who is reporting is known from the email once the roster exists; the name is only
+  // needed where there is no roster to check against (no sheet configured).
+  team: opt(z.string().trim().max(60)),
   opponent: z.string().trim().min(1).max(60),
   sets: z.array(z.tuple([games, games])).length(3),
   name: z.string().trim().min(2).max(80),
@@ -104,10 +107,82 @@ export function buildScoreSlackText(r) {
   const line = r.sets.map(([a, b]) => `${a}-${b}`).join(", ");
   const bits = [
     `*League score, week ${r.week}*  ${escapeSlack(r.team)} ${won}-${lost} ${escapeSlack(r.opponent)}  (${line})`,
-    `Reported by ${escapeSlack(r.name)}  ·  ${escapeSlack(r.email)}`,
+    `Reported by ${escapeSlack(r.name)}  ·  ${escapeSlack(r.email)}${r.ref ? `  ·  ref ${r.ref}` : ""}`,
   ];
   if (r.notes) bits.push(`_${escapeSlack(r.notes)}_`);
+  if (r.status) bits.push(r.mailed === false ? `${escapeSlack(r.status)}, but their confirmation email did not go out: ask them.` : `Awaiting confirmation from ${escapeSlack(r.opponent)} (emailed).`);
   return bits.join("\n");
+}
+
+// ---- Who may report, and who confirms ----------------------------------------------
+// A score counts once the OTHER team has confirmed it (or two days pass without a
+// dispute, which Foundry applies by hand from the sheet). The reporter is identified by
+// the email they signed up with, so nobody reports for a team they are not on, and the
+// opposing team is picked from the roster so the confirmation goes to the right inboxes.
+// The roster is the signups sheet, read through the same Apps Script (action "roster").
+//
+// Confirmation links carry a stateless HMAC token: the server keeps nothing, the sheet
+// row's Ref column is the record, and the key is derived from the sheet secret so there
+// is no second secret to keep in step.
+
+const REF_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const REF_RE = /^[A-Z2-9]{8}$/;
+export function newRef(bytes = randomBytes(8)) {
+  let out = "";
+  for (let i = 0; i < 8; i++) out += REF_ALPHABET[bytes[i] % 32];
+  return out;
+}
+
+export function confirmToken(secret, ref, action) {
+  const key = createHmac("sha256", String(secret || "")).update("league-confirm").digest();
+  return createHmac("sha256", key).update(`${ref}:${action}`).digest("hex").slice(0, 32);
+}
+
+export function checkConfirmQuery(secret, q = {}) {
+  const ref = String(q.ref || "").toUpperCase();
+  const action = String(q.a || "");
+  const t = String(q.t || "");
+  if (!REF_RE.test(ref) || !["confirm", "dispute"].includes(action)) return null;
+  const want = confirmToken(secret, ref, action);
+  if (t.length !== want.length || !timingSafeEqual(Buffer.from(t), Buffer.from(want))) return null;
+  return { ref, action };
+}
+
+const norm = (v) => String(v || "").trim().toLowerCase();
+const firstName = (n) => String(n || "").trim().split(/\s+/)[0] || "";
+
+/** How a team is shown and picked: its chosen name, else "Sam R. and Alex C.". */
+export function teamDisplayName(t) {
+  if (t.team) return t.team;
+  const short = (n) => {
+    const parts = String(n || "").trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return "";
+    return parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0]}.` : parts[0];
+  };
+  const a = short(t.p1), b = short(t.p2);
+  return a && b ? `${a} and ${b}` : a || b || "";
+}
+
+/** The email to the opposing team: the score as reported, one tap to confirm, a link to dispute. */
+export function buildConfirmMail(r, theirs, siteUrl, secret) {
+  const { won, lost } = tally(r.sets);
+  const line = r.sets.map(([a, b]) => `${a}-${b}`).join(", ");
+  const link = (a) => `${siteUrl}/league/confirm?ref=${r.ref}&t=${confirmToken(secret, r.ref, a)}&a=${a}`;
+  const names = [firstName(theirs.p1), firstName(theirs.p2)].filter(Boolean);
+  return {
+    to: [theirs.e1, theirs.e2].filter(Boolean),
+    subject: `Confirm the score, week ${r.week}, ${r.team} v ${r.opponent}`,
+    title: "CONFIRM THE SCORE",
+    preview: `${r.team} reported ${won} sets to ${lost}. One tap to confirm.`,
+    intro: [
+      `Hi ${names.join(" and ") || r.opponent},`,
+      `${r.name} of ${r.team} has sent in your week ${r.week} result. One tap to confirm it and it goes into the table.`,
+    ],
+    details: [["\u{1F3BE}", `${r.team} ${won}, ${r.opponent} ${lost}. Sets ${line}, games to ${r.team} first.`]],
+    cta_text: "Confirm the score",
+    cta_url: link("confirm"),
+    cta_note: `Not right? [Say so here](${link("dispute")}) and Foundry will sort it out with both teams. If we hear nothing in two days the score stands.`,
+  };
 }
 
 export function buildSlackText(r) {
@@ -135,6 +210,10 @@ export function buildSlackText(r) {
  * @param {string|null} deps.sheetUrl  the Apps Script web app that appends a row; null disables
  * @param {string|null} deps.sheetSecret  shared secret the script checks
  * @param {string}   deps.closes       first day signups are closed, YYYY-MM-DD
+ * @param {string|null} deps.mailUrl   Kumi's internal league-mail endpoint; null disables the confirmation email
+ * @param {string|null} deps.mailSecret
+ * @param {string}   deps.siteUrl      where the confirmation links point
+ * @param {number}   deps.rosterTtlMs  how long the roster read from the sheet is reused
  * @param {Function} deps.fetchImpl
  * @param {Function} deps.now
  */
@@ -149,6 +228,10 @@ export function createLeagueRouter({
   sheetSecret = process.env.LEAGUE_SHEET_SECRET || null,
   priceTeam = DEFAULT_PRICE_TEAM,
   closes = DEFAULT_CLOSES,
+  mailUrl = process.env.LEAGUE_MAIL_URL || "https://padelmaps.org/api/internal/league-mail",
+  mailSecret = process.env.LEAGUE_MAIL_SECRET || null,
+  siteUrl = process.env.SITE_URL || "https://www.foundrypadel.com",
+  rosterTtlMs: ROSTER_TTL_MS = 60 * 1000,
   // Retries for the sheet row: an Apps Script cold start fails the first POST and
   // succeeds on the second (the junior clinic's lesson, 6 Oct).
   sheetAttempts: SHEET_ATTEMPTS = 3,
@@ -232,25 +315,31 @@ export function createLeagueRouter({
     const { won, lost } = tally(r.sets);
     return postRow([
       stamp(), String(r.week), r.team, r.opponent, ...r.sets.map(([a, b]) => `${a}-${b}`),
-      String(won), String(lost), r.name, r.email, r.notes || "", "",
+      String(won), String(lost), r.name, r.email, r.notes || "", r.status || "", r.ref || "",
     ], "score");
   }
 
   async function postRow(cells, action) {
     if (!sheetUrl) return false;
-    const row = cells.map(sheetCell);
+    await sheetAction(action, { row: cells.map(sheetCell) });
+    return true;
+  }
+
+  // One call to the Apps Script, retried through its cold starts. Returns its JSON
+  // answer; throws when it never answered ok.
+  async function sheetAction(action, body) {
     let lastError = null;
     for (let attempt = 1; attempt <= SHEET_ATTEMPTS; attempt++) {
       try {
         const res = await fetchImpl(sheetUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ secret: sheetSecret || "", ...(action ? { action } : {}), row }),
+          body: JSON.stringify({ secret: sheetSecret || "", ...(action ? { action } : {}), ...body }),
         });
         if (!res.ok) throw new Error(`sheet ${res.status}`);
         const json = await res.json().catch(() => ({}));
         if (json.ok === false) throw new Error(`sheet ${json.error || "refused"}`);
-        return true;
+        return json;
       } catch (e) {
         lastError = e;
         if (attempt < SHEET_ATTEMPTS) await sleep(SHEET_RETRY_MS * attempt);
@@ -258,6 +347,40 @@ export function createLeagueRouter({
     }
     throw lastError;
   }
+
+  // The roster: every signed-up team with its two emails, from the signups sheet.
+  // Cached briefly so a burst of score reports is not a burst of Apps Script calls.
+  // null when there is no sheet, which means there is nothing to check against.
+  let rosterCache = { at: 0, teams: null };
+  async function fetchRoster() {
+    if (!sheetUrl) return null;
+    if (rosterCache.teams && now().getTime() - rosterCache.at < ROSTER_TTL_MS) return rosterCache.teams;
+    const json = await sheetAction("roster", {});
+    const teams = (json.teams || [])
+      .map((t) => ({
+        league: norm(t.league).startsWith("women") ? "womens" : "mens",
+        team: String(t.team || "").trim(), p1: String(t.p1 || "").trim(), e1: norm(t.e1), p2: String(t.p2 || "").trim(), e2: norm(t.e2),
+      }))
+      .filter((t) => t.p1)
+      .map((t) => ({ ...t, name: teamDisplayName(t) }));
+    rosterCache = { at: now().getTime(), teams };
+    return teams;
+  }
+
+  async function sendConfirmMail(r, theirs) {
+    if (!mailUrl || !mailSecret) return false;
+    const mail = buildConfirmMail(r, theirs, siteUrl, sheetSecret);
+    if (!mail.to.length) return false;
+    const res = await fetchImpl(mailUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-League-Secret": mailSecret },
+      body: JSON.stringify(mail),
+    });
+    if (!res.ok) throw new Error(`league-mail ${res.status}`);
+    return true;
+  }
+
+  const dateShort = () => new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", month: "numeric", day: "numeric" }).format(now());
 
   // What the page needs before anyone fills the form in: whether signups are open and
   // whether there is somewhere to pay yet.
@@ -318,13 +441,55 @@ export function createLeagueRouter({
       return res.status(400).json({ error: "A set ends 6-0 to 6-4, 7-5 or 7-6. Check the scores." });
     }
     if (scoreLimit(req, res)) return;
+
+    // With a roster, the reporter must be on a team (by the email they signed up with)
+    // and the opponent must be a team in the same league; the names come from the
+    // roster, not the form. Without one there is nothing to check, so the typed names
+    // are taken as they are.
+    let roster = null;
+    if (sheetUrl) {
+      try {
+        roster = await fetchRoster();
+      } catch (e) {
+        console.error("[league] roster unavailable:", e?.message || e);
+        return res.status(502).json({ error: "We could not check the team list just now. Please try again in a minute." });
+      }
+    }
+    let team = sanitize(parsed.data.team || "", 60);
+    let opponent = sanitize(parsed.data.opponent, 60);
+    let theirs = null;
+    if (roster) {
+      const email = norm(parsed.data.email);
+      const mine = roster.find((t) => t.e1 === email || t.e2 === email);
+      if (!mine) {
+        return res.status(403).json({ error: "That email is not on a league team. Use the email you signed up with, or email portland@foundrypadel.com." });
+      }
+      team = mine.name;
+      theirs = roster.find((t) => t !== mine && t.league === mine.league && norm(t.name) === norm(opponent)) || null;
+      if (!theirs) return res.status(400).json({ error: "Pick the other team from the list." });
+      opponent = theirs.name;
+    } else if (!team) {
+      return res.status(400).json({ error: "Your team name is needed." });
+    }
     const r = {
       ...parsed.data,
-      team: sanitize(parsed.data.team, 60),
-      opponent: sanitize(parsed.data.opponent, 60),
+      team,
+      opponent,
       name: sanitize(parsed.data.name, 80),
       notes: sanitize(parsed.data.notes || "", 300),
+      ref: theirs ? newRef() : "",
+      status: theirs ? `awaiting ${theirs.name}` : "",
+      mailed: null,
     };
+    // The email to the other team goes first, so the Slack line can say whether it went.
+    if (theirs) {
+      try {
+        r.mailed = await sendConfirmMail(r, theirs);
+      } catch (e) {
+        console.error("[league] confirmation email failed:", e?.message || e);
+        r.mailed = false;
+      }
+    }
     const outcomes = await Promise.allSettled([postSlack(buildScoreSlackText(r)), appendScoreRow(r)]);
     const recorded = outcomes.some((o) => o.status === "fulfilled" && o.value === true);
     for (const o of outcomes) {
@@ -334,7 +499,59 @@ export function createLeagueRouter({
       console.error("[league] score NOT recorded anywhere", { week: r.week, team: r.team });
       return res.status(502).json({ error: "We could not save the score just now. Please try again in a minute, or email it to portland@foundrypadel.com." });
     }
-    return res.json({ ok: true, ...tally(r.sets) });
+    return res.json({ ok: true, ...tally(r.sets), team, opponent, ref: r.ref || null, confirmBy: theirs ? theirs.name : null, mailed: r.mailed });
+  });
+
+  // The teams, for the score form's picker. Names only, never emails.
+  router.get("/api/league/teams", async (req, res) => {
+    try {
+      const teams = (await fetchRoster()) || [];
+      res.set("Cache-Control", "public, max-age=60");
+      res.json({ teams: teams.map((t) => ({ league: t.league, name: t.name })) });
+    } catch (e) {
+      console.error("[league] teams unavailable:", e?.message || e);
+      res.json({ teams: [] });
+    }
+  });
+
+  // The other team's confirm-or-dispute link. GET shows the score the link is about;
+  // POST records the answer in the Scores tab (the Checked column) and tells Slack.
+  // The token in the link is the proof, so these sit outside Turnstile.
+  const confirmLimit = rateLimit({ name: "league-confirm", max: 20, windowMs: 10 * 60 * 1000 });
+  router.get("/api/league/confirm", async (req, res) => {
+    if (!sheetUrl) return res.status(503).json({ error: "Confirmation is not set up." });
+    const ok = checkConfirmQuery(sheetSecret, req.query);
+    if (!ok) return res.status(403).json({ error: "That link is not valid. Use the one from the email." });
+    try {
+      const json = await sheetAction("score-get", { ref: ok.ref });
+      if (!json.row) return res.status(404).json({ error: "We could not find that score. It may have been removed." });
+      return res.json({ ok: true, action: ok.action, row: json.row });
+    } catch (e) {
+      console.error("[league] score-get failed:", e?.message || e);
+      return res.status(502).json({ error: "We could not read the score just now. Please try again in a minute." });
+    }
+  });
+  router.post("/api/league/confirm", async (req, res) => {
+    if (!sheetUrl) return res.status(503).json({ error: "Confirmation is not set up." });
+    if (confirmLimit(req, res)) return;
+    const ok = checkConfirmQuery(sheetSecret, req.body || {});
+    if (!ok) return res.status(403).json({ error: "That link is not valid. Use the one from the email." });
+    const status = ok.action === "confirm" ? `confirmed ${dateShort()}` : `DISPUTED ${dateShort()}`;
+    let json;
+    try {
+      json = await sheetAction("score-confirm", { ref: ok.ref, status });
+    } catch (e) {
+      console.error("[league] score-confirm failed:", e?.message || e);
+      return res.status(502).json({ error: "We could not save that just now. Please try again in a minute." });
+    }
+    if (!json.row) return res.status(404).json({ error: "We could not find that score. It may have been removed." });
+    if (!json.already) {
+      const row = json.row;
+      const head = ok.action === "confirm" ? "*League score confirmed*" : "*League score DISPUTED*";
+      postSlack(`${head}  week ${escapeSlack(row.week)}  ${escapeSlack(row.team)} ${escapeSlack(row.won)}-${escapeSlack(row.lost)} ${escapeSlack(row.opponent)}  (${escapeSlack(row.sets)})  ·  ref ${ok.ref}${ok.action === "dispute" ? "\nAsk both teams and fix the row." : ""}`)
+        .catch((e) => console.error("[league] confirm slack failed:", e?.message || e));
+    }
+    return res.json({ ok: true, action: ok.action, row: json.row, already: Boolean(json.already) });
   });
 
   return router;

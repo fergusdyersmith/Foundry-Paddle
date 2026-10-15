@@ -12,6 +12,12 @@
 //      there). Finds the team by Email 1 or Email 2, else by Player 1 or Player 2 name,
 //      and stamps the Paid column ("P1 paid 10/15"). The payment id is kept in the cell
 //      so a repeated Square delivery changes nothing. Answers {matched, team, player, both}.
+//   4. The roster: {secret, action: "roster"} answers {teams: [{league, team, p1, e1, p2,
+//      e2}]}, one per signup row, so the site can check who reports a score and email
+//      the other team. Emails never leave the site's server.
+//   5. A confirmation: {secret, action: "score-get", ref} reads one Scores row by its Ref;
+//      {secret, action: "score-confirm", ref, status} writes the status ("confirmed 11/13"
+//      or "DISPUTED 11/13") into the Checked column unless one is already there.
 // Nothing else reads or writes the sheet.
 //
 // Install (once, about two minutes; the same as server/open-sheet.gs):
@@ -28,7 +34,8 @@ var HEADERS = ["Submitted", "League", "Team", "Player 1", "Email 1", "Phone 1", 
                "Paid", "Status"];
 var SCORES_TAB = "Scores";
 var SCORE_HEADERS = ["Submitted", "Week", "Team", "Opponent", "Set 1", "Set 2", "Set 3",
-                     "Sets won", "Sets lost", "Reported by", "Email", "Notes", "Checked"];
+                     "Sets won", "Sets lost", "Reported by", "Email", "Notes", "Checked", "Ref"];
+var CHECKED = 13, REF = 14;   // 1-based columns on the Scores tab
 
 function tab(ss, name, headers) {
   var sheet = ss.getSheetByName(name);
@@ -51,7 +58,8 @@ function doPost(e) {
     if (!secret || body.secret !== secret) {
       return out.setContent(JSON.stringify({ ok: false, error: secret ? "bad secret" : "no SECRET set" }));
     }
-    if (body.action !== "paid" && (!Array.isArray(body.row) || body.row.length === 0)) {
+    var rowless = { paid: 1, roster: 1, "score-get": 1, "score-confirm": 1 };
+    if (!rowless[body.action] && (!Array.isArray(body.row) || body.row.length === 0)) {
       return out.setContent(JSON.stringify({ ok: false, error: "no row" }));
     }
     var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -59,11 +67,20 @@ function doPost(e) {
     // 6-4 never turns into a date.
     var row = (body.row || []).map(function (v) { return v == null ? "" : String(v); });
     if (body.action === "score") {
-      tab(ss, SCORES_TAB, SCORE_HEADERS).appendRow(row);
+      var scores = tab(ss, SCORES_TAB, SCORE_HEADERS);
+      // The tab was made before Ref existed: add the header once.
+      if (String(scores.getRange(1, REF).getValue() || "") === "") scores.getRange(1, REF).setValue("Ref").setFontWeight("bold");
+      scores.appendRow(row);
       return out.setContent(JSON.stringify({ ok: true }));
     }
     if (body.action === "paid") {
       return out.setContent(JSON.stringify(markPaid(ss, body)));
+    }
+    if (body.action === "roster") {
+      return out.setContent(JSON.stringify(roster(ss)));
+    }
+    if (body.action === "score-get" || body.action === "score-confirm") {
+      return out.setContent(JSON.stringify(scoreByRef(ss, body)));
     }
     var sheet = ss.getSheets()[0];
     if (sheet.getLastRow() === 0) {
@@ -116,6 +133,46 @@ function markPaid(ss, body) {
   cell.setValue(cur ? cur + "; " + stamp : stamp);
   var other = "P" + (which === 1 ? 2 : 1) + " paid";
   return { ok: true, matched: true, team: team, player: which, name: String(vals[hit][which === 1 ? P1 : P2] || ""), both: cur.indexOf(other) >= 0 };
+}
+
+// Every signup row as a team, for the site to check reporters against.
+function roster(ss) {
+  var sheet = ss.getSheets()[0];
+  var last = sheet.getLastRow();
+  var teams = [];
+  if (last >= 2) {
+    var vals = sheet.getRange(2, 1, last - 1, HEADERS.length).getValues();
+    for (var i = 0; i < vals.length; i++) {
+      if (!String(vals[i][3] || "").trim()) continue;
+      teams.push({ league: String(vals[i][1] || ""), team: String(vals[i][2] || ""), p1: String(vals[i][3] || ""), e1: String(vals[i][4] || ""), p2: String(vals[i][7] || ""), e2: String(vals[i][8] || "") });
+    }
+  }
+  return { ok: true, teams: teams };
+}
+
+// One Scores row by its Ref, read ("score-get") or marked ("score-confirm" with a status).
+function scoreByRef(ss, body) {
+  var ref = String(body.ref || "").trim().toUpperCase();
+  if (!ref) return { ok: false, error: "no ref" };
+  var sheet = ss.getSheetByName(SCORES_TAB);
+  if (!sheet || sheet.getLastRow() < 2) return { ok: true, row: null };
+  var last = sheet.getLastRow();
+  var refs = sheet.getRange(2, REF, last - 1, 1).getValues();
+  for (var i = 0; i < refs.length; i++) {
+    if (String(refs[i][0] || "").trim().toUpperCase() !== ref) continue;
+    var r = sheet.getRange(i + 2, 1, 1, SCORE_HEADERS.length).getValues()[0];
+    var row = { week: String(r[1]), team: String(r[2]), opponent: String(r[3]), sets: [r[4], r[5], r[6]].map(String).join(", "),
+                won: String(r[7]), lost: String(r[8]), reportedBy: String(r[9]), status: String(r[12] || ""), ref: ref };
+    if (body.action === "score-confirm") {
+      var cur = row.status;
+      if (/^(confirmed|DISPUTED)/.test(cur)) return { ok: true, row: row, already: true };
+      var status = String(body.status || "").slice(0, 40);
+      sheet.getRange(i + 2, CHECKED).setValue(status);
+      row.status = status;
+    }
+    return { ok: true, row: row };
+  }
+  return { ok: true, row: null };
 }
 
 // A browser visit to the URL says the script is alive without touching the sheet.

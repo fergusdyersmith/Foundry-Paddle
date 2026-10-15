@@ -46,7 +46,7 @@ export const LEAGUE_RULES = [
   { head: "One match a week", body: "Foundry posts who you play each week. The two teams pick a day and a time that suits them both, inside that week, and book the court like any other game." },
   { head: "Three sets, every set counts", body: "Every match is three full sets, played out even when one team takes the first two. A team scores one point in the table for each set it wins, so a 2 to 1 loss still earns a point and the third set is always worth playing." },
   { head: "Golden point", body: "At deuce, the next point decides the game. No advantage, no long deuce battles, matches finish in a predictable time." },
-  { head: "Report the score", body: "Winners send the set scores the same day, through the score form on this site. The table on this page updates each week." },
+  { head: "Report the score", body: "Winners send the set scores the same day, through the score form on this site. The other team gets an email to confirm it, and the table on this page updates each week." },
   { head: "Cannot make a week?", body: "Talk to the other team and move the match into another week; you will just play twice that week. A match nobody plays is a forfeit." },
 ] as const;
 
@@ -78,6 +78,10 @@ export const LEAGUE_PRIZE_LINE = "The prize: free entry to the 2027 league, and 
 /** Where the standings come from once the league is under way: a JSON file Ryan updates
  *  each week. The page shows a placeholder until it has content. */
 export const LEAGUE_TABLE_URL = "/league-data/table.json";
+
+/** Days the other team has to dispute a reported score before it stands. Applied by hand
+ *  from the Scores tab (there is no clock on the server); the number is a promise in copy. */
+export const LEAGUE_CONFIRM_DAYS = 2;
 
 /** Set once the club decides how the fee is paid; null means the signup records the team
  *  and the club follows up with the payment link. Mirrors OPEN_PLAYTOMIC_URL on the Open. */
