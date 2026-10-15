@@ -229,16 +229,19 @@ const League = () => {
                   : "We have you down and will find you a partner at your level once signups close. "}
                 The schedule and your first opponent arrive by email the week before week one.
               </p>
+              <p className="mt-4 font-body text-sm text-secondary-foreground">
+                One thing to know before week one. Every match is three full sets, played out even when one team takes the first two. Each set you win is a point in the table.
+              </p>
               {done.payUrl ? (
                 <>
-                  <p className="mt-6 font-body text-base text-secondary-foreground">One more thing: the team fee is <span className="text-foreground">${done.priceTeam}</span>, paid once for the season.</p>
+                  <p className="mt-6 font-body text-base text-secondary-foreground">One more thing: entry is <span className="text-foreground">${done.priceTeam / 2} a player</span>, paid once for the season. Your partner pays their own.</p>
                   <a href={done.payUrl} target="_blank" rel="noopener noreferrer" className="mt-6 inline-flex items-center gap-2 bg-primary px-10 py-4 font-display text-lg tracking-widest text-primary-foreground transition-all hover:brightness-110">
-                    PAY THE TEAM FEE <ExternalLink size={18} />
+                    PAY YOUR ${done.priceTeam / 2} <ExternalLink size={18} />
                   </a>
                 </>
               ) : (
                 <p className="mt-6 font-body text-sm text-muted-foreground">
-                  The ${done.priceTeam} team fee is paid once for the season. We will email you the payment link, nothing to do now.
+                  Entry is ${done.priceTeam / 2} a player, paid once for the season. We will email you the payment link, nothing to do now.
                 </p>
               )}
             </div>
