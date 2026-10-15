@@ -163,6 +163,44 @@ export function teamDisplayName(t) {
   return a && b ? `${a} and ${b}` : a || b || "";
 }
 
+/** The signup confirmation, one per player we have an email for: you are on the list, the
+ *  format in three lines, and the pay button when there is somewhere to pay. The partner's
+ *  copy says who signed them up. */
+export function buildSignupMail(r, { to, first, byPartner = null, payUrl = null, priceTeam = DEFAULT_PRICE_TEAM, siteUrl = "https://www.foundrypadel.com" }) {
+  const league = r.league === "womens" ? "women's league" : "men's league";
+  const each = priceTeam / 2;
+  const who = byPartner
+    ? `${byPartner} has signed you both up for the ${league}, ${r.level}.`
+    : r.partner
+      ? `That is you and ${r.partner} down for the ${league}, ${r.level}.`
+      : `That is you down for the ${league}, ${r.level}. We will find you a partner at your level once signups close.`;
+  const details = [
+    ["\u{1F4C5}", "Six weeks, Nov 2 to Dec 13, one match a week. You and the other team book the court between you."],
+    ["\u{1F3BE}", "Every match is three full sets, played out even when one team takes the first two. Each set you win is a point in the table."],
+    ["\u{1F4B5}", `Entry is $${each} a player, paid once for the season. Your partner pays their own.`],
+    ["\u{2709}\uFE0F", "The schedule and your first opponent arrive by email the week before week one."],
+  ];
+  const mail = {
+    to: [to],
+    subject: "You're in the Foundry League",
+    title: "YOU'RE ON THE LIST",
+    preview: `${who} Entry is $${each} a player.`,
+    intro: [`Hi ${first || "there"},`, who],
+    details,
+    footer_note: "Reply to this email and a person reads it.",
+  };
+  if (payUrl) {
+    mail.cta_text = `Pay your $${each}`;
+    mail.cta_url = payUrl;
+    mail.cta_note = `One payment per player. Already paid? Nothing more to do. Questions go to [portland@foundrypadel.com](mailto:portland@foundrypadel.com).`;
+  } else {
+    mail.cta_text = "The league page";
+    mail.cta_url = `${siteUrl}/league`;
+    mail.cta_note = `The $${each} a player entry is paid once for the season. We will email you the payment link, nothing to do now.`;
+  }
+  return mail;
+}
+
 /** The email to the opposing team: the score as reported, one tap to confirm, a link to dispute. */
 export function buildConfirmMail(r, theirs, siteUrl, secret) {
   const { won, lost } = tally(r.sets);
@@ -367,10 +405,7 @@ export function createLeagueRouter({
     return teams;
   }
 
-  async function sendConfirmMail(r, theirs) {
-    if (!mailUrl || !mailSecret) return false;
-    const mail = buildConfirmMail(r, theirs, siteUrl, sheetSecret);
-    if (!mail.to.length) return false;
+  async function postMail(mail) {
     const res = await fetchImpl(mailUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-League-Secret": mailSecret },
@@ -378,6 +413,25 @@ export function createLeagueRouter({
     });
     if (!res.ok) throw new Error(`league-mail ${res.status}`);
     return true;
+  }
+
+  // One confirmation per player with an email: the signer always, the partner when
+  // their address was given. Each gets their own greeting.
+  async function sendSignupMail(r) {
+    if (!mailUrl || !mailSecret) return false;
+    const opts = { payUrl, priceTeam, siteUrl };
+    await postMail(buildSignupMail(r, { ...opts, to: r.email, first: firstName(r.name) }));
+    if (r.partnerEmail) {
+      await postMail(buildSignupMail(r, { ...opts, to: r.partnerEmail, first: firstName(r.partner), byPartner: r.name }));
+    }
+    return true;
+  }
+
+  async function sendConfirmMail(r, theirs) {
+    if (!mailUrl || !mailSecret) return false;
+    const mail = buildConfirmMail(r, theirs, siteUrl, sheetSecret);
+    if (!mail.to.length) return false;
+    return postMail(mail);
   }
 
   const dateShort = () => new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", month: "numeric", day: "numeric" }).format(now());
@@ -426,7 +480,16 @@ export function createLeagueRouter({
       console.error("[league] signup NOT recorded anywhere", { level: r.level, email: r.email });
       return res.status(502).json({ error: "We could not save your signup just now. Please try again in a minute, or email portland@foundrypadel.com." });
     }
-    return res.json({ ok: true, recorded, payUrl, priceTeam, partner: r.partner || null });
+    // The confirmation email, after the record exists: it promises a place on the list,
+    // so it only goes when there is one. A mail failure is logged, never shown; the
+    // success screen carries the same facts and the pay button.
+    let mailed = false;
+    try {
+      mailed = await sendSignupMail(r);
+    } catch (e) {
+      console.error("[league] signup email failed:", e?.message || e);
+    }
+    return res.json({ ok: true, recorded, payUrl, priceTeam, partner: r.partner || null, mailed });
   });
 
   // A match result from either team. Nothing to pay and nothing to hold: the record is

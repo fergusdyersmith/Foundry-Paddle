@@ -53,6 +53,40 @@ describe("POST /api/league/register", () => {
       "Alex Chen", "alex@example.com", "", "intermediate", "2.5", "Weeknights after 7, Sunday mornings", "Away Thanksgiving week.", "", ""]);
   });
 
+  it("emails the signer and the partner their place on the list, with the pay button", async () => {
+    const mail = [];
+    const a = app({ slackToken: null, klaviyo: null, sheetUrl: "https://sheet", sheetSecret: "s", payUrl: "https://square.link/u/abc",
+      mailUrl: "https://kumi/league-mail", mailSecret: "m41l",
+      fetchImpl: async (url, init) => {
+        if (url === "https://kumi/league-mail") { mail.push({ headers: init.headers, body: JSON.parse(init.body) }); return { ok: true, status: 200, json: async () => ({ ok: true }) }; }
+        return { ok: true, status: 200, json: async () => ({ ok: true }) };
+      } });
+    const r = await call(a, "POST", "/api/league/register", good);
+    expect(r.status).toBe(200); expect(r.json.mailed).toBe(true);
+    expect(mail).toHaveLength(2);
+    expect(mail[0].headers["X-League-Secret"]).toBe("m41l");
+    const [me, partner] = mail.map((m) => m.body);
+    expect(me.to).toEqual(["sam@example.com"]); expect(me.intro[0]).toBe("Hi Sam,");
+    expect(me.intro[1]).toBe("That is you and Alex Chen down for the men's league, intermediate.");
+    expect(me.cta_text).toBe("Pay your $35"); expect(me.cta_url).toBe("https://square.link/u/abc");
+    expect(me.details.map((d) => d[1]).join(" ")).toContain("three full sets");
+    expect(partner.to).toEqual(["alex@example.com"]); expect(partner.intro[0]).toBe("Hi Alex,");
+    expect(partner.intro[1]).toBe("Sam Rivera has signed you both up for the men's league, intermediate.");
+  });
+
+  it("without a pay link the email points at the league page, and a mail failure never fails the signup", async () => {
+    const mail = [];
+    const a = app({ slackToken: null, klaviyo: null, sheetUrl: "https://sheet", payUrl: null, mailUrl: "https://kumi/league-mail", mailSecret: "m",
+      fetchImpl: async (url, init) => {
+        if (url === "https://kumi/league-mail") { mail.push(JSON.parse(init.body)); return { ok: false, status: 502 }; }
+        return { ok: true, status: 200, json: async () => ({ ok: true }) };
+      } });
+    const r = await call(a, "POST", "/api/league/register", { ...good, partner: "", partnerEmail: "", team: "" });
+    expect(r.status).toBe(200); expect(r.json.recorded).toBe(true); expect(r.json.mailed).toBe(false);
+    expect(mail[0].cta_url).toBe("https://www.foundrypadel.com/league");
+    expect(mail[0].intro[1]).toContain("find you a partner");
+  });
+
   it("retries a cold sheet once, and counts it as recorded when the retry takes", async () => {
     let n = 0;
     const a = app({ slackToken: null, klaviyo: null, sheetUrl: "https://sheet",
