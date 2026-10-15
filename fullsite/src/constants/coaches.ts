@@ -92,7 +92,7 @@ export const COACHES: CoachProfile[] = [
       "Tactics, technique, footwork. Intermediate+: back glass, side glass, double-wall, lobs, bandeja, bajadas. Beginners: volleys, lobs, core technique.",
     certifications: "RPP",
     languages: "English",
-    levelRange: "Beginner & intermediate",
+    levelRange: "All levels",
     privateLessons: {
       playtomicBookable: true,
       rate: "$125/hour, court included",
