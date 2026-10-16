@@ -74,6 +74,41 @@ describe("POST /api/league/register", () => {
     expect(partner.intro[1]).toBe("Sam Rivera has signed you both up for the men's league, intermediate.");
   });
 
+  it("asks Kumi for one pay link per player and hands each their own, in the answer and the emails", async () => {
+    const mail = []; const asked = [];
+    const a = app({ slackToken: null, klaviyo: null, sheetUrl: "https://sheet", sheetSecret: "s", payUrl: null,
+      mailUrl: "https://kumi/league-mail", mailSecret: "m41l",
+      fetchImpl: async (url, init) => {
+        if (url === "https://kumi/league-pay-link") {
+          const body = JSON.parse(init.body); asked.push({ headers: init.headers, body });
+          return { ok: true, status: 200, json: async () => ({ ok: true, url: `https://square.link/u/${body.email.split("@")[0]}`, id: "L" }) };
+        }
+        if (url === "https://kumi/league-mail") { mail.push(JSON.parse(init.body)); return { ok: true, status: 200, json: async () => ({ ok: true }) }; }
+        return { ok: true, status: 200, json: async () => ({ ok: true }) };
+      } });
+    const r = await call(a, "POST", "/api/league/register", good);
+    expect(r.status).toBe(200);
+    expect(asked.map((q) => q.body)).toEqual([{ email: "sam@example.com", name: "Sam Rivera" }, { email: "alex@example.com", name: "Alex Chen" }]);
+    expect(asked[0].headers["X-League-Secret"]).toBe("m41l");
+    expect(r.json.payUrl).toBe("https://square.link/u/sam");
+    expect(mail[0].cta_url).toBe("https://square.link/u/sam"); expect(mail[0].cta_text).toBe("Pay your $35");
+    expect(mail[1].cta_url).toBe("https://square.link/u/alex");
+  });
+
+  it("falls back to the shared link when Kumi cannot mint one, and to the league page when there is none", async () => {
+    const mail = [];
+    const mk = (payUrl) => app({ slackToken: null, klaviyo: null, sheetUrl: "https://sheet", payUrl, mailUrl: "https://kumi/league-mail", mailSecret: "m",
+      fetchImpl: async (url, init) => {
+        if (url === "https://kumi/league-pay-link") return { ok: false, status: 502, json: async () => ({ detail: "Square refused" }) };
+        if (url === "https://kumi/league-mail") { mail.push(JSON.parse(init.body)); return { ok: true, status: 200, json: async () => ({ ok: true }) }; }
+        return { ok: true, status: 200, json: async () => ({ ok: true }) };
+      } });
+    const shared = await call(mk("https://square.link/u/shared"), "POST", "/api/league/register", good);
+    expect(shared.status).toBe(200); expect(shared.json.payUrl).toBe("https://square.link/u/shared"); expect(mail[0].cta_url).toBe("https://square.link/u/shared");
+    const none = await call(mk(null), "POST", "/api/league/register", good);
+    expect(none.status).toBe(200); expect(none.json.payUrl).toBe(null); expect(mail[2].cta_url).toBe("https://www.foundrypadel.com/league");
+  });
+
   it("without a pay link the email points at the league page, and a mail failure never fails the signup", async () => {
     const mail = [];
     const a = app({ slackToken: null, klaviyo: null, sheetUrl: "https://sheet", payUrl: null, mailUrl: "https://kumi/league-mail", mailSecret: "m",

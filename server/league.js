@@ -4,7 +4,8 @@
 // league is not in Playtomic. Playtomic's league feature books the courts itself and charges
 // nothing for them (Ryan, 13 Oct), and the whole idea is that teams book their own court at
 // whatever hour suits them, so Playtomic holds nothing about the league. This form IS the
-// signup. The $70 team fee is collected separately: LEAGUE_PAY_URL, once set, is handed
+// signup. The $70 team fee is collected separately: each player gets their own Square
+// link, minted by Kumi at signup (see payLinkFor); LEAGUE_PAY_URL, if set, is only a fallback, handed
 // back after a recorded signup, the way the Open hands back its Playtomic link; until then
 // the page says the club will follow up.
 //
@@ -268,6 +269,10 @@ export function createLeagueRouter({
   closes = DEFAULT_CLOSES,
   mailUrl = process.env.LEAGUE_MAIL_URL || "https://padelmaps.org/api/internal/league-mail",
   mailSecret = process.env.LEAGUE_MAIL_SECRET || null,
+  // Kumi mints one Square link per player (same secret as the mail). Square links made
+  // through the API take one payment and die, so a shared LEAGUE_PAY_URL only ever
+  // collected from the first player (15 Oct 2026); it is now the fallback, if set at all.
+  payLinkUrl = process.env.LEAGUE_PAYLINK_URL || (mailUrl ? mailUrl.replace(/league-mail$/, "league-pay-link") : null),
   siteUrl = process.env.SITE_URL || "https://www.foundrypadel.com",
   rosterTtlMs: ROSTER_TTL_MS = 60 * 1000,
   // Retries for the sheet row: an Apps Script cold start fails the first POST and
@@ -415,14 +420,34 @@ export function createLeagueRouter({
     return true;
   }
 
+  // A payment link for one player, fresh from Kumi; the shared link (or nothing) when
+  // Kumi cannot be asked. A failure here never fails the signup: the email then says the
+  // link follows, and the Slack line tells the desk who to chase.
+  async function payLinkFor(email, name) {
+    if (!payLinkUrl || !mailSecret || !email) return payUrl;
+    try {
+      const res = await fetchImpl(payLinkUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-League-Secret": mailSecret },
+        body: JSON.stringify({ email, name: name || null }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok && typeof json.url === "string" && json.url.startsWith("https://")) return json.url;
+      console.error("[league] pay link failed:", res.status, json.detail || "");
+    } catch (e) {
+      console.error("[league] pay link failed:", e?.message || e);
+    }
+    return payUrl;
+  }
+
   // One confirmation per player with an email: the signer always, the partner when
-  // their address was given. Each gets their own greeting.
-  async function sendSignupMail(r) {
+  // their address was given. Each gets their own greeting and their own pay link.
+  async function sendSignupMail(r, links = { me: payUrl, partner: payUrl }) {
     if (!mailUrl || !mailSecret) return false;
-    const opts = { payUrl, priceTeam, siteUrl };
-    await postMail(buildSignupMail(r, { ...opts, to: r.email, first: firstName(r.name) }));
+    const opts = { priceTeam, siteUrl };
+    await postMail(buildSignupMail(r, { ...opts, payUrl: links.me, to: r.email, first: firstName(r.name) }));
     if (r.partnerEmail) {
-      await postMail(buildSignupMail(r, { ...opts, to: r.partnerEmail, first: firstName(r.partner), byPartner: r.name }));
+      await postMail(buildSignupMail(r, { ...opts, payUrl: links.partner, to: r.partnerEmail, first: firstName(r.partner), byPartner: r.name }));
     }
     return true;
   }
@@ -440,7 +465,7 @@ export function createLeagueRouter({
   // whether there is somewhere to pay yet.
   router.get("/api/league/status", (req, res) => {
     const closed = todayInClub(now()) >= closes;
-    res.json({ closed, closes, priceTeam, payable: Boolean(payUrl) });
+    res.json({ closed, closes, priceTeam, payable: Boolean(payUrl || (payLinkUrl && mailSecret)) });
   });
 
   router.post("/api/league/register", async (req, res) => {
@@ -483,13 +508,17 @@ export function createLeagueRouter({
     // The confirmation email, after the record exists: it promises a place on the list,
     // so it only goes when there is one. A mail failure is logged, never shown; the
     // success screen carries the same facts and the pay button.
+    const links = {
+      me: await payLinkFor(r.email, r.name),
+      partner: r.partnerEmail ? await payLinkFor(r.partnerEmail, r.partner) : null,
+    };
     let mailed = false;
     try {
-      mailed = await sendSignupMail(r);
+      mailed = await sendSignupMail(r, links);
     } catch (e) {
       console.error("[league] signup email failed:", e?.message || e);
     }
-    return res.json({ ok: true, recorded, payUrl, priceTeam, partner: r.partner || null, mailed });
+    return res.json({ ok: true, recorded, payUrl: links.me, priceTeam, partner: r.partner || null, mailed });
   });
 
   // A match result from either team. Nothing to pay and nothing to hold: the record is
