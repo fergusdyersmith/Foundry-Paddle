@@ -187,6 +187,9 @@ export const COACHES: CoachProfile[] = [
     // From his Playtomic coach profile ("Available for coaching at all levels."), the
     // only description he has given so far. Placeholder until he sends his own.
     bio: "Alejandro is available for coaching at all levels, from first-timers to experienced players.",
+    // Generic on purpose (Kelly, 2026-10-16) until he sends his own: without a line here
+    // Kumi's summary of the page could only say he "also coaches".
+    specialties: "Technique and fundamentals at every level, from first lessons to confident match play",
     levelRange: "All levels",
     mock: true,
   },
