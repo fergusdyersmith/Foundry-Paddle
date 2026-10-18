@@ -3,13 +3,13 @@
 //   1. The site's server, one body per registration: {secret, row: [...]}. Appends the row.
 //   2. Kumi's paid sync (padelclublist/scripts/open_paid_sync.py), every 15 minutes:
 //      {secret, action: "paid", complete: true, paid: [{name, email, phone, level, seen}]}.
-//   3. A read for the club's Claude: {secret, action: "rows"} (readRows, below).
 //      Marks the matching row PAID (column L) and writes the Playtomic level (column M); a
 //      player who paid without ever filling in the form gets a row of their own. When the
 //      list is complete (the sync read the whole tournament), a row marked PAID whose
 //      player is no longer registered becomes CANCELLED; register again and it is PAID
 //      again. Without `complete` nothing is ever cancelled, so a partial read cannot
 //      cancel the whole sheet.
+//   3. A read for the club's Claude: {secret, action: "rows"} (readRows, below).
 // Nothing else reads or writes the sheet.
 //
 // Install (once, about two minutes):
