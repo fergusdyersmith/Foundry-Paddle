@@ -58,9 +58,10 @@ export const OPEN_LEVELS: OpenLevel[] = [
 
 export const SHIRT_SIZES = ["XS", "S", "M", "L", "XL", "XXL"] as const;
 
+// Estimated hours (Kelly, 2026-10-18): Saturday 9 AM to 7 PM, Sunday 9 AM to 5 PM.
 export const OPEN_SCHEDULE = [
-  { day: "Saturday, December 5", what: "Pool play in every level. Everybody plays several matches; results seed Sunday's bracket." },
-  { day: "Sunday, December 6", what: "Single-elimination bracket by level, seeded by Saturday's pools. Everyone is in on Sunday whatever Saturday brought, then it is knockout. Finals in the afternoon, prizes after." },
+  { day: "Saturday, December 5", hours: "About 9 AM to 7 PM", what: "Pool play in every level. Everybody plays several matches; results seed Sunday's bracket." },
+  { day: "Sunday, December 6", hours: "About 9 AM to 5 PM", what: "Single-elimination bracket by level, seeded by Saturday's pools. Everyone is in on Sunday whatever Saturday brought, then it is knockout. Finals in the afternoon, prizes after." },
 ] as const;
 
 /** Where the brackets come from once the tournament is under way. A JSON file the club

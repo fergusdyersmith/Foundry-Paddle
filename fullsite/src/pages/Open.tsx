@@ -147,7 +147,7 @@ const Open = () => {
             name: OPEN_NAME,
             description: "A two-day padel tournament for beginners, intermediate and advanced players. Pool play Saturday, single-elimination bracket Sunday. Everyone plays both days.",
             startDate: `${OPEN_DATE_START}T09:00:00-08:00`,
-            endDate: `${OPEN_DATE_END}T18:00:00-08:00`,
+            endDate: `${OPEN_DATE_END}T17:00:00-08:00`,
             eventAttendanceMode: "https://schema.org/MixedEventAttendanceMode",
             eventStatus: "https://schema.org/EventScheduled",
             url: "https://www.foundrypadel.com/open",
@@ -326,6 +326,7 @@ const Open = () => {
                 {OPEN_SCHEDULE.map((s) => (
                   <div key={s.day} className="border-t border-primary pt-4">
                     <h3 className="font-display text-2xl text-foreground">{s.day.toUpperCase()}</h3>
+                    <p className="mt-1 font-body text-sm font-semibold text-foreground">{s.hours} (estimated)</p>
                     <p className="mt-2 font-body text-sm leading-relaxed text-secondary-foreground">{s.what}</p>
                   </div>
                 ))}
