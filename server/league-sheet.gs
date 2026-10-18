@@ -22,6 +22,7 @@
 //      of that tab (the first sheet when tab is empty) whose cell in column `col` (1-based)
 //      starts with `startsWith` (at least four characters, so "TEST" can go but "" cannot).
 //      How test rows are cleared without hand-editing the sheet.
+//   7. A read for the club's Claude: {secret, action: "rows", tab?} (readRows, below).
 // Every cell is written as plain text (appendText): appendRow would read a set score
 // like 6-4 as the 4th of June, which is what happened to the first test rows on 15 Oct.
 // Nothing else reads or writes the sheet.
@@ -70,7 +71,7 @@ function doPost(e) {
     if (!secret || body.secret !== secret) {
       return out.setContent(JSON.stringify({ ok: false, error: secret ? "bad secret" : "no SECRET set" }));
     }
-    var rowless = { paid: 1, roster: 1, "score-get": 1, "score-confirm": 1, "delete-rows": 1 };
+    var rowless = { paid: 1, roster: 1, rows: 1, "score-get": 1, "score-confirm": 1, "delete-rows": 1 };
     if (!rowless[body.action] && (!Array.isArray(body.row) || body.row.length === 0)) {
       return out.setContent(JSON.stringify({ ok: false, error: "no row" }));
     }
@@ -90,6 +91,9 @@ function doPost(e) {
     }
     if (body.action === "paid") {
       return out.setContent(JSON.stringify(markPaid(ss, body)));
+    }
+    if (body.action === "rows") {
+      return out.setContent(JSON.stringify(readRows(ss, body)));
     }
     if (body.action === "roster") {
       return out.setContent(JSON.stringify(roster(ss)));
@@ -210,6 +214,22 @@ function deleteRows(ss, body) {
 }
 
 // A browser visit to the URL says the script is alive without touching the sheet.
+// A read, for the club's own Claude (Kelly, 2026-10-18): {secret, action: "rows", tab?, limit?}
+// answers {ok, tab, headers, rows, total} with the tab's cells as shown (so a phone keeps
+// its +), newest last, at most `limit` rows (default 500, from the bottom). Read-only.
+function readRows(ss, body) {
+  var sheet = body.tab ? ss.getSheetByName(String(body.tab)) : ss.getSheets()[0];
+  if (!sheet) return { ok: false, error: "no tab " + body.tab, tabs: ss.getSheets().map(function (s) { return s.getName(); }) };
+  var last = sheet.getLastRow(), width = sheet.getLastColumn();
+  if (last < 1 || width < 1) return { ok: true, tab: sheet.getName(), headers: [], rows: [], total: 0 };
+  var headers = sheet.getRange(1, 1, 1, width).getDisplayValues()[0];
+  var limit = Math.max(1, Math.min(Number(body.limit) || 500, 2000));
+  var first = Math.max(2, last - limit + 1);
+  var rows = last >= 2 ? sheet.getRange(first, 1, last - first + 1, width).getDisplayValues() : [];
+  return { ok: true, tab: sheet.getName(), headers: headers, rows: rows, total: Math.max(0, last - 1),
+           tabs: ss.getSheets().map(function (s) { return s.getName(); }) };
+}
+
 function doGet() {
   return ContentService.createTextOutput("Foundry League signups hook is up.");
 }

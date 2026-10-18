@@ -3,6 +3,7 @@
 //   1. The site's server, one body per registration: {secret, row: [...]}. Appends the row.
 //   2. Kumi's paid sync (padelclublist/scripts/open_paid_sync.py), every 15 minutes:
 //      {secret, action: "paid", complete: true, paid: [{name, email, phone, level, seen}]}.
+//   3. A read for the club's Claude: {secret, action: "rows"} (readRows, below).
 //      Marks the matching row PAID (column L) and writes the Playtomic level (column M); a
 //      player who paid without ever filling in the form gets a row of their own. When the
 //      list is complete (the sync read the whole tournament), a row marked PAID whose
@@ -32,6 +33,9 @@ function doPost(e) {
     // rather than taking any POST from anyone who finds the /exec URL.
     if (!secret || body.secret !== secret) {
       return out.setContent(JSON.stringify({ ok: false, error: secret ? "bad secret" : "no SECRET set" }));
+    }
+    if (body.action === "rows") {
+      return out.setContent(JSON.stringify(readRows(SpreadsheetApp.getActiveSpreadsheet(), body)));
     }
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
     if (body.action === "paid") {
@@ -91,6 +95,22 @@ function markPaid(sheet, paid, complete) {
 }
 
 // A browser visit to the URL says the script is alive without touching the sheet.
+// A read, for the club's own Claude (Kelly, 2026-10-18): {secret, action: "rows", tab?, limit?}
+// answers {ok, tab, headers, rows, total} with the tab's cells as shown (so a phone keeps
+// its +), newest last, at most `limit` rows (default 500, from the bottom). Read-only.
+function readRows(ss, body) {
+  var sheet = body.tab ? ss.getSheetByName(String(body.tab)) : ss.getSheets()[0];
+  if (!sheet) return { ok: false, error: "no tab " + body.tab, tabs: ss.getSheets().map(function (s) { return s.getName(); }) };
+  var last = sheet.getLastRow(), width = sheet.getLastColumn();
+  if (last < 1 || width < 1) return { ok: true, tab: sheet.getName(), headers: [], rows: [], total: 0 };
+  var headers = sheet.getRange(1, 1, 1, width).getDisplayValues()[0];
+  var limit = Math.max(1, Math.min(Number(body.limit) || 500, 2000));
+  var first = Math.max(2, last - limit + 1);
+  var rows = last >= 2 ? sheet.getRange(first, 1, last - first + 1, width).getDisplayValues() : [];
+  return { ok: true, tab: sheet.getName(), headers: headers, rows: rows, total: Math.max(0, last - 1),
+           tabs: ss.getSheets().map(function (s) { return s.getName(); }) };
+}
+
 function doGet() {
   return ContentService.createTextOutput("Foundry Open registrations hook is up.");
 }

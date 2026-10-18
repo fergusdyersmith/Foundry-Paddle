@@ -1,6 +1,6 @@
 // Apps Script bound to "Junior Clinic signups" (Google Sheet, owned by kelly@foundrypadel.com,
 // shared with monica@). One caller, the site's server, POSTing JSON with the shared secret.
-// Two jobs:
+// Three jobs:
 //   1. A signup: {secret, row: [...]}, one body per child. Appends the row to the first
 //      sheet; writes the header row first if the sheet is empty.
 //   2. A signed waiver: {secret, action: "waiver", parent, emergency, pickup, children: [{name,
@@ -10,6 +10,7 @@
 //      "Waiver signed <date>" in the Status column of the child's signup row(s). Then one
 //      email to the desk with every PDF attached, and a copy to the parent. Answers with
 //      which children were found on the signup list and which were not.
+//   3. A read for the club's Claude: {secret, action: "rows", tab?} (readRows, below).
 // Nothing else reads or writes the sheet.
 //
 // Install (same two minutes as server/open-sheet.gs):
@@ -65,6 +66,9 @@ function handle(body) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   if (body.action === "waiver") {
     return fileWaiver(ss, body);
+  }
+  if (body.action === "rows") {
+    return readRows(ss, body);
   }
   if (!Array.isArray(body.row) || body.row.length === 0) {
     return { ok: false, error: "no row" };
@@ -260,6 +264,22 @@ function sendParentCopy(body, blobs) {
 }
 
 // So the web app also answers a browser GET with something readable.
+// A read, for the club's own Claude (Kelly, 2026-10-18): {secret, action: "rows", tab?, limit?}
+// answers {ok, tab, headers, rows, total} with the tab's cells as shown (so a phone keeps
+// its +), newest last, at most `limit` rows (default 500, from the bottom). Read-only.
+function readRows(ss, body) {
+  var sheet = body.tab ? ss.getSheetByName(String(body.tab)) : ss.getSheets()[0];
+  if (!sheet) return { ok: false, error: "no tab " + body.tab, tabs: ss.getSheets().map(function (s) { return s.getName(); }) };
+  var last = sheet.getLastRow(), width = sheet.getLastColumn();
+  if (last < 1 || width < 1) return { ok: true, tab: sheet.getName(), headers: [], rows: [], total: 0 };
+  var headers = sheet.getRange(1, 1, 1, width).getDisplayValues()[0];
+  var limit = Math.max(1, Math.min(Number(body.limit) || 500, 2000));
+  var first = Math.max(2, last - limit + 1);
+  var rows = last >= 2 ? sheet.getRange(first, 1, last - first + 1, width).getDisplayValues() : [];
+  return { ok: true, tab: sheet.getName(), headers: headers, rows: rows, total: Math.max(0, last - 1),
+           tabs: ss.getSheets().map(function (s) { return s.getName(); }) };
+}
+
 function doGet() {
   return ContentService.createTextOutput("Junior Clinic signups hook: POST only.");
 }
