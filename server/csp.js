@@ -1,11 +1,13 @@
 /**
- * Content Security Policy, in REPORT-ONLY mode.
+ * Content Security Policy, ENFORCED since 2026-10-19.
  *
- * A browser applying this blocks nothing: it only reports what it WOULD have blocked to
- * /api/csp-report, which logs it. A policy that misses one of the site's outside sources
- * breaks that part of a page silently (the booking iframe, the Wistia video, analytics),
- * so it runs report-only until the logs have been quiet through a normal week of
- * traffic. Then switch the header name in server.js to Content-Security-Policy.
+ * It ran report-only from 2026-10-12 to 2026-10-19 (48 deploys of real traffic); every
+ * report left was Wistia's own telemetry or something a visitor's browser injected, so
+ * the header switched to Content-Security-Policy. Browsers still post what they block to
+ * /api/csp-report, which logs it as "[csp] blocked", and
+ * `node scripts/csp-week-report.mjs` summarises those logs. A page that suddenly loses a
+ * piece (the booking iframe, the Wistia video, analytics) after adding an outside source
+ * needs that source added here.
  *
  * What each source is for:
  *   googletagmanager / google-analytics   GA4 (gtag in index.html)
@@ -14,10 +16,13 @@
  *   fonts.googleapis / gstatic            the web fonts (index.css)
  *   playtomic.io / playtomic.com          the booking iframe on /book (.io redirects to .com)
  *   www.google.com (frame)                the map embed (footer, /contact)
- *   challenges.cloudflare.com             Turnstile, once its keys are set (server/turnstile.js)
+ *   challenges.cloudflare.com             Turnstile on the signup forms (server/turnstile.js)
  *
- * Left out on purpose: browser.sentry-cdn.com, which Wistia's player loads for its own
- * error reporting. Blocking it costs the video nothing, so expect it in the reports.
+ * Left out on purpose: Wistia's own telemetry, which costs the video nothing to block, so
+ * expect it in the reports: browser.sentry-cdn.com and its ingest host (Wistia's error
+ * tracker) and *.litix.io (Mux video analytics, from Wistia's wistia-mux.js).
+ * Not ours either: eval, wasm-eval and odd third-party hosts on / (adware, extensions,
+ * in-app browsers). Neither our bundle, gtag nor Turnstile's api.js uses eval or WebAssembly.
  * Wistia also asks for http:// copies of its files on a plain-http page (localhost);
  * those reports are a local-testing artifact, production is https throughout.
  *
@@ -67,11 +72,11 @@ const POLICY = {
   "report-uri": ["/api/csp-report"],
 };
 
-export const CSP_REPORT_ONLY = Object.entries(POLICY)
+export const CSP = Object.entries(POLICY)
   .map(([directive, sources]) => `${directive} ${sources.join(" ")}`)
   .join("; ");
 
-/** Paths that get the report-only policy: our own pages. Not /api (JSON, nothing to
+/** Paths that get the policy: our own pages. Not /api (JSON, nothing to
  *  load), not /assets (files, not documents), and not /join, which relays Kumi's page and
  *  would only report on Kumi's sources. */
 export function wantsCsp(pathname) {
@@ -102,7 +107,10 @@ export function summarizeCspReport(body) {
       } catch {
         pagePath = clip(page);
       }
-      return { directive: clip(directive), blocked: clip(blocked), page: pagePath };
+      // Which script tried it: for eval, wasm-eval and inline that is the only clue, and an
+      // extension or injected script shows up here rather than in the blocked URL.
+      const source = String(r["source-file"] || r.sourceFile || "").replace(/[?#].*$/, "");
+      return { directive: clip(directive), blocked: clip(blocked), page: pagePath, source: clip(source) };
     });
 }
 
@@ -111,7 +119,8 @@ export function cspReportHandler(req, res) {
     const key = `${v.directive} ${v.blocked}`;
     if (seen.has(key) || seen.size >= MAX_DISTINCT) continue;
     seen.add(key);
-    console.warn(`[csp] would block ${v.directive}: ${v.blocked || "(inline)"} on ${v.page}`);
+    const from = v.source && v.source !== v.blocked ? ` from ${v.source.replace(/\s/g, "")}` : "";
+    console.warn(`[csp] blocked ${v.directive}: ${v.blocked || "(inline)"} on ${v.page}${from}`);
   }
   res.status(204).end();
 }

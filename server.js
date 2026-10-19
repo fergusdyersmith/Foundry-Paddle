@@ -15,7 +15,7 @@ import { createJuniorsRouter } from "./server/juniors.js";
 import { createLeagueRouter } from "./server/league.js";
 import { formatUsd, ratesOn } from "./shared/rates.js";
 import { rateLimit } from "./server/abuse.js";
-import { CSP_REPORT_ONLY, cspReportHandler, wantsCsp } from "./server/csp.js";
+import { CSP, cspReportHandler, wantsCsp } from "./server/csp.js";
 import { upsertProfile } from "./server/klaviyoProfile.js";
 import { TURNSTILE_PATHS, turnstileCheck } from "./server/turnstile.js";
 import { createBlandAutoSync } from "./server/blandAutoSync.js";
@@ -38,29 +38,28 @@ const app = express();
 app.disable("x-powered-by");
 app.use(express.json({ limit: "32kb" }));
 
-// Baseline response headers. The full CSP is report-only for now (server/csp.js): the
-// site loads Wistia, GA, Google Fonts and the Playtomic booking iframe, and a policy that
-// misses one of them breaks a page silently.
+// Baseline response headers. Pages get the full CSP (server/csp.js), enforced since
+// 2026-10-19: the site loads Wistia, GA, Google Fonts and the Playtomic booking iframe, and
+// a new outside source missing from it breaks that part of a page.
 app.use((req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  const csp = wantsCsp(req.path) ? [CSP] : [];
   // Nothing but /tv is meant to be framed: it is the club's court screen, which embeds it.
   // Everywhere else (gift checkout, the waiver, the signup forms) refuses, so a hostile
   // page cannot overlay its own buttons on ours.
   if (req.path !== "/tv") {
     res.setHeader("X-Frame-Options", "SAMEORIGIN");
-    res.setHeader("Content-Security-Policy", "frame-ancestors 'self'");
+    csp.push("frame-ancestors 'self'");
   }
-  if (wantsCsp(req.path)) {
-    res.setHeader("Content-Security-Policy-Report-Only", CSP_REPORT_ONLY);
-  }
+  if (csp.length) res.setHeader("Content-Security-Policy", csp.join("; "));
   if (req.headers["x-forwarded-proto"] === "https") {
     res.setHeader("Strict-Transport-Security", "max-age=31536000");
   }
   next();
 });
 
-// Where browsers send what the report-only CSP would have blocked; logged as "[csp]".
+// Where browsers send what the CSP blocked; logged as "[csp]".
 // Browsers post these as application/csp-report or application/reports+json, which the
 // app-wide JSON parser leaves alone.
 const cspReportLimit = rateLimit({ name: "csp-report", max: 30, windowMs: 60 * 1000 });

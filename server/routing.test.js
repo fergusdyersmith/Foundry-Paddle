@@ -202,16 +202,20 @@ describe("response headers", () => {
     expect(await status(ctx.base, "/.vite/manifest.json")).toBe(404);
   });
 
-  it("reports (but does not enforce) a CSP on pages, and leaves the API and /join alone", async () => {
+  it("enforces the CSP on pages, and gives the API and /join only the framing rule", async () => {
     ctx = await boot();
     const page = await fetch(`${ctx.base}/book`);
-    const policy = page.headers.get("content-security-policy-report-only");
+    const policy = page.headers.get("content-security-policy");
     expect(policy).toContain("object-src 'none'");
     expect(policy).toContain("report-uri /api/csp-report");
-    // The enforced header is still only the framing rule.
-    expect(page.headers.get("content-security-policy")).toBe("frame-ancestors 'self'");
+    expect(policy).toContain("frame-ancestors 'self'");
+    expect(page.headers.get("content-security-policy-report-only")).toBeNull();
+    // The court screen is framed by the club's TV, so it gets the policy but no framing rule.
+    const tv = (await fetch(`${ctx.base}/tv`)).headers.get("content-security-policy");
+    expect(tv).toContain("object-src 'none'");
+    expect(tv).not.toContain("frame-ancestors");
     const api = await fetch(`${ctx.base}/api/csp-report`, { method: "POST" });
-    expect(api.headers.get("content-security-policy-report-only")).toBeNull();
+    expect(api.headers.get("content-security-policy")).toBe("frame-ancestors 'self'");
   });
 
   it("logs a CSP report once, in either format, and answers 204", async () => {
@@ -229,11 +233,11 @@ describe("response headers", () => {
     expect((await post("application/csp-report", report)).status).toBe(204);
     expect((await post("application/csp-report", report)).status).toBe(204);
     const lines = warn.mock.calls.map((c) => c[0]).filter((l) => String(l).startsWith("[csp]"));
-    expect(lines).toEqual(["[csp] would block script-src-elem: https://evil.example/x.js on /book"]);
+    expect(lines).toEqual(["[csp] blocked script-src-elem: https://evil.example/x.js on /book"]);
     await post("application/reports+json", [
       { type: "csp-violation", body: { documentURL: "https://www.foundrypadel.com/", effectiveDirective: "frame-src", blockedURL: "https://x.example/" } },
     ]);
-    expect(warn.mock.calls.map((c) => c[0])).toContain("[csp] would block frame-src: https://x.example/ on /");
+    expect(warn.mock.calls.map((c) => c[0])).toContain("[csp] blocked frame-src: https://x.example/ on /");
     // The query string is dropped: it can carry a visitor id, and a new one on every hit
     // would log every hit.
     for (const cid of ["1.1", "2.2"]) {
@@ -242,8 +246,13 @@ describe("response headers", () => {
       });
     }
     expect(warn.mock.calls.map((c) => c[0]).filter((l) => String(l).includes("ga.example"))).toEqual([
-      "[csp] would block connect-src: https://ga.example/g/collect on /",
+      "[csp] blocked connect-src: https://ga.example/g/collect on /",
     ]);
+    // For eval and inline, the script that tried it is the only clue, so it is logged too.
+    await post("application/csp-report", {
+      "csp-report": { "document-uri": "https://www.foundrypadel.com/", "effective-directive": "script-src", "blocked-uri": "wasm-eval", "source-file": "chrome-extension://abc/inject.js?v=1" },
+    });
+    expect(warn.mock.calls.map((c) => c[0])).toContain("[csp] blocked script-src: wasm-eval on / from chrome-extension://abc/inject.js");
     warn.mockRestore();
   });
 
