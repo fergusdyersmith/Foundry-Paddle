@@ -15,6 +15,10 @@ const WISTIA_SCRIPTS = [
  */
 const WistiaVideo = () => {
   useEffect(() => {
+    // The player sends viewing data to Mux (*.litix.io) for a 10% sample of views. We
+    // don't use it and the CSP blocks it anyway (server/csp.js), so it is switched off.
+    // player.js reads this flag as each player starts, so it must be set first.
+    window.wistiaDisableMux = true;
     for (const { src, module } of WISTIA_SCRIPTS) {
       if (document.querySelector(`script[src="${src}"]`)) continue;
       const script = document.createElement("script");

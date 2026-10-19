@@ -35,7 +35,7 @@ const railway = (args) =>
 // blocked URL and against the script that tried it (logged since 2026-10-19).
 const KNOWN = [
   [/browser\.sentry-cdn\.com|o4505518331658240\.ingest\.us\.sentry\.io/, "Wistia's own error tracker, left out on purpose"],
-  [/\.litix\.io/, "Wistia's Mux video analytics (wistia-mux.js), left out on purpose"],
+  [/\.litix\.io/, "Wistia's Mux video analytics, switched off 10/19, so only pages loaded before then"],
   [/connect\.facebook\.net\/.*pcm\.js/, "Facebook/Instagram in-app browser injecting its own script"],
   [/^(chrome|moz|safari|safari-web)-extension:/, "a visitor's browser extension"],
   // One visitor on 2026-10-15: four tracker hosts, one deploy, one day, none referenced by the site.

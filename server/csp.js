@@ -20,7 +20,8 @@
  *
  * Left out on purpose: Wistia's own telemetry, which costs the video nothing to block, so
  * expect it in the reports: browser.sentry-cdn.com and its ingest host (Wistia's error
- * tracker) and *.litix.io (Mux video analytics, from Wistia's wistia-mux.js).
+ * tracker). Its Mux video analytics (*.litix.io, from wistia-mux.js) is also left out,
+ * and since 2026-10-19 switched off in WistiaVideo.tsx (window.wistiaDisableMux).
  * Not ours either: eval, wasm-eval and odd third-party hosts on / (adware, extensions,
  * in-app browsers). Neither our bundle, gtag nor Turnstile's api.js uses eval or WebAssembly.
  * Wistia also asks for http:// copies of its files on a plain-http page (localhost);
