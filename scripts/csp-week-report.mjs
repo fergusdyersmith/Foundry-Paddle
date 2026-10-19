@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 // What the Content-Security-Policy blocked (or, before 2026-10-19 when it was report-only,
 // would have blocked), across every Railway deployment since a date. The question it
-// answers: is anything the site itself needs being blocked?
+// answers: is anything the site itself needs being blocked? Since 2026-10-19 it also
+// reads the report-only trial of a script-src without 'unsafe-inline' ("[csp-trial]"
+// lines, one per inline script seen, with its first 40 characters) and says whether the
+// hashes can replace 'unsafe-inline' in the enforced policy.
 //
 //   node scripts/csp-week-report.mjs [--since 2026-10-12] [--service foundry-court-welcome]
 //
@@ -47,7 +50,7 @@ const all = JSON.parse(railway(["deployment", "list", "--json", "--limit", "200"
 const firstAfter = all.findIndex((d) => d.createdAt >= since);
 const deploys = firstAfter < 0 ? all.slice(-1) : all.slice(Math.max(0, firstAfter - 1));
 
-const seen = new Map(); // "directive blocked" -> { directive, blocked, pages:Set, deploys:Set, first, last }
+const seen = new Map(); // "directive blocked" -> { directive, blocked, trial, pages:Set, sources:Set, samples:Set, deploys:Set, first, last }
 let unreadable = 0;
 for (const d of deploys) {
   let out;
@@ -65,15 +68,21 @@ for (const d of deploys) {
     } catch {
       continue;
     }
-    const m = /^\[csp\] (?:would block|blocked) (\S+): (.*) on (\S*)(?: from (\S+))?$/.exec(rec.message || "");
+    const m = /^\[csp(-trial)?\] (?:would block|blocked) (\S+): (\S+) on (\S*)(?: from (\S+))?(?: sample (".*"))?$/.exec(rec.message || "");
     if (!m) continue;
-    const [, directive, rawBlocked, page, source] = m;
+    const [, trial, directive, rawBlocked, page, source, rawSample] = m;
     const blocked = rawBlocked.replace(/[?#].*$/, ""); // older deploys logged query strings
+    let sample = "";
+    try {
+      sample = rawSample ? JSON.parse(rawSample) : "";
+    } catch {}
 
-    const key = `${directive} ${blocked}`;
-    const v = seen.get(key) || { directive, blocked, pages: new Set(), sources: new Set(), deploys: new Set(), first: rec.timestamp, last: rec.timestamp };
+    // Trial reports are all "inline", so the script's opening is what tells them apart.
+    const key = trial ? `trial ${directive} ${source} ${sample}` : `${directive} ${blocked}`;
+    const v = seen.get(key) || { directive, blocked, trial: !!trial, pages: new Set(), sources: new Set(), samples: new Set(), deploys: new Set(), first: rec.timestamp, last: rec.timestamp };
     v.pages.add(page);
     if (source) v.sources.add(source);
+    if (sample) v.samples.add(sample);
     v.deploys.add(d.id);
     if (rec.timestamp < v.first) v.first = rec.timestamp;
     if (rec.timestamp > v.last) v.last = rec.timestamp;
@@ -86,9 +95,11 @@ for (const d of deploys) {
 const live = await fetch("https://www.foundrypadel.com/", { signal: AbortSignal.timeout(15_000) })
   .then((r) => ({ reportOnly: r.headers.get("content-security-policy-report-only"), enforced: r.headers.get("content-security-policy") }))
   .catch(() => ({}));
-const livePolicy = live.reportOnly || live.enforced || "";
-// Before 2026-10-19 the enforced header carried only frame-ancestors.
-const enforcing = !live.reportOnly && /script-src/.test(live.enforced || "");
+// Before 2026-10-19 the enforced header carried only frame-ancestors and the full policy
+// was report-only; since then the report-only header is the inline trial.
+const enforcing = /script-src/.test(live.enforced || "");
+const livePolicy = (enforcing ? live.enforced : live.reportOnly) || "";
+const trialRunning = /trial=inline/.test(live.reportOnly || "");
 const policy = Object.fromEntries(
   livePolicy.split(";").map((d) => d.trim().split(/\s+/)).filter((p) => p[0]).map(([name, ...srcs]) => [name, srcs]),
 );
@@ -112,14 +123,17 @@ function nowAllowed(directive, blocked) {
 
 const day = (ts) => String(ts).slice(5, 10);
 const describe = (v) =>
-  `${v.directive}: ${v.blocked}\n    on ${[...v.pages].slice(0, 5).join(", ")}; ${v.deploys.size} of ${deploys.length} deploys; ${day(v.first)} to ${day(v.last)}` +
-  (v.sources.size ? `\n    from ${[...v.sources].slice(0, 3).join(", ")}` : "");
+  `${v.trial ? "[inline trial] " : ""}${v.directive}: ${v.blocked}\n    on ${[...v.pages].slice(0, 5).join(", ")}; ${v.deploys.size} of ${deploys.length} deploys; ${day(v.first)} to ${day(v.last)}` +
+  (v.sources.size ? `\n    from ${[...v.sources].slice(0, 3).join(", ")}` : "") +
+  (v.samples.size ? `\n    starts ${[...v.samples].slice(0, 3).map((x) => JSON.stringify(x)).join(", ")}` : "");
 const known = [];
 const unknown = [];
+let unknownTrial = 0;
 for (const v of seen.values()) {
-  const why = nowAllowed(v.directive, v.blocked)
+  const why = !v.trial && nowAllowed(v.directive, v.blocked)
     ? "now allowed by the live policy"
     : KNOWN.find(([re]) => re.test(v.blocked) || [...v.sources].some((s) => re.test(s)))?.[1];
+  if (!why && v.trial) unknownTrial++;
   (why ? known : unknown).push(why ? `${describe(v)}\n    (${why})` : describe(v));
 }
 if (!livePolicy) unknown.push("(could not read the live policy header; check www.foundrypadel.com is up)");
@@ -133,6 +147,13 @@ lines.push(
       ? "Nothing unexplained: the policy is enforced and blocks nothing the site needs."
       : "Nothing unexplained. Safe to switch the header to enforcing.",
 );
+if (trialRunning) {
+  lines.push(
+    unknownTrial
+      ? `Inline-script trial: ${unknownTrial} inline script(s) below that the hashes would block. Find what injects each before dropping 'unsafe-inline'.`
+      : "Inline-script trial: nothing unexplained. Safe to move the hashes into the enforced script-src and retire the trial (server/csp.js).",
+  );
+}
 for (const u of unknown) lines.push(`- ${u}`);
 if (known.length) {
   lines.push(`Explained (${known.length}):`);

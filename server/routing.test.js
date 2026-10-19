@@ -14,6 +14,7 @@
  * `npm run build:railway` and stay fast.
  */
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { createHash } from "crypto";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import http from "http";
@@ -22,14 +23,19 @@ import path from "path";
 /** A stand-in for dist/: the prerendered files server.js looks for by name. */
 function buildFixture() {
   const dir = mkdtempSync(path.join(tmpdir(), "foundry-dist-"));
-  const page = (name) => `<!DOCTYPE html><html><head><title>${name}</title></head><body>${name}</body></html>`;
+  const page = (name, head = "") => `<!DOCTYPE html><html><head><title>${name}</title>${head}</head><body>${name}</body></html>`;
   for (const route of ["index", "book", "memberships", "community", "tv", "404"]) {
     writeFileSync(path.join(dir, `${route}.html`), page(route));
   }
   // A page that shares its name with a folder, as /juniors does with juniors/waiver.html.
   writeFileSync(path.join(dir, "juniors.html"), page("juniors"));
   mkdirSync(path.join(dir, "juniors"));
-  writeFileSync(path.join(dir, "juniors", "waiver.html"), page("waiver"));
+  writeFileSync(path.join(dir, "juniors", "waiver.html"), page("waiver", `<script type="module">window.y = 2</script>`));
+  // Scripts as a real build has them: inline code, a JSON-LD data block, an external file.
+  writeFileSync(
+    path.join(dir, "book.html"),
+    page("book", `<script>window.x = 1</script><script type="application/ld+json">{}</script><script src="/assets/app-abc123.js"></script>`),
+  );
   mkdirSync(path.join(dir, "assets"));
   writeFileSync(path.join(dir, "assets", "app-abc123.js"), "console.log(1)");
   writeFileSync(path.join(dir, "robots.txt"), "User-agent: *\nAllow: /\n");
@@ -209,13 +215,50 @@ describe("response headers", () => {
     expect(policy).toContain("object-src 'none'");
     expect(policy).toContain("report-uri /api/csp-report");
     expect(policy).toContain("frame-ancestors 'self'");
-    expect(page.headers.get("content-security-policy-report-only")).toBeNull();
     // The court screen is framed by the club's TV, so it gets the policy but no framing rule.
     const tv = (await fetch(`${ctx.base}/tv`)).headers.get("content-security-policy");
     expect(tv).toContain("object-src 'none'");
     expect(tv).not.toContain("frame-ancestors");
     const api = await fetch(`${ctx.base}/api/csp-report`, { method: "POST" });
     expect(api.headers.get("content-security-policy")).toBe("frame-ancestors 'self'");
+  });
+
+  it("trials a script-src without 'unsafe-inline', report-only, allowing the build's inline scripts by hash", async () => {
+    ctx = await boot();
+    const sha = (code) => `'sha256-${createHash("sha256").update(code).digest("base64")}'`;
+    const trial = (await fetch(`${ctx.base}/memberships`)).headers.get("content-security-policy-report-only");
+    // Every page gets every page's hashes, including the nested juniors/waiver.html, and
+    // only scripts that run: the JSON-LD block and the external file are not hashed.
+    expect(trial).toContain(sha("window.x = 1"));
+    expect(trial).toContain(sha("window.y = 2"));
+    expect(trial.match(/'sha256-/g)).toHaveLength(2);
+    expect(trial).not.toContain("'unsafe-inline'");
+    expect(trial).toContain("'report-sample'");
+    expect(trial).toContain("report-uri /api/csp-report?trial=inline");
+    const api = await fetch(`${ctx.base}/api/csp-report`, { method: "POST" });
+    expect(api.headers.get("content-security-policy-report-only")).toBeNull();
+  });
+
+  it("logs only inline script from the trial, one line per script, with its sample", async () => {
+    ctx = await boot();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const post = (body) =>
+      fetch(`${ctx.base}/api/csp-report?trial=inline`, {
+        method: "POST",
+        headers: { "Content-Type": "application/csp-report" },
+        body: JSON.stringify({ "csp-report": { "document-uri": "https://www.foundrypadel.com/the-sport", ...body } }),
+      });
+    const inline = (sample) => ({ "effective-directive": "script-src-elem", "blocked-uri": "inline", "source-file": "https://fast.wistia.com/player.js", "script-sample": sample });
+    expect((await post(inline("window.a=1"))).status).toBe(204);
+    await post(inline("window.a=1"));
+    await post(inline("window.b=2"));
+    // The enforced policy already reports this one.
+    await post({ "effective-directive": "script-src-elem", "blocked-uri": "https://evil.example/x.js" });
+    expect(warn.mock.calls.map((c) => c[0]).filter((l) => String(l).startsWith("[csp"))).toEqual([
+      '[csp-trial] would block script-src-elem: inline on /the-sport from https://fast.wistia.com/player.js sample "window.a=1"',
+      '[csp-trial] would block script-src-elem: inline on /the-sport from https://fast.wistia.com/player.js sample "window.b=2"',
+    ]);
+    warn.mockRestore();
   });
 
   it("logs a CSP report once, in either format, and answers 204", async () => {

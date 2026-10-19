@@ -15,7 +15,7 @@ import { createJuniorsRouter } from "./server/juniors.js";
 import { createLeagueRouter } from "./server/league.js";
 import { formatUsd, ratesOn } from "./shared/rates.js";
 import { rateLimit } from "./server/abuse.js";
-import { CSP, cspReportHandler, wantsCsp } from "./server/csp.js";
+import { CSP, cspReportHandler, inlineScriptHashes, inlineTrialCsp, wantsCsp } from "./server/csp.js";
 import { upsertProfile } from "./server/klaviyoProfile.js";
 import { TURNSTILE_PATHS, turnstileCheck } from "./server/turnstile.js";
 import { createBlandAutoSync } from "./server/blandAutoSync.js";
@@ -27,6 +27,8 @@ const dist = process.env.SITE_DIST
   ? path.resolve(process.env.SITE_DIST)
   : path.join(__dirname, "dist");
 const indexHtml = path.join(dist, "index.html");
+// The report-only trial of a script-src without 'unsafe-inline' (server/csp.js).
+const CSP_INLINE_TRIAL = inlineTrialCsp(inlineScriptHashes(dist));
 
 // Every call this server makes to someone else's API gives up after this long. Node's
 // fetch has no timeout of its own, so one hung upstream (Playtomic, padelmaps.org) used to
@@ -53,6 +55,7 @@ app.use((req, res, next) => {
     csp.push("frame-ancestors 'self'");
   }
   if (csp.length) res.setHeader("Content-Security-Policy", csp.join("; "));
+  if (wantsCsp(req.path)) res.setHeader("Content-Security-Policy-Report-Only", CSP_INLINE_TRIAL);
   if (req.headers["x-forwarded-proto"] === "https") {
     res.setHeader("Strict-Transport-Security", "max-age=31536000");
   }
