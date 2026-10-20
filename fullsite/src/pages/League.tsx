@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Head } from "vite-react-ssg";
 import { Check, ExternalLink, MapPin, Phone } from "lucide-react";
 import PayLinkForm from "@/components/PayLinkForm";
+import { LeagueTeams } from "@/components/WhosIn";
 import Photo from "@/components/Photo";
 import Seo from "@/components/Seo";
 import SmsConsentCheckbox from "@/components/SmsConsentCheckbox";
@@ -383,6 +384,10 @@ const League = () => {
           </Reveal>
         </div>
       </section>
+
+      {/* Teams so far: every signed-up team by league and level, and who is looking for a
+          partner. Hidden while Kumi has no list. */}
+      {!isOver && <LeagueTeams closesLabel={LEAGUE_CLOSES_LABEL} closed={isClosed} />}
 
       {/* Table */}
       <section id="table" className="scroll-mt-24 px-6 pb-20">

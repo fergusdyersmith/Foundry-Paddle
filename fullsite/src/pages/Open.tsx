@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Head } from "vite-react-ssg";
 import { Check, ExternalLink, MapPin, Phone, Radio } from "lucide-react";
 import PayLinkForm from "@/components/PayLinkForm";
+import { OpenWhosIn } from "@/components/WhosIn";
 import Photo from "@/components/Photo";
 import Seo from "@/components/Seo";
 import Reveal from "@/components/motion/Reveal";
@@ -386,6 +387,11 @@ const Open = () => {
           </Reveal>
         </div>
       </section>
+
+      {/* Who's in so far: paid entries by level, and who is looking for a partner. Above the
+          draws, which stay for the brackets once registration closes. Hidden once the draws
+          are out and while Kumi has no list. */}
+      {!brackets && !isOver && <OpenWhosIn />}
 
       {/* Brackets and stream */}
       <section id="brackets" className="scroll-mt-24 px-6 pb-20">

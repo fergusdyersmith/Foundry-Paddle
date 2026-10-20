@@ -13,6 +13,7 @@ import { createTransferRouter } from "./server/transfer.js";
 import { createOpenRouter } from "./server/open.js";
 import { createJuniorsRouter } from "./server/juniors.js";
 import { createLeagueRouter } from "./server/league.js";
+import { createEntriesRouter } from "./server/entries.js";
 import { formatUsd, ratesOn } from "./shared/rates.js";
 import { rateLimit } from "./server/abuse.js";
 import { CSP, cspReportHandler, inlineScriptHashes, inlineTrialCsp, wantsCsp } from "./server/csp.js";
@@ -1807,6 +1808,10 @@ app.use(
     listId: KLAVIYO_INTEREST_LIST_ID,
   }),
 );
+
+// Who is in: the Open's paid entries and the league's teams, built by Kumi (it can see the
+// Playtomic payments and both signup sheets) and proxied here; see server/entries.js.
+app.use(createEntriesRouter());
 
 // One observation buffer, served by /api/voice/_recent and written by both the
 // AI tool endpoints and the ring group. Checking "did that call work" should
