@@ -80,7 +80,7 @@ export function OpenWhosIn({ url = "/api/open/entries" }: { url?: string }) {
             <div key={l.key} className="border border-border bg-secondary p-6">
               <div className="flex items-baseline justify-between gap-4">
                 <h3 className="font-display text-3xl text-foreground">{l.label.toUpperCase()}</h3>
-                <span className="font-body text-xs tracking-[0.2em] uppercase text-primary">{l.count} in</span>
+                <span className="shrink-0 whitespace-nowrap font-body text-xs tracking-[0.2em] uppercase text-primary">{l.count} in</span>
               </div>
               {l.pairs.length > 0 && (
                 <div className="mt-5">
