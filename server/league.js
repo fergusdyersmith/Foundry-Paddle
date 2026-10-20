@@ -23,6 +23,9 @@ import { z } from "zod";
 import { escapeSlack, normalizePhone, sanitize } from "./notify.js";
 import { rateLimit, sheetCell } from "./abuse.js";
 import { upsertProfile } from "./klaviyoProfile.js";
+// The "Signed up but need to pay?" form is the same on both pages: optional name, email and
+// partner, and a Slack line so the club can match the payment.
+import { buildPayLinkSlackText, payLinkSchema } from "./open.js";
 
 export const LEVELS = ["beginner", "intermediate", "advanced"];
 /** Men's and women's, no mixed (Ryan, 14 Oct): the results decide the NPL pairings. */
@@ -423,13 +426,15 @@ export function createLeagueRouter({
   // A payment link for one player, fresh from Kumi; the shared link (or nothing) when
   // Kumi cannot be asked. A failure here never fails the signup: the email then says the
   // link follows, and the Slack line tells the desk who to chase.
+  // No email is fine (20 Oct): the pay-link form asks for nothing, and Kumi then makes a
+  // link with no email filled in, carrying the name when there is one.
   async function payLinkFor(email, name) {
-    if (!payLinkUrl || !mailSecret || !email) return payUrl;
+    if (!payLinkUrl || !mailSecret) return payUrl;
     try {
       const res = await fetchImpl(payLinkUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-League-Secret": mailSecret },
-        body: JSON.stringify({ email, name: name || null }),
+        body: JSON.stringify({ email: email || null, name: name || null }),
       });
       const json = await res.json().catch(() => ({}));
       if (res.ok && typeof json.url === "string" && json.url.startsWith("https://")) return json.url;
@@ -644,6 +649,33 @@ export function createLeagueRouter({
         .catch((e) => console.error("[league] confirm slack failed:", e?.message || e));
     }
     return res.json({ ok: true, action: ok.action, row: json.row, already: Boolean(json.already) });
+  });
+
+  // "Signed up but need to pay?" (Kelly, 20 Oct): a player's own link when their partner
+  // signed them both up, or they signed up and never paid. On 20 Oct two players in seven
+  // teams had no way to pay: their partner had left their email blank, so no link was
+  // ever made for them. Everything is optional; a name or email goes to Kumi (the name
+  // rides on the Square payment, which is how the payment finds its row) and to Slack.
+  // Open after signups close, because paying late is still paying.
+  const payLinkLimit = rateLimit({ name: "league-pay-link", max: 6, windowMs: 10 * 60 * 1000 });
+  router.post("/api/league/pay-link", async (req, res) => {
+    const parsed = payLinkSchema.safeParse(req.body || {});
+    if (!parsed.success) {
+      return res.status(400).json({ error: "That email does not look right. Leave it blank if you like." });
+    }
+    if (payLinkLimit(req, res)) return;
+    const r = {
+      name: sanitize(parsed.data.name || "", 80),
+      email: sanitize(parsed.data.email || "", 255),
+      partner: sanitize(parsed.data.partner || "", 80),
+    };
+    const link = await payLinkFor(r.email || null, r.name || null);
+    try {
+      await postSlack(buildPayLinkSlackText(r, "League") + (link ? "" : "\nNo pay link could be made, so the page asked them to email portland@foundrypadel.com."));
+    } catch (e) {
+      console.error("[league] pay-link Slack post failed:", e?.message || e);
+    }
+    return res.json({ ok: true, payUrl: link || null, each: priceTeam / 2 });
   });
 
   return router;

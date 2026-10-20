@@ -74,6 +74,29 @@ export const registrationSchema = z.object({
   website: z.string().max(0).optional(),
 });
 
+// "Signed up but need to pay?" (Kelly, 20 Oct): the Playtomic link for someone who is
+// already on the list, most often a partner a registered player named who never filled
+// the form in (on 20 Oct three of them, plus two who filled it in and never paid). Every
+// field is optional, because the link is the point: "if someone just wants to get the
+// playtomic link, then we should let them get it and pay." A name or email only helps
+// the club match the payment, so it goes to Slack and nowhere else. No sheet row: the
+// paid sync already gives anyone who pays without the form a row of their own, and a
+// row from here would read as a second registration.
+export const payLinkSchema = z.object({
+  name: opt(z.string().trim().max(80)),
+  email: opt(z.string().trim().email().max(255)),
+  // Whose partner they are, or the team they are with.
+  partner: opt(z.string().trim().max(80)),
+  website: z.string().max(0).optional(),
+});
+
+export function buildPayLinkSlackText(r, label = "Open") {
+  const who = [r.name, r.email].filter(Boolean).map(escapeSlack).join("  ·  ");
+  const bits = [who || "(no name or email given)"];
+  if (r.partner) bits.push(`partner of ${escapeSlack(r.partner)}`);
+  return `*Pay link only (${label})*  ${bits.join("  ·  ")}`;
+}
+
 export function buildSlackText(r, tier) {
   const who = [r.name, r.playtomicEmail || r.email, r.phone].filter(Boolean).map(escapeSlack).join("  ·  ");
   const bits = [
@@ -309,6 +332,32 @@ export function createOpenRouter({
       price: tier.price,
       pay: tier.price,
     });
+  });
+
+  // The link for someone already on the list (see payLinkSchema). Answered even when
+  // Slack is down: a payment matters more than knowing in advance who is making it.
+  const payLinkLimit = rateLimit({ name: "open-pay-link", max: 6, windowMs: 10 * 60 * 1000 });
+  router.post("/api/open/pay-link", async (req, res) => {
+    const parsed = payLinkSchema.safeParse(req.body || {});
+    if (!parsed.success) {
+      return res.status(400).json({ error: "That email does not look right. Leave it blank if you like." });
+    }
+    if (payLinkLimit(req, res)) return;
+    const tier = currentTier(tiers, todayInClub(now()), closes);
+    if (tier.closed) {
+      return res.status(410).json({ error: "Registration has closed. Call the club if you think there is still a place." });
+    }
+    const r = {
+      name: sanitize(parsed.data.name || "", 80),
+      email: sanitize(parsed.data.email || "", 255),
+      partner: sanitize(parsed.data.partner || "", 80),
+    };
+    try {
+      await postSlack(buildPayLinkSlackText(r));
+    } catch (e) {
+      console.error("[open] pay-link Slack post failed:", e?.message || e);
+    }
+    return res.json({ ok: true, bookUrl, price: tier.price });
   });
 
   return router;

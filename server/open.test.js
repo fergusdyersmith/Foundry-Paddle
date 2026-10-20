@@ -214,3 +214,49 @@ describe("registering again", () => {
     expect(slack[1]).not.toContain("<!channel>"); expect(slack[1]).toContain("&lt;!channel&gt;");
   });
 });
+
+describe("POST /api/open/pay-link", () => {
+  const slackTo = (slack) => async (url, init) => { slack.push(JSON.parse(init.body)); return { json: async () => ({ ok: true }) }; };
+
+  it("hands over the Playtomic link with nothing filled in, and says so on Slack", async () => {
+    const slack = [];
+    const a = app({ slackToken: "x", channel: "#t", bookUrl: "https://app.playtomic.com/tournaments/abc", fetchImpl: slackTo(slack),
+      now: () => new Date("2026-10-20T12:00:00-07:00") });
+    const r = await call(a, "POST", "/api/open/pay-link", {});
+    expect(r.status).toBe(200);
+    expect(r.json).toEqual({ ok: true, bookUrl: "https://app.playtomic.com/tournaments/abc", price: 75 });
+    expect(slack).toHaveLength(1); expect(slack[0].channel).toBe("#t");
+    expect(slack[0].text).toBe("*Pay link only (Open)*  (no name or email given)");
+  });
+
+  it("puts the name, email and partner in the Slack line, escaped, and writes no sheet row", async () => {
+    const posts = [];
+    const a = app({ slackToken: "x", bookUrl: "u", sheetUrl: "https://script.google.com/macros/s/X/exec", sheetSecret: "s",
+      fetchImpl: async (url, init) => { posts.push([url, JSON.parse(init.body)]); return { ok: true, status: 200, json: async () => ({ ok: true }) }; },
+      now: () => new Date("2026-10-20T12:00:00-07:00") });
+    const r = await call(a, "POST", "/api/open/pay-link", { name: "Tariq <Eltayeb>", email: "t@example.com", partner: "<!channel>" });
+    expect(r.json.bookUrl).toBe("u");
+    expect(posts).toHaveLength(1); expect(posts[0][0]).toBe("https://slack.com/api/chat.postMessage");
+    expect(posts[0][1].text).toBe("*Pay link only (Open)*  Tariq &lt;Eltayeb&gt;  ·  t@example.com  ·  partner of &lt;!channel&gt;");
+  });
+
+  it("still hands over the link when Slack is down", async () => {
+    const a = app({ slackToken: "x", bookUrl: "u", fetchImpl: async () => { throw new Error("boom"); },
+      now: () => new Date("2026-10-20T12:00:00-07:00") });
+    const r = await call(a, "POST", "/api/open/pay-link", { name: "Sam" });
+    expect(r.status).toBe(200); expect(r.json.bookUrl).toBe("u");
+  });
+
+  it("answers bookUrl null before the Playtomic event exists", async () => {
+    const a = app({ slackToken: null, bookUrl: null, now: () => new Date("2026-10-20T12:00:00-07:00") });
+    expect((await call(a, "POST", "/api/open/pay-link", {})).json).toMatchObject({ ok: true, bookUrl: null });
+  });
+
+  it("refuses the honeypot, a bad email, and anything after the close", async () => {
+    const mk = (d) => app({ slackToken: null, bookUrl: "u", now: () => new Date(d) });
+    expect((await call(mk("2026-10-20T12:00:00-07:00"), "POST", "/api/open/pay-link", { website: "spam" })).status).toBe(400);
+    expect((await call(mk("2026-10-20T12:00:00-07:00"), "POST", "/api/open/pay-link", { email: "not-an-email" })).status).toBe(400);
+    const late = await call(mk("2026-11-28T09:00:00-08:00"), "POST", "/api/open/pay-link", {});
+    expect(late.status).toBe(410); expect(late.json.bookUrl).toBeUndefined();
+  });
+});

@@ -316,3 +316,58 @@ describe("POST /api/league/score", () => {
     expect(teamDisplayName({ team: "", p1: "Solo", p2: "" })).toBe("Solo");
   });
 });
+
+describe("POST /api/league/pay-link", () => {
+  const kumi = (asked, slack, { fail = false } = {}) => async (url, init) => {
+    if (url === "https://kumi/league-pay-link") {
+      asked.push(JSON.parse(init.body));
+      return fail ? { ok: false, status: 502, json: async () => ({ detail: "Square refused" }) }
+        : { ok: true, status: 200, json: async () => ({ ok: true, url: "https://square.link/u/own", id: "L" }) };
+    }
+    if (url === "https://slack.com/api/chat.postMessage") { slack.push(JSON.parse(init.body)); return { json: async () => ({ ok: true }) }; }
+    return { ok: true, status: 200, json: async () => ({ ok: true }) };
+  };
+  const base = { slackToken: "x", channel: "#league", klaviyo: null, payUrl: null, mailUrl: "https://kumi/league-mail", mailSecret: "m41l" };
+
+  it("mints a link with nothing filled in, asking Kumi with no email and no name", async () => {
+    const asked = []; const slack = [];
+    const r = await call(app({ ...base, fetchImpl: kumi(asked, slack) }), "POST", "/api/league/pay-link", {});
+    expect(r.status).toBe(200);
+    expect(r.json).toEqual({ ok: true, payUrl: "https://square.link/u/own", each: 35 });
+    expect(asked).toEqual([{ email: null, name: null }]);
+    expect(slack[0].channel).toBe("#league"); expect(slack[0].text).toBe("*Pay link only (League)*  (no name or email given)");
+  });
+
+  it("a name alone still reaches Kumi, with email null, and the name and partner go on Slack escaped", async () => {
+    const asked = []; const slack = [];
+    const r = await call(app({ ...base, fetchImpl: kumi(asked, slack) }), "POST", "/api/league/pay-link", { name: "Tariq Eltayeb", partner: "Alois <D>" });
+    expect(r.json.payUrl).toBe("https://square.link/u/own");
+    expect(asked).toEqual([{ email: null, name: "Tariq Eltayeb" }]);
+    expect(slack[0].text).toBe("*Pay link only (League)*  Tariq Eltayeb  ·  partner of Alois &lt;D&gt;");
+  });
+
+  it("passes the email through, and works after signups close", async () => {
+    const asked = []; const slack = [];
+    const a = app({ ...base, fetchImpl: kumi(asked, slack), now: () => new Date("2026-11-03T12:00:00-08:00") });
+    const r = await call(a, "POST", "/api/league/pay-link", { name: "Luz Leiton", email: "luz@example.com" });
+    expect(r.status).toBe(200); expect(asked).toEqual([{ email: "luz@example.com", name: "Luz Leiton" }]);
+  });
+
+  it("answers null when no link can be made, and Slack says so; a Slack failure never stops a link", async () => {
+    const asked = []; const slack = [];
+    const none = await call(app({ ...base, fetchImpl: kumi(asked, slack, { fail: true }) }), "POST", "/api/league/pay-link", { name: "Dwight" });
+    expect(none.status).toBe(200); expect(none.json.payUrl).toBe(null);
+    expect(slack[0].text).toContain("No pay link could be made");
+    const down = await call(app({ ...base, fetchImpl: async (url, init) => {
+      if (url === "https://kumi/league-pay-link") return { ok: true, status: 200, json: async () => ({ url: "https://square.link/u/x" }) };
+      throw new Error("slack down");
+    } }), "POST", "/api/league/pay-link", {});
+    expect(down.status).toBe(200); expect(down.json.payUrl).toBe("https://square.link/u/x");
+  });
+
+  it("refuses the honeypot and a bad email", async () => {
+    const a = app({ ...base, fetchImpl: kumi([], []) });
+    expect((await call(a, "POST", "/api/league/pay-link", { website: "spam" })).status).toBe(400);
+    expect((await call(a, "POST", "/api/league/pay-link", { email: "nope" })).status).toBe(400);
+  });
+});

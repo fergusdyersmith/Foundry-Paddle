@@ -52,13 +52,17 @@ export function turnstileCheck({
   return verifyHuman;
 }
 
-/** The forms it guards: each one subscribes someone, or emails someone, or both. */
+/** The forms it guards: each one subscribes someone, or emails someone, or both. The two
+ *  pay-link forms post to the club's Slack, and the league one has Kumi make a Square
+ *  link, so a script must not be able to run them in a loop either (20 Oct). */
 export const TURNSTILE_PATHS = [
   "/api/register-interest",
   "/api/juniors/register",
   "/api/juniors/notify",
   "/api/juniors/waiver",
   "/api/open/register",
+  "/api/open/pay-link",
   "/api/league/register",
+  "/api/league/pay-link",
   "/api/league/score",
 ];

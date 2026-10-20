@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Head } from "vite-react-ssg";
 import { Check, ExternalLink, MapPin, Phone, Radio } from "lucide-react";
+import PayLinkForm from "@/components/PayLinkForm";
 import Photo from "@/components/Photo";
 import Seo from "@/components/Seo";
 import Reveal from "@/components/motion/Reveal";
@@ -311,6 +312,20 @@ const Open = () => {
                 Questions? Email <a href={`mailto:${OPEN_EMAIL}`} className="whitespace-nowrap text-primary hover:underline">{OPEN_EMAIL}</a> or call <a href={`tel:${PHONE_TEL}`} className="whitespace-nowrap text-primary hover:underline">{PHONE_DISPLAY}</a>.
               </p>
             </form>
+          )}
+
+          {/* For a partner someone else named, or anyone who filled the form in and never paid. */}
+          {!isOver && !isClosed && (
+            <PayLinkForm
+              idPrefix="op"
+              endpoint="/api/open/pay-link"
+              linkKey="bookUrl"
+              intro="Already filled in the form, or your partner signed you up? Get the Playtomic link here. Your name or email helps us match your payment, but you can leave them blank."
+              payLabel="PAY ON PLAYTOMIC"
+              payNote={`Your entry is $${price}. You are in once you have paid on Playtomic. No Playtomic account yet? Make a free one in the app first.`}
+              noLink="Payment on Playtomic is not open yet."
+              email={OPEN_EMAIL}
+            />
           )}
         </div>
       </section>

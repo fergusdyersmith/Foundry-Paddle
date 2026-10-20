@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { Head } from "vite-react-ssg";
 import { Check, ExternalLink, MapPin, Phone } from "lucide-react";
+import PayLinkForm from "@/components/PayLinkForm";
 import Photo from "@/components/Photo";
 import Seo from "@/components/Seo";
 import SmsConsentCheckbox from "@/components/SmsConsentCheckbox";
@@ -306,6 +307,21 @@ const League = () => {
                 Questions? Email <a href={`mailto:${LEAGUE_EMAIL}`} className="whitespace-nowrap text-primary hover:underline">{LEAGUE_EMAIL}</a> or call <a href={`tel:${PHONE_TEL}`} className="whitespace-nowrap text-primary hover:underline">{PHONE_DISPLAY}</a>.
               </p>
             </form>
+          )}
+
+          {/* For a partner signed up by someone else, or a player who never paid. Stays up
+              after signups close: paying late is still paying. */}
+          {!isOver && (
+            <PayLinkForm
+              idPrefix="lp"
+              endpoint="/api/league/pay-link"
+              linkKey="payUrl"
+              intro={`Your partner signed you both up, or you signed up and haven't paid yet? Get your own $${LEAGUE_PRICE_PLAYER} payment link here. Your name or email helps us match your payment, but you can leave them blank.`}
+              payLabel={`PAY YOUR $${LEAGUE_PRICE_PLAYER}`}
+              payNote="One payment per player, once for the season. Your partner pays their own."
+              noLink="We could not make your payment link just now."
+              email={LEAGUE_EMAIL}
+            />
           )}
         </div>
       </section>
