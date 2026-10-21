@@ -49,6 +49,17 @@ export const OPEN_SUPPLIERS = [
   { role: "Balls by", name: "Wilson", src: null },
 ] as const;
 
+/** Signed sponsors with a logo on file, in the order they appear on the page. Two Stroke
+ *  Coffee joins once their logo arrives (Kelly, 21 Oct). Role text is what they bought. */
+export const OPEN_SPONSORS = [
+  { role: "Sleeve sponsor", name: "St. Johns Physical Therapy", src: "/open-sponsors/st-johns-physical-therapy.png", url: "https://stjohnsphysicaltherapy.com/" },
+  { role: "Jersey sponsor", name: "Portland Rock Gym", src: "/open-sponsors/portland-rock-gym.png", url: "https://portlandrockgym.com/" },
+  { role: "Jersey sponsor", name: "StormBreaker Brewing", src: "/open-sponsors/stormbreaker-brewing.png", url: "https://www.stormbreakerbrewing.com/" },
+  { role: "Welcome bag partner", name: "Burgerville", src: "/open-sponsors/burgerville.png", url: "https://www.burgerville.com/" },
+] as const;
+/** The one-page sponsor sheet, kept in public/open-data beside the brackets feed. */
+export const OPEN_SPONSOR_SHEET_URL = "/open-data/sponsor-sheet.pdf";
+
 export type OpenLevel = { key: "beginner" | "intermediate" | "advanced"; label: string; rating: string; blurb: string };
 export const OPEN_LEVELS: OpenLevel[] = [
   { key: "beginner", label: "Beginner", rating: "0 to 1.75", blurb: "New to padel, or still learning the walls. Rallies over results." },

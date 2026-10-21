@@ -24,6 +24,8 @@ import {
   OPEN_NAME,
   OPEN_PRIZE_POOL,
   OPEN_SCHEDULE,
+  OPEN_SPONSORS,
+  OPEN_SPONSOR_SHEET_URL,
   OPEN_SUPPLIERS,
   OPEN_STREAM_LABEL,
   OPEN_STREAM_URL,
@@ -369,6 +371,27 @@ const Open = () => {
               <p className="mt-4 font-body text-xs tracking-[0.1em] uppercase text-muted-foreground">Beer and wine for ages 21 and over</p>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Sponsors: the businesses on the jerseys and in the welcome bags */}
+      <section className="px-6 pb-8">
+        <div className="mx-auto max-w-5xl">
+          <div className="section-divider mb-16" />
+          <h2 className={sectionHeading}>BACKING THE OPEN</h2>
+          <div className="mt-8 flex flex-wrap items-end gap-x-12 gap-y-8">
+            {OPEN_SPONSORS.map((s) => (
+              <a key={s.name} href={s.url} target="_blank" rel="noopener noreferrer" className="flex flex-col gap-3 transition-opacity hover:opacity-80">
+                <span className="font-body text-[10px] tracking-[0.2em] uppercase text-muted-foreground">{s.role}</span>
+                <img src={s.src} alt={s.name} className="h-16 w-auto sm:h-20" loading="lazy" />
+              </a>
+            ))}
+          </div>
+          <p className="mt-8 font-body text-sm leading-relaxed text-secondary-foreground">
+            Your logo on 100 jerseys, the event page and the live stream, from $350. See the{" "}
+            <a href={OPEN_SPONSOR_SHEET_URL} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">sponsor sheet</a>
+            {" "}or email <a href={`mailto:${OPEN_EMAIL}`} className="whitespace-nowrap text-primary hover:underline">{OPEN_EMAIL}</a>.
+          </p>
         </div>
       </section>
 
