@@ -49,12 +49,13 @@ export const OPEN_SUPPLIERS = [
   { role: "Balls by", name: "Wilson", src: null },
 ] as const;
 
-/** Signed sponsors with a logo on file, in the order they appear on the page. Two Stroke
- *  Coffee joins once their logo arrives (Kelly, 21 Oct). Role text is what they bought. */
+/** Signed sponsors with a logo on file, in the order they appear on the page (Kelly, 21 Oct).
+ *  Role text is what they bought. */
 export const OPEN_SPONSORS = [
   { role: "Sleeve sponsor", name: "St. Johns Physical Therapy", src: "/open-sponsors/st-johns-physical-therapy.png", url: "https://stjohnsphysicaltherapy.com/" },
   { role: "Jersey sponsor", name: "Portland Rock Gym", src: "/open-sponsors/portland-rock-gym.png", url: "https://portlandrockgym.com/" },
   { role: "Jersey sponsor", name: "StormBreaker Brewing", src: "/open-sponsors/stormbreaker-brewing.png", url: "https://www.stormbreakerbrewing.com/" },
+  { role: "Jersey sponsor", name: "Two Stroke Coffee Co.", src: "/open-sponsors/two-stroke-coffee.png", url: "https://www.twostrokecoffeeco.com/" },
   { role: "Welcome bag partner", name: "Burgerville", src: "/open-sponsors/burgerville.png", url: "https://www.burgerville.com/" },
 ] as const;
 /** The one-page sponsor sheet, kept in public/open-data beside the brackets feed. */
