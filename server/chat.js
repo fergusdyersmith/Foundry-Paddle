@@ -89,8 +89,8 @@ const LIMITS = {
   // Room for every public fact, whole. At 60 the bot kept the first 60 of 72 it was sent,
   // and they came oldest first: the dozen newest (Book Early, the League, the prize rule)
   // never reached it, and 13 more were cut mid-sentence at 700 characters (2026-10-14).
-  // Kumi now sends newest first; ~80 facts is about 10k input tokens, about a cent a turn on
-  // Haiku 5.5, well inside the daily cap below.
+  // Kumi now sends newest first; ~80 facts is about 10k input tokens, about a tenth of a cent a
+  // turn on Haiku 5.5, well inside the daily cap below.
   kbEntries: 160,
   kbAnswerChars: 1700,
   // The model's own thinking counts against this, so it is more generous than a bare reply.
