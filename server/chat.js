@@ -9,6 +9,9 @@
  *     a human ticked `public` in the admin panel;
  *   - the only thing it can write to Kumi is one append-only chat-log row behind a shared
  *     secret, and there is no read path for it;
+ *   - the only other thing it reaches is the chat-reply relay on padelmaps.org (one POST
+ *     per visitor question, behind a shared secret). The relay has no tools either: it can
+ *     return a capped, tool-less chat completion and nothing else;
  *   - the model has NO tools. It can emit text and nothing else. A successful prompt
  *     injection therefore buys an attacker a rude sentence, not an action.
  *
@@ -29,12 +32,18 @@ import { SITEMAP_ROUTES, UNLISTED_ROUTES } from "../shared/siteRoutes.js";
 // this process; nothing here is interpolated from a request.
 // ---------------------------------------------------------------------------------------
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY?.trim();
-// Deliberately an OpenAI model, not Claude: the club's matchmaking assistant is Claude, and
-// keeping the public bot on a different vendor means a bad day for one is not a bad day for
-// both. luna is the cheap tier ($0.20/M in, $1.20/M out) which is the right size for FAQs.
-const MODEL = process.env.OPENAI_CHAT_MODEL?.trim() || "gpt-5.6-luna";
-const OPENAI_URL = "https://api.openai.com/v1/responses";
+// No AI provider key lives on Railway. After the 2026-10-21 Railway env-var breach (customer
+// environment variables were read) the model call moved behind padelmaps.org: the model
+// (Claude Haiku 5.5) runs there on Foundry's own Anthropic key, and this server reaches it
+// with a shared secret that can only buy a capped, tool-less chat completion. A stolen
+// secret therefore costs a few dollars of FAQ answers, not a provider account.
+// Honest trade-off: this gives up the old vendor split (the public bot used to be OpenAI so
+// a bad day for one vendor was not a bad day for both). A bad day for Anthropic is now a
+// bad day for both Kumi and the website bot.
+const KUMI_CHAT_REPLY_URL =
+  process.env.KUMI_CHAT_REPLY_URL || "https://padelmaps.org/api/web-chat-reply";
+const WEB_CHAT_REPLY_SECRET = process.env.WEB_CHAT_REPLY_SECRET?.trim();
+const DEFAULT_MODEL = "claude-haiku-5-5";
 
 const KUMI_PUBLIC_KB_URL =
   process.env.KUMI_PUBLIC_KB_URL ||
@@ -80,21 +89,24 @@ const LIMITS = {
   // Room for every public fact, whole. At 60 the bot kept the first 60 of 72 it was sent,
   // and they came oldest first: the dozen newest (Book Early, the League, the prize rule)
   // never reached it, and 13 more were cut mid-sentence at 700 characters (2026-10-14).
-  // Kumi now sends newest first; ~80 facts is about 10k input tokens, $0.002 a turn on
-  // luna, well inside the daily cap below.
+  // Kumi now sends newest first; ~80 facts is about 10k input tokens, about a cent a turn on
+  // Haiku 5.5, well inside the daily cap below.
   kbEntries: 160,
   kbAnswerChars: 1700,
-  replyTokens: 700,
+  // The model's own thinking counts against this, so it is more generous than a bare reply.
+  replyTokens: 1000,
   perIpPer10Min: 12,
   perIpPerDay: 60,
   perConversationPerHour: 30,
-  openaiTimeoutMs: 25_000,
+  relayTimeoutMs: 25_000,
 };
 
 // Hard daily ceiling in dollars. Not a soft warning: past this the endpoint stops calling
-// OpenAI until UTC midnight. A runaway loop or a bored stranger costs a few dollars, once.
+// the relay until UTC midnight. A runaway loop or a bored stranger costs a few dollars, once.
 const DAILY_USD_CAP = Number(process.env.CHAT_DAILY_USD_CAP || 3);
-const PRICE_PER_M = { input: 0.2, output: 1.2 }; // gpt-5.6-luna
+// Fallback only: the relay returns cost_usd, which is what we record. These are Claude
+// Haiku 5.5 prices in dollars per million tokens, used if cost_usd is ever missing.
+const PRICE_PER_M = { input: 0.1, output: 0.5 };
 
 // ---------------------------------------------------------------------------------------
 // Rate limiting and the spend ceiling. In-memory on purpose: one Railway instance, and a
@@ -131,11 +143,15 @@ function budgetExhausted() {
   return spend.usd >= DAILY_USD_CAP;
 }
 
-function recordSpend(usage) {
+function recordSpend(payload) {
   if (spend.day !== today()) spend = { day: today(), usd: 0, requests: 0 };
+  const usage = payload?.usage;
+  const reported = Number(payload?.cost_usd);
   const cost =
-    ((usage?.input_tokens || 0) / 1e6) * PRICE_PER_M.input +
-    ((usage?.output_tokens || 0) / 1e6) * PRICE_PER_M.output;
+    Number.isFinite(reported) && reported >= 0
+      ? reported
+      : ((usage?.input_tokens || 0) / 1e6) * PRICE_PER_M.input +
+        ((usage?.output_tokens || 0) / 1e6) * PRICE_PER_M.output;
   spend.usd += cost;
   spend.requests += 1;
   if (spend.usd >= DAILY_USD_CAP) {
@@ -429,7 +445,7 @@ function cleanReply(text) {
 // Logging back to Kumi. Fire and forget, and it must never be able to break a reply.
 // ---------------------------------------------------------------------------------------
 
-function logTurn({ conversationId, role, content, unanswered }) {
+function logTurn({ conversationId, role, content, unanswered, model }) {
   if (!WEB_CHAT_LOG_SECRET) return Promise.resolve(); // logging is optional
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), 5000);
@@ -444,7 +460,7 @@ function logTurn({ conversationId, role, content, unanswered }) {
       role,
       content,
       unanswered: !!unanswered,
-      model: role === "assistant" ? MODEL : undefined,
+      model: role === "assistant" ? model || DEFAULT_MODEL : undefined,
     }),
     signal: ctrl.signal,
   })
@@ -482,16 +498,12 @@ function clientKey(req) {
   return clientIp(req);
 }
 
-function extractText(payload) {
-  // The raw Responses API has no output_text convenience field (that is an SDK nicety), and
-  // the first output item is a reasoning block, so walk to the message.
-  const parts = [];
-  for (const item of payload?.output || []) {
-    if (item?.type !== "message") continue;
-    for (const c of item.content || []) if (typeof c?.text === "string") parts.push(c.text);
-  }
-  return parts.join("\n").trim();
+function replyText(payload) {
+  // The relay returns the finished text as one string (empty when the model said nothing).
+  return typeof payload?.text === "string" ? payload.text.trim() : "";
 }
+
+const REFUSAL_REPLY = "That is not something I can help with here. Ask me anything about Foundry Padel.";
 
 export function createChatRouter({ getClasses, getEvents }) {
   const router = express.Router();
@@ -499,7 +511,7 @@ export function createChatRouter({ getClasses, getEvents }) {
   // Lets the widget stay hidden entirely when the bot is not configured, instead of
   // appearing and then erroring at the visitor.
   router.get("/api/chat/status", async (req, res) => {
-    if (!OPENAI_API_KEY || budgetExhausted()) return res.json({ enabled: false });
+    if (!WEB_CHAT_REPLY_SECRET || budgetExhausted()) return res.json({ enabled: false });
     // No published facts means every answer would be "I'm not sure, try /contact", which is
     // a worse first impression than no chat button at all. This also makes the deploy order
     // self-correcting: the bubble appears when someone publishes knowledge, not when the
@@ -509,8 +521,8 @@ export function createChatRouter({ getClasses, getEvents }) {
   });
 
   router.post("/api/chat", async (req, res) => {
-    if (!OPENAI_API_KEY) {
-      console.error("[chat] OPENAI_API_KEY is not set");
+    if (!WEB_CHAT_REPLY_SECRET) {
+      console.error("[chat] WEB_CHAT_REPLY_SECRET is not set");
       return res.status(503).json({ error: "Chat is not available right now." });
     }
     if (!sameOriginish(req)) {
@@ -578,47 +590,50 @@ export function createChatRouter({ getClasses, getEvents }) {
     });
 
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), LIMITS.openaiTimeoutMs);
+    const timer = setTimeout(() => ctrl.abort(), LIMITS.relayTimeoutMs);
     let payload;
     try {
-      const upstream = await fetch(OPENAI_URL, {
+      const upstream = await fetch(KUMI_CHAT_REPLY_URL, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${OPENAI_API_KEY}`,
           "Content-Type": "application/json",
+          "x-chat-token": WEB_CHAT_REPLY_SECRET,
         },
         body: JSON.stringify({
-          model: MODEL,
-          instructions,
-          input: [...history, { role: "user", content: message }],
-          max_output_tokens: LIMITS.replyTokens,
-          reasoning: { effort: "low" },
-          text: { verbosity: "low" },
-          // Nothing about a stranger's question needs to sit on OpenAI's side.
-          store: false,
+          slug: "foundry-padel",
+          system: instructions,
+          messages: [...history, { role: "user", content: message }],
+          max_tokens: LIMITS.replyTokens,
         }),
         signal: ctrl.signal,
       });
       if (!upstream.ok) {
         const preview = (await upstream.text().catch(() => "")).slice(0, 300);
-        console.error("[chat] OpenAI %d: %s", upstream.status, preview);
+        console.error("[chat] reply relay %d: %s", upstream.status, preview);
+        if (upstream.status === 503) {
+          return res.status(503).json({
+            error: "The chat assistant is taking a break. Please use the contact page.",
+          });
+        }
         return res.status(502).json({ error: "I could not answer that just now. Please try again." });
       }
       payload = await upstream.json();
     } catch (err) {
-      console.error("[chat] OpenAI request failed:", err.message);
+      console.error("[chat] reply relay request failed:", err.message);
       return res.status(504).json({ error: "That took too long. Please try again." });
     } finally {
       clearTimeout(timer);
     }
 
-    recordSpend(payload?.usage);
+    recordSpend(payload);
 
-    const reply = cleanReply(extractText(payload));
+    const refused = payload?.stop_reason === "refusal";
+    const reply = refused ? REFUSAL_REPLY : cleanReply(replyText(payload));
     if (!reply) {
-      console.error("[chat] empty completion (status=%s)", payload?.status);
+      console.error("[chat] empty completion (stop_reason=%s)", payload?.stop_reason);
       return res.status(502).json({ error: "I could not answer that just now. Please try again." });
     }
+    const model = typeof payload?.model === "string" && payload.model ? payload.model : DEFAULT_MODEL;
 
     const unanswered = UNANSWERED_RE.test(reply);
     // SEQUENTIAL, not two parallel fire-and-forgets. Kumi stamps created_at on arrival, so
@@ -627,7 +642,7 @@ export function createChatRouter({ getClasses, getEvents }) {
     // then showed a conversation reading backwards (seen 2026-08-12, ids 49-52). Chaining
     // costs the visitor nothing because the reply below is already on its way out.
     logTurn({ conversationId, role: "user", content: message, unanswered }).then(() =>
-      logTurn({ conversationId, role: "assistant", content: reply, unanswered }),
+      logTurn({ conversationId, role: "assistant", content: reply, unanswered, model }),
     );
 
     return res.json({ reply, unanswered });
@@ -644,7 +659,8 @@ export const __testables = {
   stripDisallowedLinks,
   systemPrompt,
   scheduleBlock,
-  extractText,
+  replyText,
+  REFUSAL_REPLY,
   sameOriginish,
   LIMITS,
   ALLOWED_LINK_HOSTS,

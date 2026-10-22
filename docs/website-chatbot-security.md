@@ -9,14 +9,15 @@ public chatbot open a hole between Kumi, PadelMaps and the Foundry Padel website
 ## The shape of it
 
 ```
-visitor ──▶ foundrypadel.com (Railway, server/chat.js) ──▶ OpenAI
+visitor ──▶ foundrypadel.com (Railway, server/chat.js)
                           │
                           ├─ GET  padelmaps.org/api/public-knowledge   (curated, read-only)
-                          └─ POST padelmaps.org/api/web-chat-log       (append-only, secret)
+                          ├─ POST padelmaps.org/api/web-chat-log       (append-only, secret)
+                          └─ POST padelmaps.org/api/web-chat-reply     (tool-less Claude Haiku 5.5 completion, secret, capped)
 ```
 
 Railway holds no database credentials, no Playtomic token, no admin session and no member
-data. The two Kumi endpoints above are the entire connection between the public bot and the
+data. The Kumi endpoints above are the entire connection between the public bot and the
 club's systems, and both are defined in one file (`app/routers/public_chat.py`) so the
 surface can be read in one sitting.
 
@@ -72,7 +73,7 @@ filtered on the way out.
 | 22 | Origin/Referer required, so a script cannot just curl it | PASS: `callers > refuses a request with no Origin and no Referer` |
 | 23 | Per-IP rate limit | PASS: 12 per 10 minutes, 60 per day |
 | 24 | Per-conversation cap that survives an IP change | PASS: 30 per hour, `caps a single conversation even if the visitor changes IP` |
-| 25 | Hard daily spend ceiling that fails closed | PASS: `$3` default; past it the endpoint stops calling OpenAI entirely and the widget hides itself |
+| 25 | Hard daily spend ceiling that fails closed | PASS: `$3` default; past it the endpoint stops calling the reply relay entirely and the widget hides itself |
 | 25b | The bot cannot go live before anyone has published a fact for it to answer from | PASS: an empty knowledge set hides the widget and refuses the endpoint (`hides the widget when nothing has been published to answer from`) |
 | 26 | Input length capped server-side | PASS: 600 characters, truncated rather than rejected |
 | 27 | Reply length capped | PASS: 700 output tokens |
@@ -96,7 +97,7 @@ filtered on the way out.
 | 35 | Conversations are not tied to a person | PASS: a random conversation id, in sessionStorage, no account |
 | 36 | Retention is bounded | PASS: 90 days, pruned opportunistically on write rather than by a cron someone forgets |
 | 37 | Visitors are told what happens to what they type | PASS: stated in the widget footer |
-| 38 | OpenAI does not retain the conversation | PASS: `store: false` on every request |
+| 38 | No AI provider key on Railway | PASS: since the 2026-10-21 Railway breach the model call runs behind padelmaps.org (Foundry's own Anthropic key); Railway holds only `WEB_CHAT_REPLY_SECRET`, which buys a capped, tool-less completion |
 
 ### Write path
 
@@ -134,7 +135,7 @@ but the widget also tells visitors it can be wrong and points them to /contact.
 
 1. Run the Kumi migration (`add_public_kb_web_chat`).
 2. Set `WEB_CHAT_LOG_SECRET` to the **same** value on both Kumi and Railway.
-3. Set `OPENAI_API_KEY` on Railway. Until it is set the widget stays hidden.
+3. Set `WEB_CHAT_REPLY_SECRET` on Railway (the same value as on Kumi; optionally `KUMI_CHAT_REPLY_URL`, default `https://padelmaps.org/api/web-chat-reply`). No AI provider key lives on Railway: the model call runs behind padelmaps.org. Until the secret is set the widget stays hidden.
 4. Publish knowledge rows deliberately. Do **not** publish: the guest WiFi password, the
    internal matchmaking guidance, or the coach roster row that is out of date.
 5. Deploy Kumi first, so `/api/public-knowledge` exists before the website asks for it.
