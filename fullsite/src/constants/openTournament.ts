@@ -53,6 +53,7 @@ export const OPEN_SUPPLIERS = [
  *  Role text is what they bought. */
 export const OPEN_SPONSORS = [
   { role: "Sleeve sponsor", name: "St. Johns Physical Therapy", src: "/open-sponsors/st-johns-physical-therapy.png", url: "https://stjohnsphysicaltherapy.com/" },
+  { role: "Sleeve sponsor", name: "Beacon Oral & Maxillofacial Surgeons", src: "/open-sponsors/beacon-oral-surgeons.png", url: "https://beaconoms.com/" },
   { role: "Jersey sponsor", name: "Portland Rock Gym", src: "/open-sponsors/portland-rock-gym.png", url: "https://portlandrockgym.com/" },
   { role: "Jersey sponsor", name: "StormBreaker Brewing", src: "/open-sponsors/stormbreaker-brewing.png", url: "https://www.stormbreakerbrewing.com/" },
   { role: "Jersey sponsor", name: "Two Stroke Coffee Co.", src: "/open-sponsors/two-stroke-coffee.png", url: "https://www.twostrokecoffeeco.com/" },
